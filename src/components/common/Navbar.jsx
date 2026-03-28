@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AppBar, Toolbar, Typography, IconButton, Box, Menu, MenuItem,
-  Avatar, Tooltip, Divider, ListItemIcon, Badge,
+  Avatar, Tooltip, Divider, ListItemIcon, Badge, useMediaQuery, useTheme,
 } from '@mui/material';
 import {
-  CalendarMonth, GroupAdd, PersonAdd, AccountCircle,
-  Logout, Settings, Notifications,
+  CalendarMonth, GroupAdd, PersonAdd,
+  Logout, Settings, Notifications, Menu as MenuIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -15,14 +15,17 @@ import { useAuth } from '../../hooks/useAuth';
  *
  * Props:
  * @param {object} profile - 현재 유저 프로필 [Optional]
+ * @param {function} onMenuClick - 모바일 사이드바 토글 핸들러 [Optional]
  *
  * Example usage:
- * <Navbar profile={profile} />
+ * <Navbar profile={profile} onMenuClick={fn} />
  */
-function Navbar({ profile }) {
+function Navbar({ profile, onMenuClick }) {
   const navigate = useNavigate();
   const { signOut } = useAuth();
   const [anchorEl, setAnchorEl] = useState(null);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   const handleMenuOpen = (e) => setAnchorEl(e.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
@@ -38,6 +41,13 @@ function Navbar({ profile }) {
   return (
     <AppBar position="sticky" elevation={1} sx={{ bgcolor: 'white', color: 'text.primary' }}>
       <Toolbar sx={{ gap: 1 }}>
+        {/* 모바일 햄버거 버튼 */}
+        {isMobile && onMenuClick && (
+          <IconButton onClick={onMenuClick} edge="start" sx={{ mr: 0.5 }}>
+            <MenuIcon />
+          </IconButton>
+        )}
+
         {/* 로고 */}
         <CalendarMonth sx={{ color: 'primary.main', mr: 0.5 }} />
         <Typography

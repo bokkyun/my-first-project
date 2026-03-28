@@ -1,44 +1,44 @@
 import {
   Box, Typography, Checkbox, FormControlLabel, Divider,
-  List, ListItem, Chip, Tooltip, IconButton,
+  List, ListItem, Chip, Tooltip, IconButton, Drawer, useMediaQuery, useTheme,
 } from '@mui/material';
 import { Add, Circle } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 
+const SIDEBAR_WIDTH = 220;
+
 /**
  * 좌측 사이드바 - 그룹 필터 체크박스
+ * 모바일: Drawer, 데스크톱: 고정 사이드바
  *
  * Props:
  * @param {Array} groups - 내 그룹 목록 [Required]
  * @param {string[]} visibleGroupIds - 표시할 그룹 ID 배열 [Required]
  * @param {function} onToggleGroup - 그룹 토글 핸들러 (groupId: string) => void [Required]
  * @param {function} onToggleAll - 전체 토글 핸들러 () => void [Required]
+ * @param {boolean} mobileOpen - 모바일 드로어 열림 여부 [Optional]
+ * @param {function} onMobileClose - 모바일 드로어 닫기 핸들러 [Optional]
  *
  * Example usage:
- * <Sidebar groups={groups} visibleGroupIds={visibleGroupIds} onToggleGroup={fn} onToggleAll={fn} />
+ * <Sidebar groups={groups} visibleGroupIds={ids} onToggleGroup={fn} onToggleAll={fn} mobileOpen={open} onMobileClose={fn} />
  */
-function Sidebar({ groups, visibleGroupIds, onToggleGroup, onToggleAll }) {
+function Sidebar({ groups, visibleGroupIds, onToggleGroup, onToggleAll, mobileOpen = false, onMobileClose }) {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
   const allChecked = groups.length > 0 && visibleGroupIds.length === groups.length;
   const someChecked = visibleGroupIds.length > 0 && visibleGroupIds.length < groups.length;
 
-  return (
-    <Box sx={{
-      width: 220,
-      flexShrink: 0,
-      borderRight: '1px solid',
-      borderColor: 'divider',
-      p: 2,
-      overflowY: 'auto',
-      bgcolor: 'white',
-    }}>
+  const content = (
+    <Box sx={{ width: SIDEBAR_WIDTH, p: 2, overflowY: 'auto', height: '100%', bgcolor: 'white' }}>
       {/* 내 그룹 */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
         <Typography variant="subtitle2" fontWeight={700} color="text.secondary">
           내 그룹
         </Typography>
         <Tooltip title="그룹 생성">
-          <IconButton size="small" onClick={() => navigate('/groups/create')}>
+          <IconButton size="small" onClick={() => { navigate('/groups/create'); if (onMobileClose) onMobileClose(); }}>
             <Add fontSize="small" />
           </IconButton>
         </Tooltip>
@@ -53,7 +53,7 @@ function Sidebar({ groups, visibleGroupIds, onToggleGroup, onToggleAll }) {
             <Chip
               label="그룹 가입하기"
               size="small"
-              onClick={() => navigate('/groups/join')}
+              onClick={() => { navigate('/groups/join'); if (onMobileClose) onMobileClose(); }}
               clickable
             />
           </Box>
@@ -108,10 +108,37 @@ function Sidebar({ groups, visibleGroupIds, onToggleGroup, onToggleAll }) {
         label="+ 그룹 가입"
         size="small"
         variant="outlined"
-        onClick={() => navigate('/groups/join')}
+        onClick={() => { navigate('/groups/join'); if (onMobileClose) onMobileClose(); }}
         clickable
         sx={{ width: '100%' }}
       />
+    </Box>
+  );
+
+  if (isMobile) {
+    return (
+      <Drawer
+        anchor="left"
+        open={mobileOpen}
+        onClose={onMobileClose}
+        ModalProps={{ keepMounted: true }}
+        PaperProps={{ sx: { width: SIDEBAR_WIDTH } }}
+      >
+        {content}
+      </Drawer>
+    );
+  }
+
+  return (
+    <Box sx={{
+      width: SIDEBAR_WIDTH,
+      flexShrink: 0,
+      borderRight: '1px solid',
+      borderColor: 'divider',
+      overflowY: 'auto',
+      bgcolor: 'white',
+    }}>
+      {content}
     </Box>
   );
 }

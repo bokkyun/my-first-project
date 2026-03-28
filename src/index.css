@@ -65,3 +65,34 @@ html, body {
   font-weight: 600;
   padding: 8px 0;
 }
+
+/* 모바일 FullCalendar 최적화 */
+@media (max-width: 600px) {
+  .fc .fc-toolbar-title {
+    font-size: 1rem;
+  }
+
+  .fc .fc-button {
+    font-size: 0.72rem;
+    padding: 3px 7px;
+  }
+
+  .fc .fc-toolbar {
+    gap: 4px;
+  }
+
+  .fc-daygrid-event {
+    font-size: 0.68rem;
+    padding: 1px 2px;
+  }
+
+  .fc .fc-col-header-cell-cushion {
+    font-size: 0.75rem;
+    padding: 4px 0;
+  }
+
+  .fc .fc-daygrid-day-number {
+    font-size: 0.8rem;
+    padding: 2px 4px;
+  }
+}

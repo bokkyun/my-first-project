@@ -3,7 +3,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   TextField, Button, FormControlLabel, Switch, Box, Typography,
   FormGroup, Checkbox, Select, MenuItem, FormControl, InputLabel,
-  IconButton, CircularProgress,
+  IconButton, CircularProgress, useMediaQuery, useTheme,
 } from '@mui/material';
 import { Close } from '@mui/icons-material';
 
@@ -35,6 +35,9 @@ const RECURRENCE_OPTIONS = [
  * <EventDialog open={open} onClose={fn} onSave={fn} groups={groups} defaultDate="2026-03-28" />
  */
 function EventDialog({ open, onClose, onSave, groups, defaultDate, editEvent }) {
+  const theme = useTheme();
+  const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
+
   const toDatetimeLocal = (d) => {
     if (!d) return '';
     const dt = new Date(d);
@@ -108,7 +111,7 @@ function EventDialog({ open, onClose, onSave, groups, defaultDate, editEvent }) 
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={fullScreen} PaperProps={{ sx: { borderRadius: fullScreen ? 0 : 3 } }}>
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1 }}>
         <Typography fontWeight={700}>{editEvent ? '일정 수정' : '새 일정 등록'}</Typography>
         <IconButton onClick={onClose} size="small"><Close /></IconButton>
@@ -137,7 +140,7 @@ function EventDialog({ open, onClose, onSave, groups, defaultDate, editEvent }) 
         />
 
         {!form.is_all_day && (
-          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 2 }}>
             <TextField
               label="시작 일시"
               type="datetime-local"
@@ -158,7 +161,7 @@ function EventDialog({ open, onClose, onSave, groups, defaultDate, editEvent }) 
         )}
 
         {form.is_all_day && (
-          <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, mb: 2 }}>
             <TextField
               label="시작일"
               type="date"

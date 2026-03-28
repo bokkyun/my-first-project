@@ -19,6 +19,9 @@ function CalendarPage() {
 
   const { events, createEvent, updateEvent, deleteEvent } = useEvents(user?.id, visibleGroupIds);
 
+  /** 모바일 사이드바 */
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   /** 다이얼로그 상태 */
   const [newDialogOpen, setNewDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
@@ -110,7 +113,7 @@ function CalendarPage() {
 
   return (
     <Box sx={{ width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
-      <Navbar profile={profile} />
+      <Navbar profile={profile} onMenuClick={() => setSidebarOpen(true)} />
 
       <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         <Sidebar
@@ -118,6 +121,8 @@ function CalendarPage() {
           visibleGroupIds={visibleGroupIds}
           onToggleGroup={handleToggleGroup}
           onToggleAll={handleToggleAll}
+          mobileOpen={sidebarOpen}
+          onMobileClose={() => setSidebarOpen(false)}
         />
 
         <CalendarView

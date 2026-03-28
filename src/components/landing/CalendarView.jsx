@@ -3,7 +3,7 @@ import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import { Box } from '@mui/material';
+import { Box, useMediaQuery, useTheme } from '@mui/material';
 
 /**
  * FullCalendar 기반 메인 캘린더 뷰
@@ -20,6 +20,8 @@ import { Box } from '@mui/material';
  */
 function CalendarView({ events, groups, visibleGroupIds, onDateClick, onEventClick }) {
   const calendarRef = useRef(null);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   /** 이벤트를 FullCalendar 포맷으로 변환 */
   const fcEvents = useCallback(() => {
@@ -50,18 +52,25 @@ function CalendarView({ events, groups, visibleGroupIds, onDateClick, onEventCli
   }, [events, groups, visibleGroupIds]);
 
   return (
-    <Box sx={{ flex: 1, p: 2, overflow: 'hidden', bgcolor: 'background.default' }}>
-      <Box sx={{ bgcolor: 'white', borderRadius: 2, p: 2, boxShadow: 1, height: '100%' }}>
+    <Box sx={{ flex: 1, p: { xs: 1, md: 2 }, overflow: 'hidden', bgcolor: 'background.default' }}>
+      <Box sx={{ bgcolor: 'white', borderRadius: 2, p: { xs: 1, md: 2 }, boxShadow: 1, height: '100%' }}>
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"
           locale="ko"
-          headerToolbar={{
+          headerToolbar={isMobile ? {
+            left: 'prev,next',
+            center: 'title',
+            right: 'today',
+          } : {
             left: 'prev,next today',
             center: 'title',
             right: 'dayGridMonth,timeGridWeek,timeGridDay',
           }}
+          footerToolbar={isMobile ? {
+            center: 'dayGridMonth,timeGridWeek,timeGridDay',
+          } : false}
           buttonText={{
             today: '오늘',
             month: '월',
@@ -72,8 +81,8 @@ function CalendarView({ events, groups, visibleGroupIds, onDateClick, onEventCli
           dateClick={(info) => onDateClick(info.dateStr)}
           eventClick={(info) => onEventClick(info.event.extendedProps)}
           height="calc(100vh - 140px)"
-          dayMaxEvents={3}
-          moreLinkText={(n) => `+${n}개 더`}
+          dayMaxEvents={isMobile ? 2 : 3}
+          moreLinkText={(n) => `+${n}`}
           eventDisplay="block"
         />
       </Box>
