@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
+/** 아이디 → 내부 이메일 변환 (Supabase Auth는 이메일을 식별자로 사용) */
+const toEmail = (username) => `${username.trim().toLowerCase()}@teamsync.local`;
+
 /**
  * 인증 상태를 관리하는 커스텀 훅
  * @returns {{ user, session, loading, signIn, signUp, signOut }}
@@ -27,24 +30,27 @@ export function useAuth() {
   }, []);
 
   /**
-   * @param {string} email
+   * @param {string} username - 사용자 아이디
    * @param {string} password
    */
-  const signIn = async (email, password) => {
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  const signIn = async (username, password) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: toEmail(username),
+      password,
+    });
     return { data, error };
   };
 
   /**
-   * @param {string} email
+   * @param {string} username - 사용자 아이디 (로그인 식별자)
    * @param {string} password
-   * @param {string} nickname
+   * @param {string} nickname - 표시 이름
    */
-  const signUp = async (email, password, nickname) => {
+  const signUp = async (username, password, nickname) => {
     const { data, error } = await supabase.auth.signUp({
-      email,
+      email: toEmail(username),
       password,
-      options: { data: { nickname } },
+      options: { data: { nickname: nickname || username } },
     });
     return { data, error };
   };

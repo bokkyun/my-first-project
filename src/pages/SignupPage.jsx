@@ -7,11 +7,14 @@ import {
 import { Visibility, VisibilityOff, CalendarMonth, ArrowBack } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 
+/** 아이디 유효성 검사: 영문, 숫자, 밑줄, 하이픈만 허용 */
+const isValidUsername = (v) => /^[a-zA-Z0-9_-]{3,20}$/.test(v);
+
 function SignupPage() {
   const navigate = useNavigate();
   const { signUp } = useAuth();
 
-  const [form, setForm] = useState({ email: '', nickname: '', password: '', passwordConfirm: '' });
+  const [form, setForm] = useState({ username: '', nickname: '', password: '', passwordConfirm: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -24,6 +27,11 @@ function SignupPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    if (!isValidUsername(form.username)) {
+      setError('아이디는 3~20자의 영문, 숫자, _(밑줄), -(하이픈)만 사용 가능합니다.');
+      return;
+    }
     if (form.password !== form.passwordConfirm) {
       setError('비밀번호가 일치하지 않습니다.');
       return;
@@ -32,11 +40,21 @@ function SignupPage() {
       setError('비밀번호는 6자 이상이어야 합니다.');
       return;
     }
+
     setLoading(true);
-    const { error: signUpError } = await signUp(form.email, form.password, form.nickname);
+    const { error: signUpError } = await signUp(
+      form.username,
+      form.password,
+      form.nickname || form.username,
+    );
     setLoading(false);
+
     if (signUpError) {
-      setError(signUpError.message || '회원가입에 실패했습니다. 다시 시도해주세요.');
+      if (signUpError.message?.includes('already registered')) {
+        setError('이미 사용 중인 아이디입니다.');
+      } else {
+        setError('회원가입에 실패했습니다. 다시 시도해주세요.');
+      }
     } else {
       setSuccess(true);
     }
@@ -67,9 +85,10 @@ function SignupPage() {
 
           {success ? (
             <Alert severity="success" sx={{ mb: 2 }}>
-              회원가입이 완료되었습니다! 이메일을 확인하여 계정을 인증해주세요.
-              <br />
-              <Link to="/login" style={{ color: '#1976d2', fontWeight: 600 }}>로그인 페이지로 이동</Link>
+              회원가입이 완료되었습니다!{' '}
+              <Link to="/login" style={{ color: '#1976d2', fontWeight: 600 }}>
+                로그인하러 가기
+              </Link>
             </Alert>
           ) : (
             <>
@@ -77,21 +96,25 @@ function SignupPage() {
               <Box component="form" onSubmit={handleSubmit}>
                 <TextField
                   fullWidth
-                  label="이메일"
-                  type="email"
-                  value={form.email}
-                  onChange={handleChange('email')}
+                  label="아이디"
+                  value={form.username}
+                  onChange={handleChange('username')}
                   required
-                  sx={{ mb: 2 }}
+                  sx={{ mb: 1 }}
+                  inputProps={{ maxLength: 20 }}
+                  autoComplete="username"
                 />
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                  3~20자, 영문·숫자·_(밑줄)·-(하이픈) 사용 가능
+                </Typography>
                 <TextField
                   fullWidth
-                  label="닉네임"
+                  label="닉네임 (선택)"
                   value={form.nickname}
                   onChange={handleChange('nickname')}
-                  required
                   sx={{ mb: 2 }}
                   inputProps={{ maxLength: 20 }}
+                  helperText="비워두면 아이디가 닉네임으로 사용됩니다"
                 />
                 <TextField
                   fullWidth
