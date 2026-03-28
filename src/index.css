@@ -1,0 +1,67 @@
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* FullCalendar 커스텀 스타일 */
+.fc {
+  font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+}
+
+.fc .fc-toolbar-title {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.fc .fc-button {
+  background-color: #1976d2;
+  border-color: #1976d2;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  padding: 4px 10px;
+}
+
+.fc .fc-button:hover {
+  background-color: #1565c0;
+  border-color: #1565c0;
+}
+
+.fc .fc-button-primary:disabled {
+  background-color: #90caf9;
+  border-color: #90caf9;
+}
+
+.fc-daygrid-event {
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.fc-daygrid-day:hover {
+  background-color: #f0f7ff;
+  cursor: pointer;
+}
+
+.fc-day-today {
+  background-color: #e3f2fd !important;
+}
+
+.fc-col-header-cell {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  padding: 8px 0;
+}
