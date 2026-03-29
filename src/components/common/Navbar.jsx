@@ -71,6 +71,12 @@ function Navbar({ profile, onMenuClick }) {
           </IconButton>
         </Tooltip>
 
+        <Tooltip title="로그아웃">
+          <IconButton onClick={handleSignOut} sx={{ color: 'error.main' }}>
+            <Logout />
+          </IconButton>
+        </Tooltip>
+
         <Tooltip title="프로필">
           <IconButton onClick={handleMenuOpen}>
             <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: '0.9rem' }}>
