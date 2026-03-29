@@ -4,14 +4,14 @@ import {
   Box, Container, Paper, Typography, TextField, Button,
   IconButton, InputAdornment, Alert, CircularProgress,
 } from '@mui/material';
-import { Visibility, VisibilityOff, CalendarMonth, ArrowBack, MarkEmailRead } from '@mui/icons-material';
+import { Visibility, VisibilityOff, CalendarMonth, CheckCircle } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 
-function SignupPage() {
+function ResetPasswordPage() {
   const navigate = useNavigate();
-  const { signUp } = useAuth();
+  const { updatePassword, setIsRecoveryMode } = useAuth();
 
-  const [form, setForm] = useState({ email: '', nickname: '', password: '', passwordConfirm: '' });
+  const [form, setForm] = useState({ password: '', passwordConfirm: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -35,20 +35,13 @@ function SignupPage() {
     }
 
     setLoading(true);
-    const { error: signUpError } = await signUp(
-      form.email,
-      form.password,
-      form.nickname || form.email.split('@')[0],
-    );
+    const { error: updateError } = await updatePassword(form.password);
     setLoading(false);
 
-    if (signUpError) {
-      if (signUpError.message?.includes('already registered')) {
-        setError('이미 사용 중인 이메일입니다.');
-      } else {
-        setError('회원가입에 실패했습니다. 다시 시도해주세요.');
-      }
+    if (updateError) {
+      setError('비밀번호 변경에 실패했습니다. 다시 시도해주세요.');
     } else {
+      setIsRecoveryMode(false);
       setSuccess(true);
     }
   };
@@ -64,30 +57,24 @@ function SignupPage() {
     }}>
       <Container maxWidth="xs">
         <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <IconButton onClick={() => navigate('/login')} sx={{ mr: 1 }}>
-              <ArrowBack />
-            </IconButton>
-            <Box sx={{ flex: 1, textAlign: 'center', pr: 5 }}>
-              <CalendarMonth sx={{ fontSize: 36, color: 'primary.main' }} />
-              <Typography variant="h6" fontWeight={700} color="primary.main">
-                TeamSync 회원가입
-              </Typography>
-            </Box>
+          <Box sx={{ textAlign: 'center', mb: 3 }}>
+            <CalendarMonth sx={{ fontSize: 36, color: 'primary.main' }} />
+            <Typography variant="h6" fontWeight={700} color="primary.main">
+              새 비밀번호 설정
+            </Typography>
           </Box>
 
           {success ? (
             <Box sx={{ textAlign: 'center', py: 2 }}>
-              <MarkEmailRead sx={{ fontSize: 56, color: 'success.main', mb: 1 }} />
+              <CheckCircle sx={{ fontSize: 56, color: 'success.main', mb: 1 }} />
               <Typography variant="h6" fontWeight={600} gutterBottom>
-                이메일을 확인해주세요
+                비밀번호가 변경되었습니다
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                <strong>{form.email}</strong>로 인증 링크를 발송했습니다.<br />
-                이메일의 링크를 클릭하면 가입이 완료됩니다.
+                새 비밀번호로 로그인해주세요.
               </Typography>
-              <Button variant="outlined" onClick={() => navigate('/login')} fullWidth sx={{ borderRadius: 2 }}>
-                로그인 페이지로 이동
+              <Button variant="contained" onClick={() => navigate('/login')} fullWidth sx={{ borderRadius: 2 }}>
+                로그인하러 가기
               </Button>
             </Box>
           ) : (
@@ -96,26 +83,7 @@ function SignupPage() {
               <Box component="form" onSubmit={handleSubmit}>
                 <TextField
                   fullWidth
-                  label="이메일"
-                  type="email"
-                  value={form.email}
-                  onChange={handleChange('email')}
-                  required
-                  sx={{ mb: 2 }}
-                  autoComplete="email"
-                />
-                <TextField
-                  fullWidth
-                  label="닉네임 (선택)"
-                  value={form.nickname}
-                  onChange={handleChange('nickname')}
-                  sx={{ mb: 2 }}
-                  inputProps={{ maxLength: 20 }}
-                  helperText="비워두면 이메일 앞부분이 닉네임으로 사용됩니다"
-                />
-                <TextField
-                  fullWidth
-                  label="비밀번호"
+                  label="새 비밀번호"
                   type={showPassword ? 'text' : 'password'}
                   value={form.password}
                   onChange={handleChange('password')}
@@ -134,7 +102,7 @@ function SignupPage() {
                 />
                 <TextField
                   fullWidth
-                  label="비밀번호 확인"
+                  label="새 비밀번호 확인"
                   type={showPassword ? 'text' : 'password'}
                   value={form.passwordConfirm}
                   onChange={handleChange('passwordConfirm')}
@@ -149,7 +117,7 @@ function SignupPage() {
                   disabled={loading}
                   sx={{ borderRadius: 2, py: 1.2 }}
                 >
-                  {loading ? <CircularProgress size={24} color="inherit" /> : '회원가입'}
+                  {loading ? <CircularProgress size={24} color="inherit" /> : '비밀번호 변경'}
                 </Button>
               </Box>
             </>
@@ -160,4 +128,4 @@ function SignupPage() {
   );
 }
 
-export default SignupPage;
+export default ResetPasswordPage;

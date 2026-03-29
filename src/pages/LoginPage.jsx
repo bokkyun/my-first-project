@@ -11,7 +11,7 @@ function LoginPage() {
   const navigate = useNavigate();
   const { signIn } = useAuth();
 
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -21,10 +21,14 @@ function LoginPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const { error: signInError } = await signIn(username, password);
+    const { error: signInError } = await signIn(email, password);
     setLoading(false);
     if (signInError) {
-      setError('아이디 또는 비밀번호가 올바르지 않습니다.');
+      if (signInError.message?.includes('Email not confirmed')) {
+        setError('이메일 인증이 완료되지 않았습니다. 이메일을 확인해주세요.');
+      } else {
+        setError('이메일 또는 비밀번호가 올바르지 않습니다.');
+      }
     } else {
       navigate('/calendar');
     }
@@ -41,7 +45,6 @@ function LoginPage() {
     }}>
       <Container maxWidth="xs">
         <Paper elevation={3} sx={{ p: 4, borderRadius: 3 }}>
-          {/* 로고 */}
           <Box sx={{ textAlign: 'center', mb: 3 }}>
             <CalendarMonth sx={{ fontSize: 48, color: 'primary.main' }} />
             <Typography variant="h5" fontWeight={700} color="primary.main">
@@ -57,13 +60,13 @@ function LoginPage() {
           <Box component="form" onSubmit={handleSubmit}>
             <TextField
               fullWidth
-              label="아이디"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              label="이메일"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
               sx={{ mb: 2 }}
-              autoComplete="username"
-              inputProps={{ maxLength: 20 }}
+              autoComplete="email"
             />
             <TextField
               fullWidth
@@ -72,7 +75,7 @@ function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              sx={{ mb: 3 }}
+              sx={{ mb: 1 }}
               autoComplete="current-password"
               InputProps={{
                 endAdornment: (
@@ -84,6 +87,11 @@ function LoginPage() {
                 ),
               }}
             />
+            <Box sx={{ textAlign: 'right', mb: 2 }}>
+              <Link to="/forgot-password" style={{ color: '#1976d2', fontSize: '0.85rem', textDecoration: 'none' }}>
+                비밀번호를 잊으셨나요?
+              </Link>
+            </Box>
             <Button
               type="submit"
               fullWidth
