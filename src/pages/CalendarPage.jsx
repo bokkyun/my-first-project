@@ -14,7 +14,7 @@ function CalendarPage() {
   const { user } = useAuth();
   const [profile, setProfile] = useState(null);
 
-  const { groups, loading: groupsLoading } = useGroups(user?.id);
+  const { groups, loading: groupsLoading, leaveGroup, fetchGroupMembers } = useGroups(user?.id);
   const [visibleGroupIds, setVisibleGroupIds] = useState([]);
 
   const { events, createEvent, updateEvent, deleteEvent } = useEvents(user?.id, visibleGroupIds);
@@ -123,6 +123,8 @@ function CalendarPage() {
           onToggleAll={handleToggleAll}
           mobileOpen={sidebarOpen}
           onMobileClose={() => setSidebarOpen(false)}
+          onFetchGroupMembers={fetchGroupMembers}
+          onLeaveGroup={leaveGroup}
         />
 
         <CalendarView

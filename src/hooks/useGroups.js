@@ -73,5 +73,17 @@ export function useGroups(userId) {
     return { data: true };
   };
 
-  return { groups, loading, fetchGroups, createGroup, joinGroup, leaveGroup };
+  /**
+   * @param {string} groupId
+   */
+  const fetchGroupMembers = async (groupId) => {
+    const { data, error } = await supabase
+      .from('group_members')
+      .select('role, profiles(id, nickname, email)')
+      .eq('group_id', groupId);
+    if (error) return { error };
+    return { data: data.map((m) => ({ ...m.profiles, role: m.role })) };
+  };
+
+  return { groups, loading, fetchGroups, createGroup, joinGroup, leaveGroup, fetchGroupMembers };
 }

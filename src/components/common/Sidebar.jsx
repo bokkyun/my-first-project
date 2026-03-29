@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import {
   Box, Typography, Checkbox, FormControlLabel, Divider,
   List, ListItem, Chip, Tooltip, IconButton, Drawer, useMediaQuery, useTheme,
 } from '@mui/material';
-import { Add, Circle } from '@mui/icons-material';
+import { Add, Circle, InfoOutlined } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import GroupInfoDialog from '../landing/GroupInfoDialog';
 
 const SIDEBAR_WIDTH = 220;
 
@@ -18,14 +20,18 @@ const SIDEBAR_WIDTH = 220;
  * @param {function} onToggleAll - 전체 토글 핸들러 () => void [Required]
  * @param {boolean} mobileOpen - 모바일 드로어 열림 여부 [Optional]
  * @param {function} onMobileClose - 모바일 드로어 닫기 핸들러 [Optional]
+ * @param {function} onFetchGroupMembers - (groupId) => Promise<{data, error}> [Required]
+ * @param {function} onLeaveGroup - (groupId) => Promise<void> [Required]
  *
  * Example usage:
- * <Sidebar groups={groups} visibleGroupIds={ids} onToggleGroup={fn} onToggleAll={fn} mobileOpen={open} onMobileClose={fn} />
+ * <Sidebar groups={groups} visibleGroupIds={ids} onToggleGroup={fn} onToggleAll={fn} mobileOpen={open} onMobileClose={fn} onFetchGroupMembers={fn} onLeaveGroup={fn} />
  */
-function Sidebar({ groups, visibleGroupIds, onToggleGroup, onToggleAll, mobileOpen = false, onMobileClose }) {
+function Sidebar({ groups, visibleGroupIds, onToggleGroup, onToggleAll, mobileOpen = false, onMobileClose, onFetchGroupMembers, onLeaveGroup }) {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+
+  const [infoGroup, setInfoGroup] = useState(null);
 
   const allChecked = groups.length > 0 && visibleGroupIds.length === groups.length;
   const someChecked = visibleGroupIds.length > 0 && visibleGroupIds.length < groups.length;
@@ -77,8 +83,9 @@ function Sidebar({ groups, visibleGroupIds, onToggleGroup, onToggleAll, mobileOp
           </ListItem>
           <Divider sx={{ mb: 0.5 }} />
           {groups.map((group) => (
-            <ListItem key={group.id} disablePadding>
+            <ListItem key={group.id} disablePadding sx={{ display: 'flex', alignItems: 'center' }}>
               <FormControlLabel
+                sx={{ flex: 1, mr: 0, minWidth: 0 }}
                 control={
                   <Checkbox
                     checked={visibleGroupIds.includes(group.id)}
@@ -88,14 +95,23 @@ function Sidebar({ groups, visibleGroupIds, onToggleGroup, onToggleAll, mobileOp
                   />
                 }
                 label={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                    <Circle sx={{ fontSize: 10, color: group.color }} />
-                    <Typography variant="body2" noWrap sx={{ maxWidth: 130 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0 }}>
+                    <Circle sx={{ fontSize: 10, color: group.color, flexShrink: 0 }} />
+                    <Typography variant="body2" noWrap sx={{ maxWidth: 100 }}>
                       {group.name}
                     </Typography>
                   </Box>
                 }
               />
+              <Tooltip title="멤버 보기 / 탈퇴">
+                <IconButton
+                  size="small"
+                  onClick={() => setInfoGroup(group)}
+                  sx={{ flexShrink: 0, opacity: 0.5, '&:hover': { opacity: 1 } }}
+                >
+                  <InfoOutlined sx={{ fontSize: 16 }} />
+                </IconButton>
+              </Tooltip>
             </ListItem>
           ))}
         </List>
@@ -115,31 +131,47 @@ function Sidebar({ groups, visibleGroupIds, onToggleGroup, onToggleAll, mobileOp
     </Box>
   );
 
+  const dialog = (
+    <GroupInfoDialog
+      open={Boolean(infoGroup)}
+      onClose={() => setInfoGroup(null)}
+      group={infoGroup}
+      onFetchMembers={onFetchGroupMembers}
+      onLeave={onLeaveGroup}
+    />
+  );
+
   if (isMobile) {
     return (
-      <Drawer
-        anchor="left"
-        open={mobileOpen}
-        onClose={onMobileClose}
-        ModalProps={{ keepMounted: true }}
-        PaperProps={{ sx: { width: SIDEBAR_WIDTH } }}
-      >
-        {content}
-      </Drawer>
+      <>
+        <Drawer
+          anchor="left"
+          open={mobileOpen}
+          onClose={onMobileClose}
+          ModalProps={{ keepMounted: true }}
+          PaperProps={{ sx: { width: SIDEBAR_WIDTH } }}
+        >
+          {content}
+        </Drawer>
+        {dialog}
+      </>
     );
   }
 
   return (
-    <Box sx={{
-      width: SIDEBAR_WIDTH,
-      flexShrink: 0,
-      borderRight: '1px solid',
-      borderColor: 'divider',
-      overflowY: 'auto',
-      bgcolor: 'white',
-    }}>
-      {content}
-    </Box>
+    <>
+      <Box sx={{
+        width: SIDEBAR_WIDTH,
+        flexShrink: 0,
+        borderRight: '1px solid',
+        borderColor: 'divider',
+        overflowY: 'auto',
+        bgcolor: 'white',
+      }}>
+        {content}
+      </Box>
+      {dialog}
+    </>
   );
 }
 
