@@ -22,11 +22,12 @@ const SIDEBAR_WIDTH = 220;
  * @param {function} onMobileClose - 모바일 드로어 닫기 핸들러 [Optional]
  * @param {function} onFetchGroupMembers - (groupId) => Promise<{data, error}> [Required]
  * @param {function} onLeaveGroup - (groupId) => Promise<void> [Required]
+ * @param {function} onDeleteGroup - (groupId) => Promise<void> [Required]
  *
  * Example usage:
- * <Sidebar groups={groups} visibleGroupIds={ids} onToggleGroup={fn} onToggleAll={fn} mobileOpen={open} onMobileClose={fn} onFetchGroupMembers={fn} onLeaveGroup={fn} />
+ * <Sidebar groups={groups} visibleGroupIds={ids} onToggleGroup={fn} onToggleAll={fn} mobileOpen={open} onMobileClose={fn} onFetchGroupMembers={fn} onLeaveGroup={fn} onDeleteGroup={fn} />
  */
-function Sidebar({ groups, visibleGroupIds, onToggleGroup, onToggleAll, mobileOpen = false, onMobileClose, onFetchGroupMembers, onLeaveGroup }) {
+function Sidebar({ groups, visibleGroupIds, onToggleGroup, onToggleAll, mobileOpen = false, onMobileClose, onFetchGroupMembers, onLeaveGroup, onDeleteGroup }) {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -138,6 +139,7 @@ function Sidebar({ groups, visibleGroupIds, onToggleGroup, onToggleAll, mobileOp
       group={infoGroup}
       onFetchMembers={onFetchGroupMembers}
       onLeave={onLeaveGroup}
+      onDelete={onDeleteGroup}
     />
   );
 

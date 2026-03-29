@@ -15,21 +15,25 @@ import { Circle } from '@mui/icons-material';
  * @param {object|null} group - 그룹 정보 객체 { id, name, color, description, myRole } [Required]
  * @param {function} onFetchMembers - (groupId) => Promise<{data, error}> [Required]
  * @param {function} onLeave - (groupId) => Promise<void> [Required]
+ * @param {function} onDelete - (groupId) => Promise<void> [Required]
  *
  * Example usage:
- * <GroupInfoDialog open={open} onClose={fn} group={group} onFetchMembers={fn} onLeave={fn} />
+ * <GroupInfoDialog open={open} onClose={fn} group={group} onFetchMembers={fn} onLeave={fn} onDelete={fn} />
  */
-function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave }) {
+function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave, onDelete }) {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (!open || !group) return;
     setLoading(true);
     setMembers([]);
     setConfirmLeave(false);
+    setConfirmDelete(false);
     onFetchMembers(group.id).then(({ data, error }) => {
       if (!error && data) setMembers(data);
       setLoading(false);
@@ -41,6 +45,14 @@ function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave }) {
     await onLeave(group.id);
     setLeaving(false);
     setConfirmLeave(false);
+    onClose();
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    await onDelete(group.id);
+    setDeleting(false);
+    setConfirmDelete(false);
     onClose();
   };
 
@@ -118,38 +130,42 @@ function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave }) {
       <Divider sx={{ mt: 1 }} />
 
       <DialogActions sx={{ p: 2, gap: 1 }}>
-        {!confirmLeave ? (
+        {!confirmLeave && !confirmDelete && (
           <>
-            <Button
-              variant='outlined'
-              color='error'
-              size='small'
-              disabled={group.myRole === 'admin'}
-              onClick={() => setConfirmLeave(true)}
-              sx={{ borderRadius: 2 }}
-            >
-              그룹 탈퇴
-            </Button>
-            {group.myRole === 'admin' && (
-              <Typography variant='caption' color='text.disabled' sx={{ flex: 1 }}>
-                관리자는 탈퇴 불가
-              </Typography>
+            {group.myRole === 'admin' ? (
+              <Button
+                variant='outlined'
+                color='error'
+                size='small'
+                onClick={() => setConfirmDelete(true)}
+                sx={{ borderRadius: 2 }}
+              >
+                그룹 삭제
+              </Button>
+            ) : (
+              <Button
+                variant='outlined'
+                color='error'
+                size='small'
+                onClick={() => setConfirmLeave(true)}
+                sx={{ borderRadius: 2 }}
+              >
+                그룹 탈퇴
+              </Button>
             )}
-            <Box sx={{ flex: group.myRole === 'admin' ? 0 : 1 }} />
+            <Box sx={{ flex: 1 }} />
             <Button onClick={onClose} variant='outlined' sx={{ borderRadius: 2 }}>
               닫기
             </Button>
           </>
-        ) : (
+        )}
+
+        {confirmLeave && (
           <>
             <Typography variant='body2' color='error.main' sx={{ flex: 1 }}>
               정말 탈퇴하시겠습니까?
             </Typography>
-            <Button
-              onClick={() => setConfirmLeave(false)}
-              variant='outlined'
-              sx={{ borderRadius: 2 }}
-            >
+            <Button onClick={() => setConfirmLeave(false)} variant='outlined' sx={{ borderRadius: 2 }}>
               취소
             </Button>
             <Button
@@ -160,6 +176,26 @@ function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave }) {
               sx={{ borderRadius: 2 }}
             >
               {leaving ? <CircularProgress size={16} color='inherit' /> : '탈퇴'}
+            </Button>
+          </>
+        )}
+
+        {confirmDelete && (
+          <>
+            <Typography variant='body2' color='error.main' sx={{ flex: 1 }}>
+              그룹을 삭제하면 복구할 수 없습니다.
+            </Typography>
+            <Button onClick={() => setConfirmDelete(false)} variant='outlined' sx={{ borderRadius: 2 }}>
+              취소
+            </Button>
+            <Button
+              onClick={handleDelete}
+              variant='contained'
+              color='error'
+              disabled={deleting}
+              sx={{ borderRadius: 2 }}
+            >
+              {deleting ? <CircularProgress size={16} color='inherit' /> : '삭제'}
             </Button>
           </>
         )}
