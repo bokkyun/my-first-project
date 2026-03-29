@@ -39,6 +39,25 @@ export function useEvents(userId, visibleGroupIds = []) {
     const all = [...(myEvents || []), ...sharedEvents];
     /** 중복 제거 */
     const unique = Array.from(new Map(all.map((e) => [e.id, e])).values());
+
+    /** 등록자 닉네임 fetch */
+    const creatorIds = [...new Set(unique.map((e) => e.creator_id).filter(Boolean))];
+    if (creatorIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, nickname')
+        .in('id', creatorIds);
+      if (profiles) {
+        const profileMap = Object.fromEntries(profiles.map((p) => [p.id, p]));
+        setEvents(unique.map((e) => ({
+          ...e,
+          creatorNickname: profileMap[e.creator_id]?.nickname || null,
+        })));
+        setLoading(false);
+        return;
+      }
+    }
+
     setEvents(unique);
     setLoading(false);
   }, [userId, visibleGroupIds.join(',')]);

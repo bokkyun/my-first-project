@@ -46,7 +46,7 @@ function CalendarView({ events, groups, visibleGroupIds, onDateClick, onEventCli
           allDay: ev.is_all_day,
           backgroundColor: color,
           borderColor: color,
-          extendedProps: { ...ev },
+          extendedProps: { ...ev, creatorNickname: ev.creatorNickname || null },
         };
       });
   }, [events, groups, visibleGroupIds]);
@@ -80,6 +80,33 @@ function CalendarView({ events, groups, visibleGroupIds, onDateClick, onEventCli
           events={fcEvents()}
           dateClick={(info) => onDateClick(info.dateStr)}
           eventClick={(info) => onEventClick(info.event.extendedProps)}
+          eventContent={(arg) => {
+            const nickname = arg.event.extendedProps.creatorNickname;
+            return (
+              <Box sx={{ px: 0.5, overflow: 'hidden', width: '100%', lineHeight: 1.2 }}>
+                <Box sx={{
+                  fontWeight: 600,
+                  fontSize: '0.75rem',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {arg.event.title}
+                </Box>
+                {nickname && (
+                  <Box sx={{
+                    fontSize: '0.65rem',
+                    opacity: 0.9,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {nickname}
+                  </Box>
+                )}
+              </Box>
+            );
+          }}
           height="calc(100vh - 140px)"
           dayMaxEvents={isMobile ? 2 : 3}
           moreLinkText={(n) => `+${n}`}
