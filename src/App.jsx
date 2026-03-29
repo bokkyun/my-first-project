@@ -1,5 +1,4 @@
-import { useEffect } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { CircularProgress, Box } from '@mui/material';
 import { useAuth } from './hooks/useAuth';
 import LoginPage from './pages/LoginPage';
@@ -8,8 +7,6 @@ import CalendarPage from './pages/CalendarPage';
 import GroupCreatePage from './pages/GroupCreatePage';
 import GroupJoinPage from './pages/GroupJoinPage';
 import ProfilePage from './pages/ProfilePage';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
 
 /**
  * 인증이 필요한 라우트 보호 컴포넌트
@@ -30,21 +27,12 @@ function ProtectedRoute({ children, user, loading }) {
 }
 
 function App() {
-  const { user, loading, isRecoveryMode } = useAuth();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (isRecoveryMode) {
-      navigate('/reset-password');
-    }
-  }, [isRecoveryMode, navigate]);
+  const { user, loading } = useAuth();
 
   return (
     <Routes>
-      <Route path="/login" element={user && !isRecoveryMode ? <Navigate to="/calendar" replace /> : <LoginPage />} />
-      <Route path="/signup" element={user && !isRecoveryMode ? <Navigate to="/calendar" replace /> : <SignupPage />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/login" element={user ? <Navigate to="/calendar" replace /> : <LoginPage />} />
+      <Route path="/signup" element={user ? <Navigate to="/calendar" replace /> : <SignupPage />} />
       <Route
         path="/calendar"
         element={
@@ -77,7 +65,7 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route path="*" element={<Navigate to={user && !isRecoveryMode ? '/calendar' : '/login'} replace />} />
+      <Route path="*" element={<Navigate to={user ? '/calendar' : '/login'} replace />} />
     </Routes>
   );
 }

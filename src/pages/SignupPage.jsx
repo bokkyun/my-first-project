@@ -1,17 +1,20 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   Box, Container, Paper, Typography, TextField, Button,
   IconButton, InputAdornment, Alert, CircularProgress,
 } from '@mui/material';
-import { Visibility, VisibilityOff, CalendarMonth, ArrowBack, MarkEmailRead } from '@mui/icons-material';
+import { Visibility, VisibilityOff, CalendarMonth, ArrowBack } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
+
+/** 아이디 유효성 검사: 영문, 숫자, 밑줄, 하이픈만 허용 */
+const isValidUsername = (v) => /^[a-zA-Z0-9_-]{3,20}$/.test(v);
 
 function SignupPage() {
   const navigate = useNavigate();
   const { signUp } = useAuth();
 
-  const [form, setForm] = useState({ email: '', nickname: '', password: '', passwordConfirm: '' });
+  const [form, setForm] = useState({ username: '', nickname: '', password: '', passwordConfirm: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -25,6 +28,10 @@ function SignupPage() {
     e.preventDefault();
     setError('');
 
+    if (!isValidUsername(form.username)) {
+      setError('아이디는 3~20자의 영문, 숫자, _(밑줄), -(하이픈)만 사용 가능합니다.');
+      return;
+    }
     if (form.password !== form.passwordConfirm) {
       setError('비밀번호가 일치하지 않습니다.');
       return;
@@ -36,15 +43,15 @@ function SignupPage() {
 
     setLoading(true);
     const { error: signUpError } = await signUp(
-      form.email,
+      form.username,
       form.password,
-      form.nickname || form.email.split('@')[0],
+      form.nickname || form.username,
     );
     setLoading(false);
 
     if (signUpError) {
       if (signUpError.message?.includes('already registered')) {
-        setError('이미 사용 중인 이메일입니다.');
+        setError('이미 사용 중인 아이디입니다.');
       } else {
         setError('회원가입에 실패했습니다. 다시 시도해주세요.');
       }
@@ -77,33 +84,29 @@ function SignupPage() {
           </Box>
 
           {success ? (
-            <Box sx={{ textAlign: 'center', py: 2 }}>
-              <MarkEmailRead sx={{ fontSize: 56, color: 'success.main', mb: 1 }} />
-              <Typography variant="h6" fontWeight={600} gutterBottom>
-                이메일을 확인해주세요
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                <strong>{form.email}</strong>로 인증 링크를 발송했습니다.<br />
-                이메일의 링크를 클릭하면 가입이 완료됩니다.
-              </Typography>
-              <Button variant="outlined" onClick={() => navigate('/login')} fullWidth sx={{ borderRadius: 2 }}>
-                로그인 페이지로 이동
-              </Button>
-            </Box>
+            <Alert severity="success" sx={{ mb: 2 }}>
+              회원가입이 완료되었습니다!{' '}
+              <Link to="/login" style={{ color: '#1976d2', fontWeight: 600 }}>
+                로그인하러 가기
+              </Link>
+            </Alert>
           ) : (
             <>
               {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
               <Box component="form" onSubmit={handleSubmit}>
                 <TextField
                   fullWidth
-                  label="이메일"
-                  type="email"
-                  value={form.email}
-                  onChange={handleChange('email')}
+                  label="아이디"
+                  value={form.username}
+                  onChange={handleChange('username')}
                   required
-                  sx={{ mb: 2 }}
-                  autoComplete="email"
+                  sx={{ mb: 1 }}
+                  inputProps={{ maxLength: 20 }}
+                  autoComplete="username"
                 />
+                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
+                  3~20자, 영문·숫자·_(밑줄)·-(하이픈) 사용 가능
+                </Typography>
                 <TextField
                   fullWidth
                   label="닉네임 (선택)"
@@ -111,7 +114,7 @@ function SignupPage() {
                   onChange={handleChange('nickname')}
                   sx={{ mb: 2 }}
                   inputProps={{ maxLength: 20 }}
-                  helperText="비워두면 이메일 앞부분이 닉네임으로 사용됩니다"
+                  helperText="비워두면 아이디가 닉네임으로 사용됩니다"
                 />
                 <TextField
                   fullWidth
