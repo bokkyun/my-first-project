@@ -3,6 +3,7 @@ import { Box, Snackbar, Alert } from '@mui/material';
 import { useAuth } from '../hooks/useAuth';
 import { useGroups } from '../hooks/useGroups';
 import { useEvents } from '../hooks/useEvents';
+import { useNotifications } from '../hooks/useNotifications';
 import { supabase } from '../lib/supabase';
 import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar';
@@ -18,6 +19,9 @@ function CalendarPage() {
   const [visibleGroupIds, setVisibleGroupIds] = useState([]);
 
   const { events, createEvent, updateEvent, deleteEvent } = useEvents(user?.id, visibleGroupIds);
+
+  /** 당일 스케줄 브라우저 알림 */
+  useNotifications(events);
 
   /** 모바일 사이드바 */
   const [sidebarOpen, setSidebarOpen] = useState(false);
