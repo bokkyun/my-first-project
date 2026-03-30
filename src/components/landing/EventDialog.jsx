@@ -87,21 +87,27 @@ function EventDialog({ open, onClose, onSave, groups, defaultDate, editEvent, ad
     }
   }, [editEvent, defaultDate, open]);
 
-  /** 관리자 그룹 멤버 로드 */
+  /** 체크된 관리자 그룹의 멤버만 로드 */
   useEffect(() => {
-    if (!open || editEvent || adminGroups.length === 0 || !onFetchMembers) {
+    const selectedAdminGroups = adminGroups.filter((ag) => selectedGroups.includes(ag.id));
+
+    if (!open || editEvent || selectedAdminGroups.length === 0 || !onFetchMembers) {
       setGroupMembers([]);
+      setTargetUserId('');
       return;
     }
+
     setMembersLoading(true);
-    Promise.all(adminGroups.map((g) => onFetchMembers(g.id)))
+    Promise.all(selectedAdminGroups.map((g) => onFetchMembers(g.id)))
       .then((results) => {
         const all = results.flatMap((r) => r.data || []);
         const unique = Array.from(new Map(all.map((m) => [m.id, m])).values());
         setGroupMembers(unique);
+        /** 선택된 멤버가 새 목록에 없으면 초기화 */
+        setTargetUserId((prev) => (unique.some((m) => m.id === prev) ? prev : ''));
       })
       .finally(() => setMembersLoading(false));
-  }, [open, editEvent, adminGroups.map((g) => g.id).join(',')]);
+  }, [open, editEvent, selectedGroups.join(','), adminGroups.map((g) => g.id).join(',')]);
 
   const handleChange = (field) => (e) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -258,8 +264,8 @@ function EventDialog({ open, onClose, onSave, groups, defaultDate, editEvent, ad
           </Box>
         </Box>
 
-        {/* 등록 대상 선택 (관리자만 표시) */}
-        {!editEvent && adminGroups.length > 0 && (
+        {/* 등록 대상 선택 - 체크된 그룹 중 관리자 그룹이 있을 때만 표시 */}
+        {!editEvent && (membersLoading || groupMembers.length > 0) && (
           <FormControl fullWidth sx={{ mb: 2 }}>
             <InputLabel>등록 대상</InputLabel>
             <Select
