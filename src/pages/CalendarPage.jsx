@@ -78,8 +78,8 @@ function CalendarPage() {
   };
 
   /** 이벤트 저장 */
-  const handleSaveEvent = async (eventData, groupIds) => {
-    const { error } = await createEvent(eventData, groupIds);
+  const handleSaveEvent = async (eventData, groupIds, targetUserId = null) => {
+    const { error } = await createEvent(eventData, groupIds, targetUserId);
     if (error) {
       setSnack({ open: true, msg: '일정 저장 중 오류가 발생했습니다.', severity: 'error' });
     } else {
@@ -162,6 +162,8 @@ function CalendarPage() {
         groups={groups}
         defaultDate={selectedDate}
         editEvent={null}
+        adminGroups={adminGroupIds.map((id) => groups.find((g) => g.id === id)).filter(Boolean)}
+        onFetchMembers={fetchGroupMembers}
       />
 
       {/* 일정 상세 다이얼로그 */}

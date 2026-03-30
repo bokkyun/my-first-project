@@ -69,11 +69,13 @@ export function useEvents(userId, visibleGroupIds = []) {
   /**
    * @param {object} eventData - 일정 데이터
    * @param {string[]} groupIds - 공개할 그룹 ID 배열
+   * @param {string|null} targetUserId - 등록 대상 유저 ID (관리자가 그룹원 대신 등록 시) [Optional]
    */
-  const createEvent = async (eventData, groupIds = []) => {
+  const createEvent = async (eventData, groupIds = [], targetUserId = null) => {
+    const creatorId = targetUserId || userId;
     const { data: ev, error } = await supabase
       .from('events')
-      .insert({ ...eventData, creator_id: userId })
+      .insert({ ...eventData, creator_id: creatorId })
       .select()
       .single();
     if (error) return { error };

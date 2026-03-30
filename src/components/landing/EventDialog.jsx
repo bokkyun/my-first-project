@@ -26,15 +26,17 @@ const RECURRENCE_OPTIONS = [
  * Props:
  * @param {boolean} open - 열림 여부 [Required]
  * @param {function} onClose - 닫기 핸들러 [Required]
- * @param {function} onSave - 저장 핸들러 (eventData, groupIds) => void [Required]
+ * @param {function} onSave - 저장 핸들러 (eventData, groupIds, targetUserId) => void [Required]
  * @param {Array} groups - 내 그룹 목록 [Required]
  * @param {string|null} defaultDate - 기본 날짜 (YYYY-MM-DD) [Optional]
  * @param {object|null} editEvent - 수정할 이벤트 데이터 [Optional]
+ * @param {Array} adminGroups - 관리자인 그룹 목록 [Optional, 기본값: []]
+ * @param {function} onFetchMembers - 멤버 조회 함수 async (groupId) => {data} [Optional]
  *
  * Example usage:
  * <EventDialog open={open} onClose={fn} onSave={fn} groups={groups} defaultDate="2026-03-28" />
  */
-function EventDialog({ open, onClose, onSave, groups, defaultDate, editEvent }) {
+function EventDialog({ open, onClose, onSave, groups, defaultDate, editEvent, adminGroups = [], onFetchMembers = null }) {
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -60,6 +62,9 @@ function EventDialog({ open, onClose, onSave, groups, defaultDate, editEvent }) 
   const [form, setForm] = useState(initForm());
   const [selectedGroups, setSelectedGroups] = useState([]);
   const [saving, setSaving] = useState(false);
+  const [targetUserId, setTargetUserId] = useState('');
+  const [groupMembers, setGroupMembers] = useState([]);
+  const [membersLoading, setMembersLoading] = useState(false);
 
   useEffect(() => {
     if (editEvent) {
@@ -78,8 +83,25 @@ function EventDialog({ open, onClose, onSave, groups, defaultDate, editEvent }) 
     } else {
       setForm(initForm());
       setSelectedGroups([]);
+      setTargetUserId('');
     }
   }, [editEvent, defaultDate, open]);
+
+  /** 관리자 그룹 멤버 로드 */
+  useEffect(() => {
+    if (!open || editEvent || adminGroups.length === 0 || !onFetchMembers) {
+      setGroupMembers([]);
+      return;
+    }
+    setMembersLoading(true);
+    Promise.all(adminGroups.map((g) => onFetchMembers(g.id)))
+      .then((results) => {
+        const all = results.flatMap((r) => r.data || []);
+        const unique = Array.from(new Map(all.map((m) => [m.id, m])).values());
+        setGroupMembers(unique);
+      })
+      .finally(() => setMembersLoading(false));
+  }, [open, editEvent, adminGroups.map((g) => g.id).join(',')]);
 
   const handleChange = (field) => (e) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -105,7 +127,7 @@ function EventDialog({ open, onClose, onSave, groups, defaultDate, editEvent }) 
       color: form.color,
       recurrence_type: form.recurrence_type,
     };
-    await onSave(payload, selectedGroups);
+    await onSave(payload, selectedGroups, targetUserId || null);
     setSaving(false);
     onClose();
   };
@@ -235,6 +257,35 @@ function EventDialog({ open, onClose, onSave, groups, defaultDate, editEvent }) 
             ))}
           </Box>
         </Box>
+
+        {/* 등록 대상 선택 (관리자만 표시) */}
+        {!editEvent && adminGroups.length > 0 && (
+          <FormControl fullWidth sx={{ mb: 2 }}>
+            <InputLabel>등록 대상</InputLabel>
+            <Select
+              value={targetUserId}
+              onChange={(e) => setTargetUserId(e.target.value)}
+              label='등록 대상'
+              disabled={membersLoading}
+            >
+              <MenuItem value=''>본인 (나)</MenuItem>
+              {membersLoading ? (
+                <MenuItem disabled value='__loading'>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <CircularProgress size={14} />
+                    <Typography variant='body2'>불러오는 중...</Typography>
+                  </Box>
+                </MenuItem>
+              ) : (
+                groupMembers.map((m) => (
+                  <MenuItem key={m.id} value={m.id}>
+                    {m.nickname || m.email || m.id}
+                  </MenuItem>
+                ))
+              )}
+            </Select>
+          </FormControl>
+        )}
 
         {/* 공개 그룹 선택 */}
         {groups.length > 0 && (
