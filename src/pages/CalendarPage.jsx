@@ -14,7 +14,7 @@ function CalendarPage() {
   const { user } = useAuth();
   const [profile, setProfile] = useState(null);
 
-  const { groups, loading: groupsLoading, leaveGroup, deleteGroup, fetchGroupMembers } = useGroups(user?.id);
+  const { groups, loading: groupsLoading, leaveGroup, deleteGroup, fetchGroupMembers, changeGroupAdmin } = useGroups(user?.id);
   const [visibleGroupIds, setVisibleGroupIds] = useState([]);
 
   const { events, createEvent, updateEvent, deleteEvent } = useEvents(user?.id, visibleGroupIds);
@@ -83,10 +83,21 @@ function CalendarPage() {
     }
   };
 
+  /** 관리자 그룹 ID 목록 */
+  const adminGroupIds = groups.filter((g) => g.myRole === 'admin').map((g) => g.id);
+
+  /** 이벤트에 대한 관리자 여부 확인 */
+  const isAdminOfEvent = (event) => {
+    if (!event) return false;
+    const isOwner = event.creator_id === user?.id;
+    if (isOwner) return false;
+    return (event.event_visibility || []).some((v) => adminGroupIds.includes(v.group_id));
+  };
+
   /** 이벤트 수정 */
   const handleUpdateEvent = async (eventData, groupIds) => {
     if (!selectedEvent) return;
-    const { error } = await updateEvent(selectedEvent.id, eventData, groupIds);
+    const { error } = await updateEvent(selectedEvent.id, eventData, groupIds, isAdminOfEvent(selectedEvent));
     if (error) {
       setSnack({ open: true, msg: '일정 수정 중 오류가 발생했습니다.', severity: 'error' });
     } else {
@@ -97,7 +108,8 @@ function CalendarPage() {
 
   /** 이벤트 삭제 */
   const handleDeleteEvent = async (eventId) => {
-    const { error } = await deleteEvent(eventId);
+    const targetEvent = events.find((e) => e.id === eventId);
+    const { error } = await deleteEvent(eventId, isAdminOfEvent(targetEvent));
     if (error) {
       setSnack({ open: true, msg: '일정 삭제 중 오류가 발생했습니다.', severity: 'error' });
     } else {
@@ -126,6 +138,7 @@ function CalendarPage() {
           onFetchGroupMembers={fetchGroupMembers}
           onLeaveGroup={leaveGroup}
           onDeleteGroup={deleteGroup}
+          onChangeAdmin={changeGroupAdmin}
         />
 
         <CalendarView
@@ -156,6 +169,7 @@ function CalendarPage() {
         event={selectedEvent}
         groups={groups}
         currentUserId={user?.id}
+        adminGroupIds={adminGroupIds}
       />
 
       {/* 일정 수정 다이얼로그 */}

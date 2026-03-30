@@ -89,6 +89,29 @@ export function useGroups(userId) {
 
   /**
    * @param {string} groupId
+   * @param {string} newAdminUserId - 새로운 관리자로 지정할 유저 ID
+   */
+  const changeGroupAdmin = async (groupId, newAdminUserId) => {
+    const { error: e1 } = await supabase
+      .from('group_members')
+      .update({ role: 'admin' })
+      .eq('group_id', groupId)
+      .eq('user_id', newAdminUserId);
+    if (e1) return { error: e1 };
+
+    const { error: e2 } = await supabase
+      .from('group_members')
+      .update({ role: 'member' })
+      .eq('group_id', groupId)
+      .eq('user_id', userId);
+    if (e2) return { error: e2 };
+
+    await fetchGroups();
+    return { data: true };
+  };
+
+  /**
+   * @param {string} groupId
    */
   const fetchGroupMembers = async (groupId) => {
     const { data, error } = await supabase
@@ -99,5 +122,5 @@ export function useGroups(userId) {
     return { data: data.map((m) => ({ ...m.profiles, role: m.role })) };
   };
 
-  return { groups, loading, fetchGroups, createGroup, joinGroup, leaveGroup, deleteGroup, fetchGroupMembers };
+  return { groups, loading, fetchGroups, createGroup, joinGroup, leaveGroup, deleteGroup, fetchGroupMembers, changeGroupAdmin };
 }

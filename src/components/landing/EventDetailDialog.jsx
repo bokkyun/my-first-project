@@ -25,16 +25,19 @@ const RECURRENCE_LABELS = {
  * @param {function} onEdit - 수정 핸들러 (event) => void [Required]
  * @param {function} onDelete - 삭제 핸들러 (eventId) => void [Required]
  * @param {object|null} event - 표시할 이벤트 데이터 [Optional]
- * @param {Array} groups - 내 그룹 목록 (색상 참조용) [Required]
+ * @param {Array} groups - 내 그룹 목록 (색상 참조용, myRole 포함) [Required]
  * @param {string} currentUserId - 현재 유저 ID [Required]
+ * @param {string[]} adminGroupIds - 현재 유저가 관리자인 그룹 ID 목록 [Optional, 기본값: []]
  *
  * Example usage:
- * <EventDetailDialog open={open} onClose={fn} onEdit={fn} onDelete={fn} event={event} groups={groups} currentUserId={uid} />
+ * <EventDetailDialog open={open} onClose={fn} onEdit={fn} onDelete={fn} event={event} groups={groups} currentUserId={uid} adminGroupIds={ids} />
  */
-function EventDetailDialog({ open, onClose, onEdit, onDelete, event, groups, currentUserId }) {
+function EventDetailDialog({ open, onClose, onEdit, onDelete, event, groups, currentUserId, adminGroupIds = [] }) {
   if (!event) return null;
 
   const isOwner = event.creator_id === currentUserId;
+  const isGroupAdmin = (event.event_visibility || []).some((v) => adminGroupIds.includes(v.group_id));
+  const canEdit = isOwner || isGroupAdmin;
   const eventColor = event.color || '#1976d2';
 
   const formatDate = (iso) => {
@@ -151,7 +154,7 @@ function EventDetailDialog({ open, onClose, onEdit, onDelete, event, groups, cur
         )}
       </DialogContent>
 
-      {isOwner && (
+      {canEdit && (
         <DialogActions sx={{ p: 2, gap: 1 }}>
           <Button
             startIcon={<Delete />}

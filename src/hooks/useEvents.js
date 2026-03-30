@@ -90,13 +90,13 @@ export function useEvents(userId, visibleGroupIds = []) {
    * @param {string} eventId
    * @param {object} eventData
    * @param {string[]} groupIds
+   * @param {boolean} isAdminAction - 그룹 관리자 권한으로 수정 여부 [Optional, 기본값: false]
    */
-  const updateEvent = async (eventId, eventData, groupIds = []) => {
-    const { error } = await supabase
-      .from('events')
-      .update(eventData)
-      .eq('id', eventId)
-      .eq('creator_id', userId);
+  const updateEvent = async (eventId, eventData, groupIds = [], isAdminAction = false) => {
+    const query = supabase.from('events').update(eventData).eq('id', eventId);
+    const { error } = isAdminAction
+      ? await query
+      : await query.eq('creator_id', userId);
     if (error) return { error };
 
     await supabase.from('event_visibility').delete().eq('event_id', eventId);
@@ -110,13 +110,13 @@ export function useEvents(userId, visibleGroupIds = []) {
 
   /**
    * @param {string} eventId
+   * @param {boolean} isAdminAction - 그룹 관리자 권한으로 삭제 여부 [Optional, 기본값: false]
    */
-  const deleteEvent = async (eventId) => {
-    const { error } = await supabase
-      .from('events')
-      .delete()
-      .eq('id', eventId)
-      .eq('creator_id', userId);
+  const deleteEvent = async (eventId, isAdminAction = false) => {
+    const query = supabase.from('events').delete().eq('id', eventId);
+    const { error } = isAdminAction
+      ? await query
+      : await query.eq('creator_id', userId);
     if (error) return { error };
     await fetchEvents();
     return { data: true };

@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Box, Typography, List, ListItem, Avatar, Chip,
-  Button, CircularProgress, Divider,
+  Button, CircularProgress, Divider, MenuItem, Select, FormControl, InputLabel,
 } from '@mui/material';
-import { Circle } from '@mui/icons-material';
+import { Circle, AdminPanelSettings } from '@mui/icons-material';
 
 /**
  * 그룹 정보 다이얼로그 - 멤버 목록 확인 및 그룹 탈퇴
@@ -16,17 +16,21 @@ import { Circle } from '@mui/icons-material';
  * @param {function} onFetchMembers - (groupId) => Promise<{data, error}> [Required]
  * @param {function} onLeave - (groupId) => Promise<void> [Required]
  * @param {function} onDelete - (groupId) => Promise<void> [Required]
+ * @param {function} onChangeAdmin - (groupId, newAdminUserId) => Promise<{data, error}> [Optional]
  *
  * Example usage:
- * <GroupInfoDialog open={open} onClose={fn} group={group} onFetchMembers={fn} onLeave={fn} onDelete={fn} />
+ * <GroupInfoDialog open={open} onClose={fn} group={group} onFetchMembers={fn} onLeave={fn} onDelete={fn} onChangeAdmin={fn} />
  */
-function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave, onDelete }) {
+function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave, onDelete, onChangeAdmin }) {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
   const [leaving, setLeaving] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [changeAdminOpen, setChangeAdminOpen] = useState(false);
+  const [newAdminId, setNewAdminId] = useState('');
+  const [changingAdmin, setChangingAdmin] = useState(false);
 
   useEffect(() => {
     if (!open || !group) return;
@@ -34,6 +38,8 @@ function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave, onDele
     setMembers([]);
     setConfirmLeave(false);
     setConfirmDelete(false);
+    setChangeAdminOpen(false);
+    setNewAdminId('');
     onFetchMembers(group.id).then(({ data, error }) => {
       if (!error && data) setMembers(data);
       setLoading(false);
@@ -55,6 +61,19 @@ function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave, onDele
     setConfirmDelete(false);
     onClose();
   };
+
+  const handleChangeAdmin = async () => {
+    if (!newAdminId) return;
+    setChangingAdmin(true);
+    const { error } = await onChangeAdmin(group.id, newAdminId);
+    setChangingAdmin(false);
+    if (!error) {
+      setChangeAdminOpen(false);
+      onClose();
+    }
+  };
+
+  const nonAdminMembers = members.filter((m) => m.role !== 'admin');
 
   const roleLabel = (role) => {
     if (role === 'admin') return '관리자';
@@ -129,19 +148,32 @@ function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave, onDele
 
       <Divider sx={{ mt: 1 }} />
 
-      <DialogActions sx={{ p: 2, gap: 1 }}>
-        {!confirmLeave && !confirmDelete && (
+      <DialogActions sx={{ p: 2, gap: 1, flexWrap: 'wrap' }}>
+        {!confirmLeave && !confirmDelete && !changeAdminOpen && (
           <>
             {group.myRole === 'admin' ? (
-              <Button
-                variant='outlined'
-                color='error'
-                size='small'
-                onClick={() => setConfirmDelete(true)}
-                sx={{ borderRadius: 2 }}
-              >
-                그룹 삭제
-              </Button>
+              <>
+                {onChangeAdmin && nonAdminMembers.length > 0 && (
+                  <Button
+                    variant='outlined'
+                    size='small'
+                    startIcon={<AdminPanelSettings />}
+                    onClick={() => { setChangeAdminOpen(true); setNewAdminId(''); }}
+                    sx={{ borderRadius: 2 }}
+                  >
+                    관리자 변경
+                  </Button>
+                )}
+                <Button
+                  variant='outlined'
+                  color='error'
+                  size='small'
+                  onClick={() => setConfirmDelete(true)}
+                  sx={{ borderRadius: 2 }}
+                >
+                  그룹 삭제
+                </Button>
+              </>
             ) : (
               <Button
                 variant='outlined'
@@ -198,6 +230,42 @@ function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave, onDele
               {deleting ? <CircularProgress size={16} color='inherit' /> : '삭제'}
             </Button>
           </>
+        )}
+
+        {changeAdminOpen && (
+          <Box sx={{ width: '100%' }}>
+            <Typography variant='body2' color='text.secondary' sx={{ mb: 1 }}>
+              새 관리자를 선택하면 현재 관리자 권한이 이전됩니다.
+            </Typography>
+            <FormControl fullWidth size='small' sx={{ mb: 1.5 }}>
+              <InputLabel>새 관리자 선택</InputLabel>
+              <Select
+                value={newAdminId}
+                onChange={(e) => setNewAdminId(e.target.value)}
+                label='새 관리자 선택'
+              >
+                {nonAdminMembers.map((m) => (
+                  <MenuItem key={m.id} value={m.id}>
+                    {m.nickname || m.email || '알 수 없음'}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+              <Button onClick={() => setChangeAdminOpen(false)} variant='outlined' size='small' sx={{ borderRadius: 2 }}>
+                취소
+              </Button>
+              <Button
+                onClick={handleChangeAdmin}
+                variant='contained'
+                size='small'
+                disabled={!newAdminId || changingAdmin}
+                sx={{ borderRadius: 2 }}
+              >
+                {changingAdmin ? <CircularProgress size={16} color='inherit' /> : '변경'}
+              </Button>
+            </Box>
+          </Box>
         )}
       </DialogActions>
     </Dialog>
