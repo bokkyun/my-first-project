@@ -6,6 +6,7 @@ import {
 import { Add, Circle, InfoOutlined } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import GroupInfoDialog from '../landing/GroupInfoDialog';
+import AdBanner from './AdBanner';
 
 const SIDEBAR_WIDTH = 220;
 
@@ -129,6 +130,13 @@ function Sidebar({ groups, visibleGroupIds, onToggleGroup, onToggleAll, mobileOp
         onClick={() => { navigate('/groups/join'); if (onMobileClose) onMobileClose(); }}
         clickable
         sx={{ width: '100%' }}
+      />
+
+      {/* 광고 배너 */}
+      <AdBanner
+        slot={import.meta.env.VITE_AD_SLOT_SIDEBAR}
+        format="rectangle"
+        sx={{ mt: 2 }}
       />
     </Box>
   );

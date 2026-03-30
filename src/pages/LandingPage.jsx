@@ -5,6 +5,7 @@ import {
   AdminPanelSettings, CheckCircleOutline,
 } from '@mui/icons-material';
 import PublicFooter from '../components/common/PublicFooter';
+import AdBanner from '../components/common/AdBanner';
 
 const FEATURES = [
   {
@@ -157,6 +158,16 @@ function LandingPage() {
         </Container>
       </Box>
 
+      {/* 광고 배너 1 - 주요 기능 아래 */}
+      <Box sx={{ bgcolor: 'white', py: 1 }}>
+        <Container maxWidth="md">
+          <AdBanner
+            slot={import.meta.env.VITE_AD_SLOT_HORIZONTAL}
+            sx={{ my: 1 }}
+          />
+        </Container>
+      </Box>
+
       {/* 사용 방법 */}
       <Box sx={{ py: { xs: 6, md: 10 }, bgcolor: 'grey.50' }}>
         <Container maxWidth="md">
@@ -184,6 +195,16 @@ function LandingPage() {
               </Box>
             ))}
           </Box>
+        </Container>
+      </Box>
+
+      {/* 광고 배너 2 - 사용방법 아래 */}
+      <Box sx={{ bgcolor: 'white', py: 1 }}>
+        <Container maxWidth="md">
+          <AdBanner
+            slot={import.meta.env.VITE_AD_SLOT_HORIZONTAL}
+            sx={{ my: 1 }}
+          />
         </Container>
       </Box>
 
