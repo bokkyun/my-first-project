@@ -106,6 +106,14 @@ function LoginPage() {
               </Link>
             </Typography>
           </Box>
+
+          <Box sx={{ textAlign: 'center', mt: 2 }}>
+            <Typography variant="caption" color="text.disabled">
+              <Link to="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>개인정보처리방침</Link>
+              {' · '}
+              <Link to="/terms" style={{ color: 'inherit', textDecoration: 'none' }}>이용약관</Link>
+            </Typography>
+          </Box>
         </Paper>
       </Container>
     </Box>

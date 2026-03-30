@@ -7,6 +7,10 @@ import CalendarPage from './pages/CalendarPage';
 import GroupCreatePage from './pages/GroupCreatePage';
 import GroupJoinPage from './pages/GroupJoinPage';
 import ProfilePage from './pages/ProfilePage';
+import LandingPage from './pages/LandingPage';
+import PrivacyPage from './pages/PrivacyPage';
+import TermsPage from './pages/TermsPage';
+import AboutPage from './pages/AboutPage';
 
 /**
  * 인증이 필요한 라우트 보호 컴포넌트
@@ -31,6 +35,10 @@ function App() {
 
   return (
     <Routes>
+      <Route path="/" element={<LandingPage />} />
+      <Route path="/about" element={<AboutPage />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/terms" element={<TermsPage />} />
       <Route path="/login" element={user ? <Navigate to="/calendar" replace /> : <LoginPage />} />
       <Route path="/signup" element={user ? <Navigate to="/calendar" replace /> : <SignupPage />} />
       <Route
@@ -65,7 +73,7 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route path="*" element={<Navigate to={user ? '/calendar' : '/login'} replace />} />
+      <Route path="*" element={<Navigate to={user ? '/calendar' : '/'} replace />} />
     </Routes>
   );
 }
