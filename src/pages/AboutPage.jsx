@@ -149,8 +149,8 @@ function AboutPage() {
               <Box>
                 <Typography variant="caption" color="text.secondary">이메일</Typography>
                 <Box>
-                  <MuiLink href="mailto:bokkyun@teamsync.app" underline="hover" sx={{ fontSize: '0.9rem' }}>
-                    bokkyun@teamsync.app
+                  <MuiLink href="mailto:bchoi4284@gmail.com" underline="hover" sx={{ fontSize: '0.9rem' }}>
+                    bchoi4284@gmail.com
                   </MuiLink>
                 </Box>
               </Box>
