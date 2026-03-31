@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import {
   Box, Container, Paper, Typography, TextField, Button,
   FormControlLabel, Switch, IconButton, Alert, CircularProgress,
-  Tooltip,
+  Tooltip, InputAdornment,
 } from '@mui/material';
-import { ArrowBack, Circle } from '@mui/icons-material';
+import { ArrowBack, Circle, Visibility, VisibilityOff } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { useGroups } from '../hooks/useGroups';
 import Navbar from '../components/common/Navbar';
@@ -28,7 +28,10 @@ function GroupCreatePage() {
     description: '',
     color: '#1976d2',
     isSearchable: true,
+    password: '',
+    passwordConfirm: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -45,6 +48,11 @@ function GroupCreatePage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) { setError('그룹 이름을 입력해주세요.'); return; }
+    if (!form.password.trim()) { setError('그룹 비밀번호를 입력해주세요.'); return; }
+    if (form.password !== form.passwordConfirm) {
+      setError('비밀번호가 일치하지 않습니다.');
+      return;
+    }
     setLoading(true);
     setError('');
     const { error: createError } = await createGroup(form);
@@ -91,6 +99,28 @@ function GroupCreatePage() {
               rows={2}
               inputProps={{ maxLength: 100 }}
               helperText={`${form.description.length}/100자`}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="그룹 비밀번호"
+              value={form.password}
+              onChange={handleChange('password')}
+              required
+              type={showPassword ? 'text' : 'password'}
+              helperText="가입 시 이 비밀번호를 입력해야 합니다."
+              slotProps={{
+                htmlInput: { maxLength: 30 },
+                input: {
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton onClick={() => setShowPassword((v) => !v)} edge="end">
+                        {showPassword ? <VisibilityOff /> : <Visibility />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
               sx={{ mb: 3 }}
             />
 
@@ -142,9 +172,21 @@ function GroupCreatePage() {
               <Button
                 type="submit"
                 variant="contained"
-                disabled={loading || !form.name.trim()}
+                disabled={loading || !form.name.trim() || !form.password.trim()}
                 sx={{ flex: 1, borderRadius: 2 }}
               >
+                {loading ? <CircularProgress size={20} color="inherit" /> : '그룹 생성'}
+              </Button>
+            </Box>
+          </Box>
+        </Paper>
+      </Container>
+    </Box>
+  );
+}
+
+export default GroupCreatePage;
+   >
                 {loading ? <CircularProgress size={20} color="inherit" /> : '그룹 생성'}
               </Button>
             </Box>

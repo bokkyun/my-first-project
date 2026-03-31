@@ -25,11 +25,12 @@ const SIDEBAR_WIDTH = 220;
  * @param {function} onLeaveGroup - (groupId) => Promise<void> [Required]
  * @param {function} onDeleteGroup - (groupId) => Promise<void> [Required]
  * @param {function} onChangeAdmin - (groupId, newAdminUserId) => Promise<{data, error}> [Optional]
+ * @param {function} onChangePassword - (groupId, newPassword) => Promise<{data, error}> [Optional]
  *
  * Example usage:
- * <Sidebar groups={groups} visibleGroupIds={ids} onToggleGroup={fn} onToggleAll={fn} mobileOpen={open} onMobileClose={fn} onFetchGroupMembers={fn} onLeaveGroup={fn} onDeleteGroup={fn} onChangeAdmin={fn} />
+ * <Sidebar groups={groups} visibleGroupIds={ids} onToggleGroup={fn} onToggleAll={fn} mobileOpen={open} onMobileClose={fn} onFetchGroupMembers={fn} onLeaveGroup={fn} onDeleteGroup={fn} onChangeAdmin={fn} onChangePassword={fn} />
  */
-function Sidebar({ groups, visibleGroupIds, onToggleGroup, onToggleAll, mobileOpen = false, onMobileClose, onFetchGroupMembers, onLeaveGroup, onDeleteGroup, onChangeAdmin }) {
+function Sidebar({ groups, visibleGroupIds, onToggleGroup, onToggleAll, mobileOpen = false, onMobileClose, onFetchGroupMembers, onLeaveGroup, onDeleteGroup, onChangeAdmin, onChangePassword }) {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -150,6 +151,7 @@ function Sidebar({ groups, visibleGroupIds, onToggleGroup, onToggleAll, mobileOp
       onLeave={onLeaveGroup}
       onDelete={onDeleteGroup}
       onChangeAdmin={onChangeAdmin}
+      onChangePassword={onChangePassword}
     />
   );
 

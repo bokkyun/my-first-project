@@ -15,7 +15,7 @@ function CalendarPage() {
   const { user } = useAuth();
   const [profile, setProfile] = useState(null);
 
-  const { groups, loading: groupsLoading, leaveGroup, deleteGroup, fetchGroupMembers, changeGroupAdmin } = useGroups(user?.id);
+  const { groups, loading: groupsLoading, leaveGroup, deleteGroup, fetchGroupMembers, changeGroupAdmin, changeGroupPassword } = useGroups(user?.id);
   const [visibleGroupIds, setVisibleGroupIds] = useState([]);
 
   const { events, createEvent, updateEvent, deleteEvent } = useEvents(user?.id, visibleGroupIds);
@@ -143,6 +143,7 @@ function CalendarPage() {
           onLeaveGroup={leaveGroup}
           onDeleteGroup={deleteGroup}
           onChangeAdmin={changeGroupAdmin}
+          onChangePassword={changeGroupPassword}
         />
 
         <CalendarView

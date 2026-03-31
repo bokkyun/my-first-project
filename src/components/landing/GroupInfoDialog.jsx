@@ -3,8 +3,9 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Box, Typography, List, ListItem, Avatar, Chip,
   Button, CircularProgress, Divider, MenuItem, Select, FormControl, InputLabel,
+  TextField, InputAdornment, IconButton,
 } from '@mui/material';
-import { Circle, AdminPanelSettings } from '@mui/icons-material';
+import { Circle, AdminPanelSettings, Lock, Visibility, VisibilityOff } from '@mui/icons-material';
 
 /**
  * 그룹 정보 다이얼로그 - 멤버 목록 확인 및 그룹 탈퇴
@@ -17,11 +18,12 @@ import { Circle, AdminPanelSettings } from '@mui/icons-material';
  * @param {function} onLeave - (groupId) => Promise<void> [Required]
  * @param {function} onDelete - (groupId) => Promise<void> [Required]
  * @param {function} onChangeAdmin - (groupId, newAdminUserId) => Promise<{data, error}> [Optional]
+ * @param {function} onChangePassword - (groupId, newPassword) => Promise<{data, error}> [Optional]
  *
  * Example usage:
- * <GroupInfoDialog open={open} onClose={fn} group={group} onFetchMembers={fn} onLeave={fn} onDelete={fn} onChangeAdmin={fn} />
+ * <GroupInfoDialog open={open} onClose={fn} group={group} onFetchMembers={fn} onLeave={fn} onDelete={fn} onChangeAdmin={fn} onChangePassword={fn} />
  */
-function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave, onDelete, onChangeAdmin }) {
+function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave, onDelete, onChangeAdmin, onChangePassword }) {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [confirmLeave, setConfirmLeave] = useState(false);
@@ -31,6 +33,10 @@ function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave, onDele
   const [changeAdminOpen, setChangeAdminOpen] = useState(false);
   const [newAdminId, setNewAdminId] = useState('');
   const [changingAdmin, setChangingAdmin] = useState(false);
+  const [changePwOpen, setChangePwOpen] = useState(false);
+  const [newPw, setNewPw] = useState('');
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [changingPw, setChangingPw] = useState(false);
 
   useEffect(() => {
     if (!open || !group) return;
@@ -40,6 +46,9 @@ function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave, onDele
     setConfirmDelete(false);
     setChangeAdminOpen(false);
     setNewAdminId('');
+    setChangePwOpen(false);
+    setNewPw('');
+    setShowNewPw(false);
     onFetchMembers(group.id).then(({ data, error }) => {
       if (!error && data) setMembers(data);
       setLoading(false);
@@ -69,6 +78,18 @@ function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave, onDele
     setChangingAdmin(false);
     if (!error) {
       setChangeAdminOpen(false);
+      onClose();
+    }
+  };
+
+  const handleChangePassword = async () => {
+    if (!newPw.trim()) return;
+    setChangingPw(true);
+    const { error } = await onChangePassword(group.id, newPw.trim());
+    setChangingPw(false);
+    if (!error) {
+      setChangePwOpen(false);
+      setNewPw('');
       onClose();
     }
   };
@@ -149,7 +170,7 @@ function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave, onDele
       <Divider sx={{ mt: 1 }} />
 
       <DialogActions sx={{ p: 2, gap: 1, flexWrap: 'wrap' }}>
-        {!confirmLeave && !confirmDelete && !changeAdminOpen && (
+        {!confirmLeave && !confirmDelete && !changeAdminOpen && !changePwOpen && (
           <>
             {group.myRole === 'admin' ? (
               <>
@@ -162,6 +183,17 @@ function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave, onDele
                     sx={{ borderRadius: 2 }}
                   >
                     관리자 변경
+                  </Button>
+                )}
+                {onChangePassword && (
+                  <Button
+                    variant='outlined'
+                    size='small'
+                    startIcon={<Lock />}
+                    onClick={() => { setChangePwOpen(true); setNewPw(''); setShowNewPw(false); }}
+                    sx={{ borderRadius: 2 }}
+                  >
+                    비밀번호 변경
                   </Button>
                 )}
                 <Button
@@ -263,6 +295,49 @@ function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave, onDele
                 sx={{ borderRadius: 2 }}
               >
                 {changingAdmin ? <CircularProgress size={16} color='inherit' /> : '변경'}
+              </Button>
+            </Box>
+          </Box>
+        )}
+
+        {changePwOpen && (
+          <Box sx={{ width: '100%' }}>
+            <Typography variant='body2' color='text.secondary' sx={{ mb: 1.5 }}>
+              새 비밀번호를 입력하세요. 변경 후 가입 시 새 비밀번호가 적용됩니다.
+            </Typography>
+            <TextField
+              fullWidth
+              size='small'
+              label='새 비밀번호'
+              type={showNewPw ? 'text' : 'password'}
+              value={newPw}
+              onChange={(e) => setNewPw(e.target.value)}
+              slotProps={{
+                htmlInput: { maxLength: 30 },
+                input: {
+                  endAdornment: (
+                    <InputAdornment position='end'>
+                      <IconButton onClick={() => setShowNewPw((v) => !v)} edge='end' size='small'>
+                        {showNewPw ? <VisibilityOff fontSize='small' /> : <Visibility fontSize='small' />}
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                },
+              }}
+              sx={{ mb: 1.5 }}
+            />
+            <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
+              <Button onClick={() => setChangePwOpen(false)} variant='outlined' size='small' sx={{ borderRadius: 2 }}>
+                취소
+              </Button>
+              <Button
+                onClick={handleChangePassword}
+                variant='contained'
+                size='small'
+                disabled={!newPw.trim() || changingPw}
+                sx={{ borderRadius: 2 }}
+              >
+                {changingPw ? <CircularProgress size={16} color='inherit' /> : '변경'}
               </Button>
             </Box>
           </Box>

@@ -4,8 +4,9 @@ import {
   Box, Container, Paper, Typography, TextField, Button,
   IconButton, Alert, CircularProgress, List, ListItem,
   ListItemText, ListItemAvatar, Avatar, Chip,
+  Dialog, DialogTitle, DialogContent, DialogActions, InputAdornment,
 } from '@mui/material';
-import { ArrowBack, Search, Circle } from '@mui/icons-material';
+import { ArrowBack, Search, Circle, Visibility, VisibilityOff } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { useGroups } from '../hooks/useGroups';
 import { supabase } from '../lib/supabase';
@@ -22,6 +23,9 @@ function GroupJoinPage() {
   const [joiningId, setJoiningId] = useState(null);
   const [message, setMessage] = useState({ text: '', severity: 'info' });
   const [profile, setProfile] = useState(null);
+  const [pwDialog, setPwDialog] = useState({ open: false, groupId: null });
+  const [pwInput, setPwInput] = useState('');
+  const [showPw, setShowPw] = useState(false);
 
   useState(() => {
     if (!user) return;
@@ -35,7 +39,7 @@ function GroupJoinPage() {
     setMessage({ text: '', severity: 'info' });
     const { data, error } = await supabase
       .from('groups')
-      .select('*, group_members(count)')
+      .select('id, name, description, color, is_searchable, group_members(count)')
       .ilike('name', `%${searchQuery.trim()}%`)
       .eq('is_searchable', true)
       .limit(20);
@@ -48,12 +52,20 @@ function GroupJoinPage() {
     }
   };
 
-  const handleJoin = async (groupId) => {
+  const openPasswordDialog = (groupId) => {
+    setPwInput('');
+    setShowPw(false);
+    setPwDialog({ open: true, groupId });
+  };
+
+  const handleJoin = async () => {
+    const groupId = pwDialog.groupId;
+    setPwDialog({ open: false, groupId: null });
     setJoiningId(groupId);
-    const { error } = await joinGroup(groupId);
+    const { error } = await joinGroup(groupId, pwInput);
     setJoiningId(null);
     if (error) {
-      setMessage({ text: '이미 가입된 그룹이거나 오류가 발생했습니다.', severity: 'error' });
+      setMessage({ text: error.message === '비밀번호가 틀렸습니다.' ? '비밀번호가 틀렸습니다.' : '이미 가입된 그룹이거나 오류가 발생했습니다.', severity: 'error' });
     } else {
       setMessage({ text: '그룹에 가입되었습니다!', severity: 'success' });
       setSearchResults((prev) => prev.filter((g) => g.id !== groupId));
@@ -82,7 +94,7 @@ function GroupJoinPage() {
               label="그룹 이름으로 검색"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              onKeyDown={(e) => e.key === 'Enter' && !e.nativeEvent.isComposing && handleSearch()}
               size="small"
             />
             <Button
@@ -114,7 +126,7 @@ function GroupJoinPage() {
                         variant={joined ? 'outlined' : 'contained'}
                         size="small"
                         disabled={joined || joiningId === group.id}
-                        onClick={() => !joined && handleJoin(group.id)}
+                        onClick={() => !joined && openPasswordDialog(group.id)}
                         sx={{ borderRadius: 2, minWidth: 80 }}
                       >
                         {joiningId === group.id
@@ -154,6 +166,38 @@ function GroupJoinPage() {
           </Box>
         </Paper>
       </Container>
+
+      {/* 비밀번호 입력 다이얼로그 */}
+      <Dialog open={pwDialog.open} onClose={() => setPwDialog({ open: false, groupId: null })} maxWidth="xs" fullWidth>
+        <DialogTitle>그룹 비밀번호 입력</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            fullWidth
+            label="비밀번호"
+            type={showPw ? 'text' : 'password'}
+            value={pwInput}
+            onChange={(e) => setPwInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && pwInput.trim() && handleJoin()}
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton onClick={() => setShowPw((v) => !v)} edge="end">
+                      {showPw ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
+            sx={{ mt: 1 }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPwDialog({ open: false, groupId: null })}>취소</Button>
+          <Button variant="contained" onClick={handleJoin} disabled={!pwInput.trim()}>확인</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

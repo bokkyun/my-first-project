@@ -27,13 +27,13 @@ export function useGroups(userId) {
   }, [fetchGroups]);
 
   /**
-   * @param {{ name, description, color, isSearchable }} groupData
+   * @param {{ name, description, color, isSearchable, password }} groupData
    */
   const createGroup = async (groupData) => {
-    const { name, description, color, isSearchable } = groupData;
+    const { name, description, color, isSearchable, password } = groupData;
     const { data: group, error: groupError } = await supabase
       .from('groups')
-      .insert({ name, description, color, is_searchable: isSearchable, created_by: userId })
+      .insert({ name, description, color, is_searchable: isSearchable, created_by: userId, password })
       .select()
       .single();
     if (groupError) return { error: groupError };
@@ -49,8 +49,17 @@ export function useGroups(userId) {
 
   /**
    * @param {string} groupId
+   * @param {string} password - 그룹 비밀번호 [Required]
    */
-  const joinGroup = async (groupId) => {
+  const joinGroup = async (groupId, password) => {
+    const { data: verified } = await supabase
+      .from('groups')
+      .select('id')
+      .eq('id', groupId)
+      .eq('password', password)
+      .maybeSingle();
+    if (!verified) return { error: { message: '비밀번호가 틀렸습니다.' } };
+
     const { error } = await supabase
       .from('group_members')
       .insert({ group_id: groupId, user_id: userId, role: 'member' });
@@ -89,6 +98,20 @@ export function useGroups(userId) {
 
   /**
    * @param {string} groupId
+   * @param {string} newPassword - 변경할 새 비밀번호 [Required]
+   */
+  const changeGroupPassword = async (groupId, newPassword) => {
+    const { error } = await supabase
+      .from('groups')
+      .update({ password: newPassword })
+      .eq('id', groupId)
+      .eq('created_by', userId);
+    if (error) return { error };
+    return { data: true };
+  };
+
+  /**
+   * @param {string} groupId
    * @param {string} newAdminUserId - 새로운 관리자로 지정할 유저 ID
    */
   const changeGroupAdmin = async (groupId, newAdminUserId) => {
@@ -122,5 +145,5 @@ export function useGroups(userId) {
     return { data: data.map((m) => ({ ...m.profiles, role: m.role })) };
   };
 
-  return { groups, loading, fetchGroups, createGroup, joinGroup, leaveGroup, deleteGroup, fetchGroupMembers, changeGroupAdmin };
+  return { groups, loading, fetchGroups, createGroup, joinGroup, leaveGroup, deleteGroup, fetchGroupMembers, changeGroupAdmin, changeGroupPassword };
 }
