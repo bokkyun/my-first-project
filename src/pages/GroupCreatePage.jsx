@@ -121,6 +121,18 @@ function GroupCreatePage() {
                   ),
                 },
               }}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="비밀번호 확인"
+              value={form.passwordConfirm}
+              onChange={handleChange('passwordConfirm')}
+              required
+              type={showPassword ? 'text' : 'password'}
+              slotProps={{
+                htmlInput: { maxLength: 30 },
+              }}
               sx={{ mb: 3 }}
             />
 
