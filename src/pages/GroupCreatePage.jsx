@@ -198,15 +198,3 @@ function GroupCreatePage() {
 }
 
 export default GroupCreatePage;
-   >
-                {loading ? <CircularProgress size={20} color="inherit" /> : '그룹 생성'}
-              </Button>
-            </Box>
-          </Box>
-        </Paper>
-      </Container>
-    </Box>
-  );
-}
-
-export default GroupCreatePage;
