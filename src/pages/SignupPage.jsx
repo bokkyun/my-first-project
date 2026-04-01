@@ -154,6 +154,17 @@ function SignupPage() {
                 >
                   {loading ? <CircularProgress size={24} color="inherit" /> : '회원가입'}
                 </Button>
+                <Box sx={{ textAlign: 'center', mt: 2 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    비밀번호를 잊으셨나요?{' '}
+                    <Link
+                      to="/reset-password"
+                      style={{ color: '#1976d2', fontWeight: 600, textDecoration: 'none' }}
+                    >
+                      비밀번호 재설정
+                    </Link>
+                  </Typography>
+                </Box>
               </Box>
             </>
           )}

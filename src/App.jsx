@@ -3,6 +3,8 @@ import { CircularProgress, Box } from '@mui/material';
 import { useAuth } from './hooks/useAuth';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import UpdatePasswordPage from './pages/UpdatePasswordPage';
 import CalendarPage from './pages/CalendarPage';
 import GroupCreatePage from './pages/GroupCreatePage';
 import GroupJoinPage from './pages/GroupJoinPage';
@@ -41,6 +43,8 @@ function App() {
       <Route path="/terms" element={<TermsPage />} />
       <Route path="/login" element={user ? <Navigate to="/calendar" replace /> : <LoginPage />} />
       <Route path="/signup" element={user ? <Navigate to="/calendar" replace /> : <SignupPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/update-password" element={<UpdatePasswordPage />} />
       <Route
         path="/calendar"
         element={

@@ -6,7 +6,7 @@ const toEmail = (username) => `${username.trim().toLowerCase()}@teamsync.local`;
 
 /**
  * 인증 상태를 관리하는 커스텀 훅
- * @returns {{ user, session, loading, signIn, signUp, signOut }}
+ * @returns {{ user, session, loading, signIn, signUp, signOut, resetPasswordForEmail, updatePassword }}
  */
 export function useAuth() {
   const [user, setUser] = useState(null);
@@ -59,5 +59,32 @@ export function useAuth() {
     await supabase.auth.signOut();
   };
 
-  return { user, session, loading, signIn, signUp, signOut };
+  /**
+   * 비밀번호 재설정 이메일 발송 (아이디 기준)
+   * @param {string} username
+   */
+  const resetPasswordForEmail = async (username) => {
+    const redirectTo = `${window.location.origin}/update-password`;
+    return supabase.auth.resetPasswordForEmail(toEmail(username), { redirectTo });
+  };
+
+  /**
+   * 새 비밀번호로 변경 (재설정 링크로 세션이 잡힌 뒤 또는 로그인 상태)
+   * @param {string} newPassword
+   */
+  const updatePassword = async (newPassword) => {
+    const { data, error } = await supabase.auth.updateUser({ password: newPassword });
+    return { data, error };
+  };
+
+  return {
+    user,
+    session,
+    loading,
+    signIn,
+    signUp,
+    signOut,
+    resetPasswordForEmail,
+    updatePassword,
+  };
 }

@@ -90,10 +90,18 @@ function LoginPage() {
               variant="contained"
               size="large"
               disabled={loading}
-              sx={{ mb: 2, borderRadius: 2, py: 1.2 }}
+              sx={{ mb: 1.5, borderRadius: 2, py: 1.2 }}
             >
               {loading ? <CircularProgress size={24} color="inherit" /> : '로그인'}
             </Button>
+            <Box sx={{ textAlign: 'right', mb: 1 }}>
+              <Link
+                to="/reset-password"
+                style={{ fontSize: '0.875rem', color: '#1976d2', fontWeight: 600, textDecoration: 'none' }}
+              >
+                비밀번호를 잊으셨나요?
+              </Link>
+            </Box>
           </Box>
 
           <Divider sx={{ my: 2 }} />
