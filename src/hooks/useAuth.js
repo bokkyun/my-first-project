@@ -53,6 +53,14 @@ export function useAuth() {
     return { data, error };
   };
 
+  const signInWithGoogle = async () => {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/calendar` },
+    });
+    return { data, error };
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
   };
@@ -80,6 +88,7 @@ export function useAuth() {
     session,
     loading,
     signIn,
+    signInWithGoogle,
     signUp,
     signOut,
     resetPasswordForEmail,

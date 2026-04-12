@@ -9,13 +9,24 @@ import { useAuth } from '../hooks/useAuth';
 
 function LoginPage() {
   const navigate = useNavigate();
-  const { signIn } = useAuth();
+  const { signIn, signInWithGoogle } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const handleGoogleLogin = async () => {
+    setError('');
+    setGoogleLoading(true);
+    const { error: googleError } = await signInWithGoogle();
+    setGoogleLoading(false);
+    if (googleError) {
+      setError('구글 로그인에 실패했습니다. 다시 시도해주세요.');
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -104,7 +115,27 @@ function LoginPage() {
             </Box>
           </Box>
 
-          <Divider sx={{ my: 2 }} />
+          <Divider sx={{ my: 2 }}>또는</Divider>
+
+          <Button
+            fullWidth
+            variant="outlined"
+            size="large"
+            onClick={handleGoogleLogin}
+            disabled={googleLoading}
+            sx={{ mb: 2, borderRadius: 2, py: 1.2, borderColor: '#dadce0', color: 'text.primary', '&:hover': { borderColor: '#bbb', backgroundColor: '#f8f8f8' } }}
+            startIcon={
+              googleLoading ? <CircularProgress size={20} /> : (
+                <Box component="img"
+                  src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                  alt="Google"
+                  sx={{ width: 20, height: 20 }}
+                />
+              )
+            }
+          >
+            Google로 로그인
+          </Button>
 
           <Box sx={{ textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary">
