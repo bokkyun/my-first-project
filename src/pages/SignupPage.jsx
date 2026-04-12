@@ -7,14 +7,14 @@ import {
 import { Visibility, VisibilityOff, CalendarMonth, ArrowBack } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 
-/** 아이디 유효성 검사: 영문, 숫자, 밑줄, 하이픈만 허용 */
-const isValidUsername = (v) => /^[a-zA-Z0-9_-]{3,20}$/.test(v);
+/** 이메일 유효성 검사 */
+const isValidEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
 function SignupPage() {
   const navigate = useNavigate();
   const { signUp } = useAuth();
 
-  const [form, setForm] = useState({ username: '', nickname: '', password: '', passwordConfirm: '' });
+  const [form, setForm] = useState({ email: '', nickname: '', password: '', passwordConfirm: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -28,8 +28,8 @@ function SignupPage() {
     e.preventDefault();
     setError('');
 
-    if (!isValidUsername(form.username)) {
-      setError('아이디는 3~20자의 영문, 숫자, _(밑줄), -(하이픈)만 사용 가능합니다.');
+    if (!isValidEmail(form.email)) {
+      setError('올바른 이메일 형식을 입력해주세요.');
       return;
     }
     if (form.password !== form.passwordConfirm) {
@@ -43,15 +43,15 @@ function SignupPage() {
 
     setLoading(true);
     const { error: signUpError } = await signUp(
-      form.username,
+      form.email,
       form.password,
-      form.nickname || form.username,
+      form.nickname,
     );
     setLoading(false);
 
     if (signUpError) {
       if (signUpError.message?.includes('already registered')) {
-        setError('이미 사용 중인 아이디입니다.');
+        setError('이미 사용 중인 이메일입니다.');
       } else {
         setError('회원가입에 실패했습니다. 다시 시도해주세요.');
       }
@@ -85,7 +85,7 @@ function SignupPage() {
 
           {success ? (
             <Alert severity="success" sx={{ mb: 2 }}>
-              회원가입이 완료되었습니다!{' '}
+              가입 확인 이메일을 발송했습니다. 이메일을 확인하여 인증을 완료해주세요.{' '}
               <Link to="/login" style={{ color: '#1976d2', fontWeight: 600 }}>
                 로그인하러 가기
               </Link>
@@ -96,17 +96,14 @@ function SignupPage() {
               <Box component="form" onSubmit={handleSubmit}>
                 <TextField
                   fullWidth
-                  label="아이디"
-                  value={form.username}
-                  onChange={handleChange('username')}
+                  label="이메일"
+                  type="email"
+                  value={form.email}
+                  onChange={handleChange('email')}
                   required
-                  sx={{ mb: 1 }}
-                  inputProps={{ maxLength: 20 }}
-                  autoComplete="username"
+                  sx={{ mb: 2 }}
+                  autoComplete="email"
                 />
-                <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2 }}>
-                  3~20자, 영문·숫자·_(밑줄)·-(하이픈) 사용 가능
-                </Typography>
                 <TextField
                   fullWidth
                   label="닉네임 (선택)"

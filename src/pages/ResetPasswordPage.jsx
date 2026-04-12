@@ -7,13 +7,13 @@ import {
 import { CalendarMonth, ArrowBack } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 
-/** 아이디 유효성 검사 (로그인과 동일) */
-const isValidUsername = (v) => /^[a-zA-Z0-9_-]{3,20}$/.test(v);
+/** 이메일 유효성 검사 */
+const isValidEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
 function ResetPasswordPage() {
   const { resetPasswordForEmail } = useAuth();
 
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -23,13 +23,13 @@ function ResetPasswordPage() {
     setError('');
     setSuccess(false);
 
-    if (!isValidUsername(username.trim())) {
-      setError('아이디는 3~20자의 영문, 숫자, _(밑줄), -(하이픈)만 사용 가능합니다.');
+    if (!isValidEmail(email)) {
+      setError('올바른 이메일 형식을 입력해주세요.');
       return;
     }
 
     setLoading(true);
-    const { error: resetError } = await resetPasswordForEmail(username.trim());
+    const { error: resetError } = await resetPasswordForEmail(email);
     setLoading(false);
 
     if (resetError) {
@@ -62,7 +62,7 @@ function ResetPasswordPage() {
               비밀번호 재설정
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              가입 시 사용한 아이디를 입력하면 재설정 안내 메일을 보냅니다.
+              가입 시 사용한 이메일을 입력하면 재설정 안내 메일을 보냅니다.
             </Typography>
           </Box>
 
@@ -76,13 +76,13 @@ function ResetPasswordPage() {
           <Box component="form" onSubmit={handleSubmit}>
             <TextField
               fullWidth
-              label="아이디"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              label="이메일"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
               sx={{ mb: 2 }}
-              autoComplete="username"
-              inputProps={{ maxLength: 20 }}
+              autoComplete="email"
               disabled={success}
             />
             <Button

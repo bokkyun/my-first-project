@@ -11,7 +11,7 @@ function LoginPage() {
   const navigate = useNavigate();
   const { signIn } = useAuth();
 
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -21,7 +21,7 @@ function LoginPage() {
     e.preventDefault();
     setError('');
     setLoading(true);
-    const { error: signInError } = await signIn(username, password);
+    const { error: signInError } = await signIn(email, password);
     setLoading(false);
     if (signInError) {
       setError('아이디 또는 비밀번호가 올바르지 않습니다.');
@@ -57,13 +57,13 @@ function LoginPage() {
           <Box component="form" onSubmit={handleSubmit}>
             <TextField
               fullWidth
-              label="아이디"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              label="이메일"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
               sx={{ mb: 2 }}
-              autoComplete="username"
-              inputProps={{ maxLength: 20 }}
+              autoComplete="email"
             />
             <TextField
               fullWidth

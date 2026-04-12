@@ -1,9 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
-/** 아이디 → 내부 이메일 변환 (Supabase Auth는 이메일을 식별자로 사용) */
-const toEmail = (username) => `${username.trim().toLowerCase()}@teamsync.local`;
-
 /**
  * 인증 상태를 관리하는 커스텀 훅
  * @returns {{ user, session, loading, signIn, signUp, signOut, resetPasswordForEmail, updatePassword }}
@@ -30,27 +27,28 @@ export function useAuth() {
   }, []);
 
   /**
-   * @param {string} username - 사용자 아이디
+   * @param {string} email - 이메일 주소
    * @param {string} password
    */
-  const signIn = async (username, password) => {
+  const signIn = async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: toEmail(username),
+      email: email.trim().toLowerCase(),
       password,
     });
     return { data, error };
   };
 
   /**
-   * @param {string} username - 사용자 아이디 (로그인 식별자)
+   * @param {string} email - 이메일 주소
    * @param {string} password
    * @param {string} nickname - 표시 이름
    */
-  const signUp = async (username, password, nickname) => {
+  const signUp = async (email, password, nickname) => {
+    const emailNormalized = email.trim().toLowerCase();
     const { data, error } = await supabase.auth.signUp({
-      email: toEmail(username),
+      email: emailNormalized,
       password,
-      options: { data: { nickname: nickname || username } },
+      options: { data: { nickname: nickname || emailNormalized.split('@')[0] } },
     });
     return { data, error };
   };
@@ -60,12 +58,12 @@ export function useAuth() {
   };
 
   /**
-   * 비밀번호 재설정 이메일 발송 (아이디 기준)
-   * @param {string} username
+   * 비밀번호 재설정 이메일 발송
+   * @param {string} email
    */
-  const resetPasswordForEmail = async (username) => {
+  const resetPasswordForEmail = async (email) => {
     const redirectTo = `${window.location.origin}/update-password`;
-    return supabase.auth.resetPasswordForEmail(toEmail(username), { redirectTo });
+    return supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo });
   };
 
   /**
