@@ -72,7 +72,7 @@ export function useAuth() {
    * @param {string} email
    */
   const resetPasswordForEmail = async (email) => {
-    const redirectTo = `${window.location.origin}/#/update-password`;
+    const redirectTo = `${window.location.origin}/update-password`;
     return supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo });
   };
 
