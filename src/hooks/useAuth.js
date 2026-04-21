@@ -56,7 +56,7 @@ export function useAuth() {
   const signInWithGoogle = async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/calendar` },
+      options: { redirectTo: `${window.location.origin}/#/calendar` },
     });
     return { data, error };
   };
@@ -70,7 +70,7 @@ export function useAuth() {
    * @param {string} email
    */
   const resetPasswordForEmail = async (email) => {
-    const redirectTo = `${window.location.origin}/update-password`;
+    const redirectTo = `${window.location.origin}/#/update-password`;
     return supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo });
   };
 
