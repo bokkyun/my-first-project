@@ -1,8 +1,8 @@
-name: Deploy React to GitHub Pages
+name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [master]
+    branches: [master, main]
   workflow_dispatch:
 
 permissions:
@@ -10,8 +10,12 @@ permissions:
   pages: write
   id-token: write
 
+concurrency:
+  group: github-pages-deploy
+  cancel-in-progress: false
+
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -20,25 +24,36 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: '22'
 
-      - name: Install dependencies
-        run: npm install
+      - name: Require Supabase secrets
+        if: ${{ secrets.VITE_SUPABASE_URL == '' || secrets.VITE_SUPABASE_ANON_KEY == '' }}
+        run: |
+          echo "::error::Settings → Secrets and variables → Actions 에 VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY 를 추가한 뒤 다시 실행해 주세요."
+          exit 1
 
-      - name: Build
-        run: npm run build
+      - name: Install and build
+        env:
+          VITE_BASE: /${{ github.event.repository.name }}/
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          npm install
+          npm run build
+          cp dist/index.html dist/404.html
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
+        with:
+          enablement: true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './dist'
+          path: dist
 
       - name: Deploy to GitHub Pages
         id: deployment
