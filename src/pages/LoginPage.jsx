@@ -24,7 +24,7 @@ function LoginPage() {
     const { error: googleError } = await signInWithGoogle();
     setGoogleLoading(false);
     if (googleError) {
-      setError('구글 로그인에 실패했습니다. 다시 시도해주세요.');
+      setError(googleError.message || '구글 로그인에 실패했습니다. Supabase·Google 리다이렉트 URL을 확인해 주세요.');
     }
   };
 
@@ -35,7 +35,14 @@ function LoginPage() {
     const { error: signInError } = await signIn(email, password);
     setLoading(false);
     if (signInError) {
-      setError('아이디 또는 비밀번호가 올바르지 않습니다.');
+      const m = signInError.message || '';
+      if (m.toLowerCase().includes('email not confirmed')) {
+        setError('이메일 인증을 완료한 뒤 다시 로그인해 주세요.');
+      } else if (m.toLowerCase().includes('invalid login') || m.toLowerCase().includes('invalid credentials')) {
+        setError('아이디 또는 비밀번호가 올바르지 않습니다.');
+      } else {
+        setError(m || '로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+      }
     } else {
       navigate('/calendar');
     }
