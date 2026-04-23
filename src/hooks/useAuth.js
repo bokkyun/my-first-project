@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import { stripSupabaseOAuthFromUrl } from '../utils/stripSupabaseOAuthUrl';
 
 /** 서브패스 배포(GitHub Pages 등) 시 OAuth·이메일 리다이렉트용 앱 절대 URL */
 function getAppBaseUrl() {
@@ -21,6 +22,7 @@ export function useAuth() {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      queueMicrotask(() => stripSupabaseOAuthFromUrl());
     }).catch(() => {
       setLoading(false);
     });
@@ -29,6 +31,7 @@ export function useAuth() {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      queueMicrotask(() => stripSupabaseOAuthFromUrl());
     });
 
     return () => subscription.unsubscribe();
@@ -64,7 +67,7 @@ export function useAuth() {
   const signInWithGoogle = async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: getAppBaseUrl() },
+      options: { redirectTo: `${getAppBaseUrl()}/calendar` },
     });
     return { data, error };
   };
