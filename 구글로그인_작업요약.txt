@@ -1,139 +1,360 @@
 ================================================================================
-  TeamSync (my-first-project) — 구글 로그인 및 인증 관련 작업 요약
-  작성 목적: 변경한 코드와 그 이유를 한 파일에서 참고할 수 있도록 정리
+  TeamSync (my-first-project)
+  구글 로그인·Supabase 인증·프로필·배포 관련 작업 상세 정리
+  (요약이 아니라, 나중에 다시 읽고 이해·수정할 수 있도록 풀어 씀)
 ================================================================================
 
-■ 1. 메인 페이지 / 캘린더 혼동 정리
---------------------------------------------------------------------------------
-  상황
-    - 처음 요청에서 "로그인 후 메인 페이지 제거"를 캘린더(/calendar)로 이해해
-      CalendarPage 라우트를 잠시 제거하고 AppHomePlaceholder만 보이게 바꿨음.
-    - 사용자 의도는 Cloudflare Pages URL 등 "다른 메인"에 가까웠고, 캘린더는 유지가 맞음.
 
-  조치
-    - /calendar + CalendarPage 복구, 로그인 후 이동 경로를 다시 /calendar 로 통일.
-    - AppHomePlaceholder.jsx 는 삭제됨.
+────────────────────────────────────────────────────────────────────────────────
+【 전제: 이 앱의 인증 구조 】
+────────────────────────────────────────────────────────────────────────────────
 
-  관련 파일
-    - src/App.jsx (라우트)
-    - src/pages/LoginPage.jsx, Navbar, Group*, ProfilePage, UpdatePasswordPage 등 navigate 대상
+  · 프론트: React + Vite, @supabase/supabase-js 로 Supabase Auth 사용.
+  · 로그인 방식
+      - 이메일 + 비밀번호 (signInWithPassword)
+      - 구글 (signInWithOAuth, provider: 'google')
+  · 클라이언트 설정 (src/lib/supabase.js)
+      - flowType: 'pkce'  → 브라우저에서 안전하게 쓰는 OAuth 방식(PKCE).
+      - detectSessionInUrl: true  → URL 의 code 등으로 세션 복구.
+      - persistSession, autoRefreshToken  → 로컬에 세션 유지.
 
+  · PKCE 흐름을 아주 짧게
+      1) 사용자가 "Google로 로그인" 클릭
+      2) Supabase 가 구글 로그인 URL 로 보냄 (이때 클라이언트는 code_verifier 를 저장)
+      3) 구글 인증 후 Supabase 가 지정한 redirectTo 로 브라우저를 돌림
+      4) 돌아온 URL 에 ?code=... (및 state 등) 가 붙음
+      5) supabase-js 가 이 code 와 저장해 둔 verifier 로 토큰을 교환하고 세션 생성
 
-■ 2. OAuth 콜백 URL (?code=...) 정리 + 구글 리다이렉트 대상
---------------------------------------------------------------------------------
-  상황
-    - 구글 로그인 후 주소에 ?code=... 가 남아 보기 싫고, 루트에 잠깐 머무는 문제.
-
-  조치
-    - src/utils/stripSupabaseOAuthUrl.js
-        * code, state, error 등 OAuth 쿼리를 history.replaceState 로 제거.
-    - stripSupabaseOAuthFromUrlWhenReady(session)
-        * **세션이 아직 없는데 code 만 있으면 절대 지우지 않음.**
-          (교환 전에 지우면 PKCE 가 깨져 구글 로그인이 실패함.)
-        * 세션이 생긴 뒤이거나, error 쿼리만 있을 때 정리.
-    - src/hooks/useAuth.js — signInWithOAuth 의 redirectTo
-        * `${getAppBaseUrl()}/calendar` 로 지정해, 복귀 후 캘린더로 오게 함.
-
-  Supabase 대시보드에서 할 일
-    - Authentication → URL Configuration → Redirect URLs 에
-      실제 배포 주소 기준으로 예:
-      https://(프로젝트).pages.dev/calendar
-      를 등록해야 함.
+  · 중요: 4)~5) 사이에 URL 의 code 가 사라지거나, 세션이 생기기 전에
+    "로그인 안 된 사용자"로 취급되어 다른 페이지로 날려 버리면 5)가 영원히 실패함.
+    이번에 겪은 "캘린더에 잠깐 갔다가 로그인 화면으로 튕김"이 바로 이 케이스임.
 
 
-■ 3. PKCE 복귀 직후 로그인 화면으로 튕기는 문제 (핵심 버그)
---------------------------------------------------------------------------------
-  증상
-    - /calendar?code=... 로 잠깐 갔다가 바로 /login 으로 돌아옴.
+────────────────────────────────────────────────────────────────────────────────
+【 작업 1: 메인 페이지와 캘린더 라우트 혼동 】
+────────────────────────────────────────────────────────────────────────────────
 
-  원인
-    - getSession() 이 세션 교환 완료 전에 null 로 끝나는 순간이 있음.
-    - 그때 loading 이 false 가 되면 ProtectedRoute 가 "비로그인"으로 보고
-      Navigate to /login 을 실행함.
-    - /login 으로 이동하면서 URL 에서 code 가 사라져 PKCE 교환이 끊김.
+  ▶ 배경
+    처음 대화에서 "로그인하면 메인 페이지로 가는데 메인 페이지를 없애 달라"는 요청이 있었음.
+    그때 "로그인 후 첫 화면"을 앱의 메인 기능인 캘린더(/calendar, CalendarPage)로 이해하고,
+    /calendar 라우트를 제거한 뒤 AppHomePlaceholder 라는 임시 화면만 보이게 수정함.
 
-  조치 (src/hooks/useAuth.js)
-    - 첫 로드 시 URL 에 ?code= 가 있으면(pkcePending) 세션이 잡힐 때까지
-      loading 을 false 로 내리지 않음.
-    - onAuthStateChange 로 session 이 생기면 loading 종료.
-    - 최대 20초 타임아웃 후에는 로딩 종료(교환 실패·환경 문제 대비).
+  ▶ 사용자 의도와의 차이
+    이후 대화에서 사용자가 말한 "메인"은 Cloudflare Pages 주소
+    (예: my-first-project-4bt.pages.dev) 쪽 이슈(OAuth 콜백 URL 등)에 가까웠고,
+    "캘린더 화면 자체를 없애 달라"는 뜻은 아니었음.
 
-  관련 파일
-    - src/App.jsx 의 ProtectedRoute (loading 동안 스피너, 끝나고 user 없으면 /login)
+  ▶ 최종 조치
+    · App.jsx 에서 /calendar 라우트와 CalendarPage 를 다시 연결.
+    · 로그인·회원가입 성공 후, 이미 로그인된 사용자의 리다이렉트 목적지를 /calendar 로 복구.
+    · Navbar 의 "홈(로고 클릭)", 그룹 생성/가입/프로필 화면의 뒤로 가기 등에서
+      navigate('/calendar') 형태로 통일.
+    · AppHomePlaceholder.jsx 는 삭제(더 이상 라우트에서 사용하지 않음).
 
-
-■ 4. 프로필(아이디·닉네임)이 안 보이던 문제
---------------------------------------------------------------------------------
-  원인
-    - GroupCreatePage, GroupJoinPage 에서 프로필 로드를 useEffect 가 아니라
-      잘못된 useState(() => { ... }) 패턴으로 넣어 두어 프로필이 거의 안 불려옴.
-    - profiles 행이 없을 때(구글 최초 로그인 등) UI 가 비어 보임.
-    - Navbar 가 profile?.email 만 보는데 DB 에 email 컬럼이 없으면 이메일이 안 나옴.
-
-  조치
-    - src/utils/profileDisplay.js — auth 메타데이터·이메일 기반 표시명 헬퍼.
-    - src/hooks/useUserProfile.js — profiles maybeSingle + 없으면 user 기준 임시 표시.
-    - Navbar — user 와 profile 을 합쳐 닉네임·이메일 표시.
-    - ProfilePage — upsert 로 첫 저장 시에도 행 생성, 이메일은 user.email 폴백.
-    - CalendarPage, GroupCreatePage, GroupJoinPage — useUserProfile 사용.
+  ▶ 참고 파일
+    src/App.jsx
+    src/pages/LoginPage.jsx
+    src/components/common/Navbar.jsx
+    src/pages/GroupCreatePage.jsx, GroupJoinPage.jsx, ProfilePage.jsx, UpdatePasswordPage.jsx
 
 
-■ 5. fetch "Invalid value" 오류 (Supabase URL)
---------------------------------------------------------------------------------
-  증상
-    - Failed to execute 'fetch' on 'Window': Invalid value
+────────────────────────────────────────────────────────────────────────────────
+【 작업 2: OAuth 콜백 URL (?code=...) 보이는 문제와 redirectTo 】
+────────────────────────────────────────────────────────────────────────────────
 
-  원인
-    - .env 나 배포 환경 변수에 줄바꿈(CRLF), 공백, 잘못된 문자열이 붙어
-      Supabase URL 이 fetch 에 유효하지 않게 넘어가는 경우.
+  ▶ 현상
+    구글 로그인 후 주소창에
+      https://.../calendar?code=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    처럼 authorization code 가 그대로 보이는 경우가 있음.
+    보안상 치명적이진 않지만(일회성 code), 깔끔하지 않고 북마크·공유 시 혼란을 줌.
 
-  조치 (src/lib/supabase.js)
-    - VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY 를 trim, BOM·\r 제거.
-    - 문자열 "undefined" 거부, new URL() 로 형식 검증 후 친절한 에러 메시지.
-    - getAppBaseUrl() — BASE_URL 쪽 줄바꿈 제거.
+  ▶ 조치 A — URL 에서 OAuth 전용 쿼리 제거
+    파일: src/utils/stripSupabaseOAuthUrl.js
 
-  배포 시
-    - Cloudflare Pages 등에서 VITE_* 는 빌드 시 주입. 값에 따옴표·공백 없이 확인.
+    · stripSupabaseOAuthFromUrl()
+        code, state, error, error_code, error_description 를 searchParams 에서 지우고
+        window.history.replaceState 로 같은 경로만 남김(페이지 리로드 없음).
+
+    · stripSupabaseOAuthFromUrlWhenReady(session)  ← 매우 중요
+        "언제" 지우느냐가 문제였음.
+
+        잘못된 순서:
+          세션 교환 전에 onAuthStateChange 나 getSession 이 session=null 로 끝나는 순간에
+          이미 strip 을 호출해 버리면, URL 에서 code 가 먼저 사라짐
+          → supabase-js 가 code 로 토큰을 바꿀 수 없음
+          → 구글 로그인 실패.
+
+        그래서 규칙을 이렇게 둠:
+          · URL 에 code 가 있는데 session 이 아직 null 이면 → 절대 strip 하지 않음.
+          · session 이 생긴 뒤에 code 가 있으면 → strip 해도 됨(교환은 끝난 상태).
+          · code 는 없고 error 쿼리만 있으면 → strip (사용자에게 에러 UI 를 보여 주고 URL 정리).
+
+    이 로직은 src/hooks/useAuth.js 의 getSession / onAuthStateChange 처리 뒤,
+    queueMicrotask 로 호출되도록 연결함.
+
+  ▶ 조치 B — 구글 로그인 후 돌아올 페이지를 /calendar 로 고정
+    파일: src/hooks/useAuth.js 의 signInWithGoogle
+
+    · options.redirectTo 를
+        `${getAppBaseUrl()}/calendar`
+      로 설정.
+
+    · getAppBaseUrl()
+        window.location.origin 과 Vite 의 import.meta.env.BASE_URL 을 이어서
+        "이 앱이 배포된 루트 URL" 을 만듦.
+        GitHub Pages 처럼 /저장소이름/ 처럼 서브패스에 올릴 때 BASE_URL 이 /repo/ 가 되므로
+        origin 과 합쳐야 함.
+        나중에 fetch 오류 방지를 위해 BASE_URL 에서 \r, \n 제거·trim 도 추가함.
+
+  ▶ Supabase 대시보드에서 반드시 맞출 것
+    Authentication → URL Configuration
+
+    · Site URL: 실제 서비스 루트 (예: https://xxxx.pages.dev)
+
+    · Redirect URLs: redirectTo 로 쓰는 문자열과 **완전히 동일한 항목**이 허용 목록에 있어야 함.
+      예:
+        https://my-first-project-4bt.pages.dev/calendar
+      로컬 개발까지 쓰면:
+        http://localhost:5173/calendar
+      (포트는 본인 환경에 맞게)
+
+    하나라도 빠지면 OAuth 마지막 단계에서 Supabase 가 리다이렉트를 거부하거나
+    세션이 안 잡히는 현상이 날 수 있음.
+
+  ▶ Google Cloud Console (참고)
+    OAuth 클라이언트의 "승인된 리디렉션 URI"에는 **앱 도메인이 아니라**
+    Supabase 가 정해 준 콜백이 들어감:
+      https://<프로젝트-ref>.supabase.co/auth/v1/callback
+    이건 Supabase 문서·대시보드에 안내되어 있음.
 
 
-■ 6. 배포 관련 (참고)
---------------------------------------------------------------------------------
-  - GitHub 저장소: bokkyun/my-first-project (브랜치 master 에 푸시).
-  - GitHub Pages 용 워크플로·서브모듈 등은 모노레포 the_first-project 쪽에도
-    시도한 이력이 있음(원격 푸시 환경에 따라 다름).
-  - 실제 서비스 URL 예: Cloudflare Pages (my-first-project-4bt.pages.dev 등).
+────────────────────────────────────────────────────────────────────────────────
+【 작업 3: /calendar?code=... 에 잠깐 갔다가 로그인 화면으로 튕기던 버그 】
+────────────────────────────────────────────────────────────────────────────────
+
+  ▶ 사용자가 본 증상
+    브라우저가
+      https://....pages.dev/calendar?code=.....
+    로 잠깐 갔다가 곧바로 /login 으로 바뀜. 결과적으로 구글 로그인이 안 된 것처럼 보임.
+
+  ▶ 원인 (프론트 라우팅 + 인증 로딩 타이밍)
+
+    App.jsx 의 ProtectedRoute 동작 요약:
+      · loading === true  → 전체 화면 스피너
+      · loading === false 이고 user 가 없음 → <Navigate to="/login" replace />
+      · loading === false 이고 user 있음 → 자식 페이지(캘린더) 표시
+
+    문제 시나리오:
+      1) OAuth 로 돌아와서 /calendar?code=... 로 진입
+      2) useAuth 가 supabase.auth.getSession() 을 호출
+      3) **아주 짧은 순간** getSession 의 결과가 session=null 로 먼저 resolve 되거나,
+         그 전에 loading 을 false 로 내려 버림
+      4) user 도 아직 null
+      5) ProtectedRoute 가 "비로그인"으로 판단하고 /login 으로 보냄
+      6) React Router 가 URL 을 /login 으로 바꾸면서 **쿼리스트링(?code=...) 이 사라짐**
+      7) 이후 supabase 가 code 로 교환하려 해도 code 가 없음 → 로그인 실패 확정
+
+    즉 "DB 에 유저가 있는데 왜 로그인이 안 되지?" 와 별개로,
+    **클라이언트가 너무 빨리 로그인 페이지로 보내서 PKCE 를 스스로 망가뜨린 것**에 가깝다.
+
+  ▶ 조치 (src/hooks/useAuth.js)
+
+    · 페이지 첫 로드 시 URL 에 PKCE 용 code 가 있는지 검사
+        urlHasPkceCode() — new URLSearchParams(window.location.search).has('code')
+
+    · pkcePending === true 인 경우(즉 OAuth 직후 복귀로 추정):
+        getSession() 이 session=null 을 돌려줘도 **즉시 setLoading(false) 하지 않음**
+        → ProtectedRoute 가 /login 으로 보내지 못하게 막음.
+
+    · onAuthStateChange 에서 session 이 비어 있지 않게 되면(교환 성공):
+        setLoading(false) 로 로딩 종료 → 캘린더 정상 표시.
+
+    · onAuthStateChange 에서 여전히 session=null 인데 URL 에 code 가 남아 있으면:
+        아직 교환 중일 수 있으므로 loading 유지.
+
+    · URL 에 code 가 더 이상 없고, 처음부터 pkcePending 도 아니었으면:
+        기존처럼 loading 을 끝김.
+
+    · 안전장치: 최대 20초 후에는 loading 을 끔
+        네트워크 오류·설정 오류 등으로 교환이 영원히 안 끝나면 UI 가 멈추지 않게 함.
+        이 경우에는 여전히 user 가 없으면 로그인 화면으로 갈 수 있음(그때는 원인 조사 필요).
+
+  ▶ 이 작업과 "작업 2" 의 strip 타이밍은 서로 맞물림
+    · strip 은 **session 이 있을 때만** code 를 지우게 해 두었고
+    · loading 은 **code 가 있는 동안 세션 생길 때까지** 기다리게 해 두었음
+    두 가지가 같이 있어야 구글 로그인이 안정적으로 동작함.
 
 
-■ 7. 파일 변경 목록 (요약)
---------------------------------------------------------------------------------
-  추가
-    - src/utils/stripSupabaseOAuthUrl.js
-    - src/utils/profileDisplay.js
-    - src/hooks/useUserProfile.js
-    - .github/workflows/deploy.yml (GitHub Pages 시)
+────────────────────────────────────────────────────────────────────────────────
+【 작업 4: 프로필(닉네임·이메일)이 안 보이던 문제 】
+────────────────────────────────────────────────────────────────────────────────
 
-  주요 수정
-    - src/hooks/useAuth.js — PKCE 대기, OAuth URL 정리 타이밍, redirectTo, getAppBaseUrl
-    - src/lib/supabase.js — 환경변수 정규화·URL 검증
-    - src/App.jsx — 라우트·ProtectedRoute
-    - src/main.jsx — BrowserRouter basename (서브패스 배포 시)
-    - src/pages/LoginPage.jsx — 오류 메시지
-    - src/components/common/Navbar.jsx — 표시 폴백
-    - src/pages/CalendarPage.jsx, ProfilePage.jsx, GroupCreatePage.jsx, GroupJoinPage.jsx
-    - vite.config.js — VITE_BASE (GitHub Pages 서브패스용)
+  ▶ 현상
+    네비게이션 바나 프로필 영역에서 닉네임이 비거나 ?, 이메일이 비어 보임.
+    "기존에 있던 아이디가 없어졌다"고 느낄 수 있음.
 
-  삭제됐던 것(복구 과정)
-    - AppHomePlaceholder.jsx (최종적으로 삭제, 캘린더 복구 후 불필요)
+  ▶ 원인 1 — React 훅 오용 (버그)
+
+    GroupCreatePage.jsx, GroupJoinPage.jsx 에 원래 아래와 비슷한 코드가 있었음:
+
+      useState(() => {
+        if (!user) return;
+        supabase.from('profiles').select(...).then(...)
+      }, [user]);
+
+    이것은 **useEffect 가 아니라 useState** 임.
+
+    · useState(초기값) 에 함수를 넘기면, React 는 그것을 "lazy initializer" 로만 호출함.
+    · 그 함수는 **초기 state 값을 return** 해야 하는데, 위 코드는 supabase 를 비동기로 호출만 하고
+      의미 있는 return 이 없음.
+    · 의존성 배열 [user] 도 useState 는 받지 않음(무시됨).
+
+    결과: **프로필 fetch 가 사실상 실행되지 않거나 의도대로 동작하지 않음**
+    → Navbar 에 넘기는 profile 이 항상 비어 있음 → "아이디가 사라진 것처럼" 보임.
+
+    조치: 위 패턴을 제거하고 useUserProfile(user) 훅으로 통일.
+
+  ▶ 원인 2 — public.profiles 테이블 행이 없는 경우
+
+    이메일 가입 시 트리거로 profiles 행을 만드는 구성이 흔하지만,
+    구글 최초 로그인 직후에는 행이 아직 없을 수 있음.
+
+    기존 UI 는 profile 이 null 이면 닉네임·이메일을 거의 안 보여 줌.
+
+    조치:
+      · src/hooks/useUserProfile.js
+          profiles 에 maybeSingle 로 조회
+          행이 있으면 DB 데이터 사용(이메일 컬럼이 없으면 user.email 로 보강)
+          행이 없으면 auth user 의 user_metadata (nickname, full_name, name 등)와
+          user.email 로 **화면용 임시 객체**를 만들어 네비가 비지 않게 함.
+
+      · src/utils/profileDisplay.js
+          getAuthDisplayName(user) — 메타데이터·이메일 앞부분 순으로 표시명 결정
+          getDisplayEmail(profile, user)
+          getAvatarLetter(profile, user)
+
+      · src/components/common/Navbar.jsx
+          useAuth() 의 user 와 props profile 을 함께 사용해 표시.
+
+      · src/pages/ProfilePage.jsx
+          프로필 저장 시 update 만 하면 행이 없을 때 아무 일도 안 일어날 수 있어
+          upsert(id, nickname, updated_at) 로 변경.
+          화면의 이메일 줄은 getDisplayEmail(profile, user).
+
+      · src/pages/CalendarPage.jsx
+          직접 supabase 로 profile 을 불러오던 useEffect 제거 → useUserProfile 사용.
+
+  ▶ 원인 3 — Supabase Auth 상 "같은 이메일"과 다른 user id
+
+    이메일/비밀번호로 만든 계정과, 같은 이메일의 구글 계정이
+    프로젝트 설정에 따라 **별도 user id** 로 남을 수 있음.
+    profiles 는 보통 id = auth.users.id 이므로, "예전 이메일 계정"의 프로필 행과
+    "구글로만 로그인하는 계정"의 행이 다를 수 있음.
+
+    이건 코드만으로는 통합할 수 없고, Supabase 대시보드에서 사용자·연동 상태를 보거나
+    정책을 정해야 함. 문서화 목적으로 여기 적어 둠.
 
 
-■ 8. 구글·Supabase 콘솔 체크리스트
---------------------------------------------------------------------------------
-  [ ] Supabase Redirect URLs 에 배포 origin + /calendar
-  [ ] Google Cloud Console — OAuth 클라이언트의 리디렉션 URI 에
-      https://<프로젝트ref>.supabase.co/auth/v1/callback
-  [ ] 배포 환경에 VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY (빌드 시 사용)
+────────────────────────────────────────────────────────────────────────────────
+【 작업 5: Failed to execute 'fetch' on 'Window': Invalid value 】
+────────────────────────────────────────────────────────────────────────────────
+
+  ▶ 현상
+    브라우저 콘솔에 fetch 관련 오류. Supabase 요청 URL 이 깨졌을 때 자주 나옴.
+
+  ▶ 원인
+    · VITE_SUPABASE_URL 이 실제로는
+        "https://xxx.supabase.co\r"
+      처럼 줄바꿈이 붙었거나,
+    · Cloudflare 환경 변수에 앞뒤 공백·잘못된 따옴표가 들어갔거나,
+    · 빌드 시 변수가 비어 문자열 "undefined" 같은 값이 들어간 경우
+    → createClient 가 만든 REST/Auth URL 이 유효하지 않음 → fetch 가 실패.
+
+  ▶ 조치 (src/lib/supabase.js)
+
+    · normalizeEnv(value)
+        String 변환, BOM(\uFEFF) 제거, trim, \r·\n 제거
+
+    · 빈 문자열이면 기존처럼 throw
+
+    · 문자열 그대로 "undefined" 면 별도 메시지로 throw
+        (Cloudflare 등에서 잘못 넣으면 이런 일이 생길 수 있음)
+
+    · new URL(supabaseUrl) 로 파싱해 http:/https: 만 허용
+        실패 시 받은 값 앞 60자 정도를 에러 메시지에 넣어 디버깅 용이하게 함.
+
+  ▶ 배포 시 유의
+    Vite 는 **빌드 시점**에 import.meta.env.VITE_* 를 번들에 박음.
+    Cloudflare Pages 에서 변수를 "런타임"만 넣고 재빌드를 안 하면 반영이 안 될 수 있음.
+    Settings → Environment variables 에 Production/Preview 모두 확인하고,
+    값 저장 후 **새 배포**를 한 번 돌리는 것이 안전함.
 
 
-================================================================================
-  끝. 이후 수정 시 이 파일을 갱신하거나 별도 CHANGELOG 에 이어 쓰면 됩니다.
-================================================================================
+────────────────────────────────────────────────────────────────────────────────
+【 작업 6: 배포·저장소 (참고) 】
+────────────────────────────────────────────────────────────────────────────────
+
+  · 앱 소스 원격: https://github.com/bokkyun/my-first-project (브랜치 master)
+  · 사용자 실제 접속 예: Cloudflare Pages (*.pages.dev)
+  · 모노레포 the_first-project 쪽에는 서브모듈·GitHub Pages 워크플로 시도 이력이 있을 수 있음.
+    실제 배포가 Cloudflare에만 연결되어 있다면 my-first-project 저장소 푸시가 배포를 트리거함.
+
+  · GitHub Actions 로 Pages 배포하는 경우:
+      VITE_BASE=/저장소이름/ 처럼 서브패스에 맞춰 빌드해야 자산 경로가 깨지지 않음.
+      main.jsx 의 BrowserRouter basename 도 import.meta.env.BASE_URL 과 맞춤.
+
+
+────────────────────────────────────────────────────────────────────────────────
+【 파일·역할 빠른 목록 】
+────────────────────────────────────────────────────────────────────────────────
+
+  추가·핵심
+    src/lib/supabase.js
+        클라이언트 생성, env 정규화·URL 검증
+    src/hooks/useAuth.js
+        세션 구독, PKCE 대기 로직, 구글 redirectTo, getAppBaseUrl, 비밀번호 재설정 URL
+    src/utils/stripSupabaseOAuthUrl.js
+        OAuth 쿼리 제거, session 기준 안전한 제거
+    src/utils/profileDisplay.js
+        표시명·이메일·아바타 글자
+    src/hooks/useUserProfile.js
+        profiles + auth 폴백
+
+  라우팅·UI
+    src/App.jsx — ProtectedRoute, /calendar 등
+    src/main.jsx — BrowserRouter basename
+    src/pages/LoginPage.jsx — 로그인 오류 메시지 세분화
+    src/components/common/Navbar.jsx — profile + user 표시
+    src/pages/CalendarPage.jsx, ProfilePage.jsx, GroupCreatePage.jsx, GroupJoinPage.jsx
+
+  설정
+    vite.config.js — VITE_BASE(서브패스)
+    .github/workflows/deploy.yml — GitHub Pages 빌드 시 (해당 시)
+
+  문서
+    구글로그인_작업요약.txt — 본 파일
+
+
+────────────────────────────────────────────────────────────────────────────────
+【 운영 체크리스트 (다시 설정할 때) 】
+────────────────────────────────────────────────────────────────────────────────
+
+  □ Supabase → URL Configuration
+      Site URL, Redirect URLs 에 배포 URL 및 /calendar 포함
+
+  □ Google Cloud → OAuth 클라이언트
+      리디렉션 URI: https://<ref>.supabase.co/auth/v1/callback
+
+  □ Cloudflare Pages (또는 사용 중인 호스팅)
+      VITE_SUPABASE_URL
+      VITE_SUPABASE_ANON_KEY
+      (빌드에 주입되는지 확인 후 재배포)
+
+  □ 로컬 .env
+      줄 끝에 공백·따옴표 없이 한 줄로
+
+
+────────────────────────────────────────────────────────────────────────────────
+  문서 끝. 내용은 대화·코드 변경 이력을 바탕으로 작성했으며,
+  이후 기능을 더 붙이면 이 파일에 절(섹션)을 추가해 관리하면 됩니다.
+────────────────────────────────────────────────────────────────────────────────
