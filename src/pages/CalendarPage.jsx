@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Box, Snackbar, Alert } from '@mui/material';
 import { useAuth } from '../hooks/useAuth';
+import { useUserProfile } from '../hooks/useUserProfile';
 import { useGroups } from '../hooks/useGroups';
 import { useEvents } from '../hooks/useEvents';
 import { useNotifications } from '../hooks/useNotifications';
-import { supabase } from '../lib/supabase';
 import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar';
 import CalendarView from '../components/landing/CalendarView';
@@ -13,7 +13,7 @@ import EventDetailDialog from '../components/landing/EventDetailDialog';
 
 function CalendarPage() {
   const { user } = useAuth();
-  const [profile, setProfile] = useState(null);
+  const { profile } = useUserProfile(user);
 
   const { groups, loading: groupsLoading, leaveGroup, deleteGroup, fetchGroupMembers, changeGroupAdmin, changeGroupPassword } = useGroups(user?.id);
   const [visibleGroupIds, setVisibleGroupIds] = useState([]);
@@ -35,13 +35,6 @@ function CalendarPage() {
 
   /** 스낵바 */
   const [snack, setSnack] = useState({ open: false, msg: '', severity: 'success' });
-
-  /** 프로필 로드 */
-  useEffect(() => {
-    if (!user) return;
-    supabase.from('profiles').select('*').eq('id', user.id).single()
-      .then(({ data }) => { if (data) setProfile(data); });
-  }, [user]);
 
   /** 그룹 로드 완료 시 전체 체크 */
   useEffect(() => {

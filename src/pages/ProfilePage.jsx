@@ -10,44 +10,46 @@ import {
 import { ArrowBack, Logout, ExitToApp } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
 import { useGroups } from '../hooks/useGroups';
+import { useUserProfile } from '../hooks/useUserProfile';
 import { supabase } from '../lib/supabase';
 import Navbar from '../components/common/Navbar';
+import { getAvatarLetter, getDisplayEmail } from '../utils/profileDisplay';
 
 function ProfilePage() {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
   const { groups, leaveGroup } = useGroups(user?.id);
+  const { profile, setProfile, refreshProfile } = useUserProfile(user);
 
-  const [profile, setProfile] = useState(null);
   const [nickname, setNickname] = useState('');
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState({ text: '', severity: 'success' });
   const [leaveConfirm, setLeaveConfirm] = useState(null);
 
   useEffect(() => {
-    if (!user) return;
-    supabase.from('profiles').select('*').eq('id', user.id).single()
-      .then(({ data }) => {
-        if (data) {
-          setProfile(data);
-          setNickname(data.nickname || '');
-        }
-      });
-  }, [user]);
+    if (profile) setNickname(profile.nickname || '');
+  }, [profile]);
 
   const handleSaveProfile = async () => {
     if (!nickname.trim()) return;
     setSaving(true);
     const { error } = await supabase
       .from('profiles')
-      .update({ nickname: nickname.trim(), updated_at: new Date().toISOString() })
-      .eq('id', user.id);
+      .upsert(
+        {
+          id: user.id,
+          nickname: nickname.trim(),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' },
+      );
     setSaving(false);
     if (error) {
       setMsg({ text: '저장 중 오류가 발생했습니다.', severity: 'error' });
     } else {
       setMsg({ text: '프로필이 저장되었습니다!', severity: 'success' });
       setProfile((prev) => ({ ...prev, nickname: nickname.trim() }));
+      refreshProfile();
     }
   };
 
@@ -62,7 +64,7 @@ function ProfilePage() {
     navigate('/login');
   };
 
-  const avatarLetter = profile?.nickname?.[0]?.toUpperCase() || '?';
+  const avatarLetter = getAvatarLetter(profile, user);
 
   return (
     <Box sx={{ width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
@@ -88,7 +90,7 @@ function ProfilePage() {
             <Avatar sx={{ width: 72, height: 72, bgcolor: 'primary.main', fontSize: '2rem', mb: 1 }}>
               {avatarLetter}
             </Avatar>
-            <Typography variant="body2" color="text.secondary">{profile?.email}</Typography>
+            <Typography variant="body2" color="text.secondary">{getDisplayEmail(profile, user)}</Typography>
           </Box>
 
           <TextField

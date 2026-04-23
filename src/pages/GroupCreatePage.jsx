@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useUserProfile } from '../hooks/useUserProfile';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Container, Paper, Typography, TextField, Button,
@@ -9,7 +10,6 @@ import { ArrowBack, Circle, Visibility, VisibilityOff } from '@mui/icons-materia
 import { useAuth } from '../hooks/useAuth';
 import { useGroups } from '../hooks/useGroups';
 import Navbar from '../components/common/Navbar';
-import { supabase } from '../lib/supabase';
 
 const GROUP_COLORS = [
   '#1976d2', '#388e3c', '#f57c00', '#d32f2f',
@@ -21,7 +21,7 @@ function GroupCreatePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { createGroup } = useGroups(user?.id);
-  const [profile, setProfile] = useState(null);
+  const { profile } = useUserProfile(user);
 
   const [form, setForm] = useState({
     name: '',
@@ -34,12 +34,6 @@ function GroupCreatePage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  useState(() => {
-    if (!user) return;
-    supabase.from('profiles').select('*').eq('id', user.id).single()
-      .then(({ data }) => { if (data) setProfile(data); });
-  }, [user]);
 
   const handleChange = (field) => (e) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useUserProfile } from '../hooks/useUserProfile';
 import { useNavigate } from 'react-router-dom';
 import {
   Box, Container, Paper, Typography, TextField, Button,
@@ -22,16 +23,10 @@ function GroupJoinPage() {
   const [searching, setSearching] = useState(false);
   const [joiningId, setJoiningId] = useState(null);
   const [message, setMessage] = useState({ text: '', severity: 'info' });
-  const [profile, setProfile] = useState(null);
+  const { profile } = useUserProfile(user);
   const [pwDialog, setPwDialog] = useState({ open: false, groupId: null });
   const [pwInput, setPwInput] = useState('');
   const [showPw, setShowPw] = useState(false);
-
-  useState(() => {
-    if (!user) return;
-    supabase.from('profiles').select('*').eq('id', user.id).single()
-      .then(({ data }) => { if (data) setProfile(data); });
-  }, [user]);
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;

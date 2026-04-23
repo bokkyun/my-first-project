@@ -9,6 +9,7 @@ import {
   Logout, Settings, Notifications, Menu as MenuIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
+import { getAuthDisplayName, getDisplayEmail, getAvatarLetter } from '../../utils/profileDisplay';
 
 /**
  * 전체 상단 네비게이션 바
@@ -22,7 +23,7 @@ import { useAuth } from '../../hooks/useAuth';
  */
 function Navbar({ profile, onMenuClick }) {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const [anchorEl, setAnchorEl] = useState(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -36,7 +37,9 @@ function Navbar({ profile, onMenuClick }) {
     navigate('/login');
   };
 
-  const avatarLetter = profile?.nickname?.[0]?.toUpperCase() || '?';
+  const displayName = profile?.nickname || getAuthDisplayName(user);
+  const displayEmail = getDisplayEmail(profile, user);
+  const avatarLetter = getAvatarLetter(profile, user);
 
   return (
     <AppBar position="sticky" elevation={1} sx={{ bgcolor: 'white', color: 'text.primary' }}>
@@ -94,8 +97,8 @@ function Navbar({ profile, onMenuClick }) {
           PaperProps={{ sx: { minWidth: 180, borderRadius: 2, mt: 1 } }}
         >
           <Box sx={{ px: 2, py: 1 }}>
-            <Typography variant="subtitle2" fontWeight={600}>{profile?.nickname}</Typography>
-            <Typography variant="caption" color="text.secondary">{profile?.email}</Typography>
+            <Typography variant="subtitle2" fontWeight={600}>{displayName || '프로필'}</Typography>
+            <Typography variant="caption" color="text.secondary">{displayEmail}</Typography>
           </Box>
           <Divider />
           <MenuItem onClick={() => { handleMenuClose(); navigate('/groups/create'); }}>
