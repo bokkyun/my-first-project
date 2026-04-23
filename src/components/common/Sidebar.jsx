@@ -19,6 +19,8 @@ const SIDEBAR_WIDTH = 220;
  * @param {string[]} visibleGroupIds - 표시할 그룹 ID 배열 [Required]
  * @param {function} onToggleGroup - 그룹 토글 핸들러 (groupId: string) => void [Required]
  * @param {function} onToggleAll - 전체 토글 핸들러 () => void [Required]
+ * @param {boolean} onlyMySchedules - 내가 등록한 일정만 보기 [Optional]
+ * @param {function} onOnlyMySchedulesChange - (boolean) => void [Optional]
  * @param {boolean} mobileOpen - 모바일 드로어 열림 여부 [Optional]
  * @param {function} onMobileClose - 모바일 드로어 닫기 핸들러 [Optional]
  * @param {function} onFetchGroupMembers - (groupId) => Promise<{data, error}> [Required]
@@ -30,7 +32,21 @@ const SIDEBAR_WIDTH = 220;
  * Example usage:
  * <Sidebar groups={groups} visibleGroupIds={ids} onToggleGroup={fn} onToggleAll={fn} mobileOpen={open} onMobileClose={fn} onFetchGroupMembers={fn} onLeaveGroup={fn} onDeleteGroup={fn} onChangeAdmin={fn} onChangePassword={fn} />
  */
-function Sidebar({ groups, visibleGroupIds, onToggleGroup, onToggleAll, mobileOpen = false, onMobileClose, onFetchGroupMembers, onLeaveGroup, onDeleteGroup, onChangeAdmin, onChangePassword }) {
+function Sidebar({
+  groups,
+  visibleGroupIds,
+  onToggleGroup,
+  onToggleAll,
+  onlyMySchedules = false,
+  onOnlyMySchedulesChange,
+  mobileOpen = false,
+  onMobileClose,
+  onFetchGroupMembers,
+  onLeaveGroup,
+  onDeleteGroup,
+  onChangeAdmin,
+  onChangePassword,
+}) {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -67,6 +83,27 @@ function Sidebar({ groups, visibleGroupIds, onToggleGroup, onToggleAll, mobileOp
               clickable
             />
           </Box>
+          {onOnlyMySchedulesChange && (
+            <FormControlLabel
+              sx={{ mt: 1.5, alignItems: 'flex-start', mx: 0 }}
+              control={
+                <Checkbox
+                  checked={onlyMySchedules}
+                  onChange={(e) => onOnlyMySchedulesChange(e.target.checked)}
+                  size="small"
+                  sx={{ py: 0.5 }}
+                />
+              }
+              label={(
+                <Box>
+                  <Typography variant="body2" fontWeight={600}>내 일정만</Typography>
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
+                    내가 등록한 일정만 표시
+                  </Typography>
+                </Box>
+              )}
+            />
+          )}
         </Box>
       ) : (
         <List dense disablePadding>
@@ -85,6 +122,29 @@ function Sidebar({ groups, visibleGroupIds, onToggleGroup, onToggleAll, mobileOp
               label={<Typography variant="body2" fontWeight={600}>전체</Typography>}
             />
           </ListItem>
+          {onOnlyMySchedulesChange && (
+            <ListItem disablePadding sx={{ mb: 0.5 }}>
+              <FormControlLabel
+                sx={{ alignItems: 'flex-start', m: 0 }}
+                control={
+                  <Checkbox
+                    checked={onlyMySchedules}
+                    onChange={(e) => onOnlyMySchedulesChange(e.target.checked)}
+                    size="small"
+                    sx={{ py: 0.5 }}
+                  />
+                }
+                label={(
+                  <Box>
+                    <Typography variant="body2" fontWeight={600}>내 일정만</Typography>
+                    <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
+                      내가 등록한 일정만 표시
+                    </Typography>
+                  </Box>
+                )}
+              />
+            </ListItem>
+          )}
           <Divider sx={{ mb: 0.5 }} />
           {groups.map((group) => (
             <ListItem key={group.id} disablePadding sx={{ display: 'flex', alignItems: 'center' }}>

@@ -14,11 +14,21 @@ import { Box, useMediaQuery, useTheme } from '@mui/material';
  * @param {string[]} visibleGroupIds - 표시할 그룹 ID [Required]
  * @param {function} onDateClick - 날짜 클릭 핸들러 (dateStr) => void [Required]
  * @param {function} onEventClick - 이벤트 클릭 핸들러 (event) => void [Required]
+ * @param {boolean} onlyMySchedules - true면 내가 등록한 일정만 표시 [Optional]
+ * @param {string|null} currentUserId - 현재 로그인 유저 ID (onlyMySchedules 시 필요) [Optional]
  *
  * Example usage:
  * <CalendarView events={events} groups={groups} visibleGroupIds={ids} onDateClick={fn} onEventClick={fn} />
  */
-function CalendarView({ events, groups, visibleGroupIds, onDateClick, onEventClick }) {
+function CalendarView({
+  events,
+  groups,
+  visibleGroupIds,
+  onDateClick,
+  onEventClick,
+  onlyMySchedules = false,
+  currentUserId = null,
+}) {
   const calendarRef = useRef(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -29,8 +39,15 @@ function CalendarView({ events, groups, visibleGroupIds, onDateClick, onEventCli
       .filter((ev) => {
         /** 내 비공개 일정은 항상 표시, 공개 일정은 체크된 그룹만 */
         const sharedGroupIds = (ev.event_visibility || []).map((v) => v.group_id);
-        if (sharedGroupIds.length === 0) return true;
-        return sharedGroupIds.some((gid) => visibleGroupIds.includes(gid));
+        let visible = true;
+        if (sharedGroupIds.length === 0) {
+          visible = true;
+        } else {
+          visible = sharedGroupIds.some((gid) => visibleGroupIds.includes(gid));
+        }
+        if (!visible) return false;
+        if (onlyMySchedules && currentUserId && ev.creator_id !== currentUserId) return false;
+        return true;
       })
       .map((ev) => {
         /** 그룹 색상 찾기 */
@@ -49,7 +66,7 @@ function CalendarView({ events, groups, visibleGroupIds, onDateClick, onEventCli
           extendedProps: { ...ev, creatorNickname: ev.creatorNickname || null },
         };
       });
-  }, [events, groups, visibleGroupIds]);
+  }, [events, groups, visibleGroupIds, onlyMySchedules, currentUserId]);
 
   return (
     <Box sx={{ flex: 1, p: { xs: 1, md: 2 }, overflow: 'hidden', bgcolor: 'background.default' }}>

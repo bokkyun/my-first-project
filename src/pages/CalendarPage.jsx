@@ -17,6 +17,7 @@ function CalendarPage() {
 
   const { groups, loading: groupsLoading, leaveGroup, deleteGroup, fetchGroupMembers, changeGroupAdmin, changeGroupPassword } = useGroups(user?.id);
   const [visibleGroupIds, setVisibleGroupIds] = useState([]);
+  const [onlyMySchedules, setOnlyMySchedules] = useState(false);
 
   const { events, createEvent, updateEvent, deleteEvent } = useEvents(user?.id, visibleGroupIds);
 
@@ -130,6 +131,8 @@ function CalendarPage() {
           visibleGroupIds={visibleGroupIds}
           onToggleGroup={handleToggleGroup}
           onToggleAll={handleToggleAll}
+          onlyMySchedules={onlyMySchedules}
+          onOnlyMySchedulesChange={setOnlyMySchedules}
           mobileOpen={sidebarOpen}
           onMobileClose={() => setSidebarOpen(false)}
           onFetchGroupMembers={fetchGroupMembers}
@@ -145,6 +148,8 @@ function CalendarPage() {
           visibleGroupIds={visibleGroupIds}
           onDateClick={handleDateClick}
           onEventClick={handleEventClick}
+          onlyMySchedules={onlyMySchedules}
+          currentUserId={user?.id ?? null}
         />
       </Box>
 
