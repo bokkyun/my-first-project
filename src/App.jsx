@@ -5,7 +5,7 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import UpdatePasswordPage from './pages/UpdatePasswordPage';
-import AppHomePlaceholder from './pages/AppHomePlaceholder';
+import CalendarPage from './pages/CalendarPage';
 import GroupCreatePage from './pages/GroupCreatePage';
 import GroupJoinPage from './pages/GroupJoinPage';
 import ProfilePage from './pages/ProfilePage';
@@ -37,25 +37,22 @@ function App() {
 
   return (
     <Routes>
-      <Route
-        path="/"
-        element={
-          !loading && user ? (
-            <ProtectedRoute user={user} loading={loading}>
-              <AppHomePlaceholder />
-            </ProtectedRoute>
-          ) : (
-            <LandingPage />
-          )
-        }
-      />
+      <Route path="/" element={!loading && user ? <Navigate to="/calendar" replace /> : <LandingPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/terms" element={<TermsPage />} />
-      <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
-      <Route path="/signup" element={user ? <Navigate to="/" replace /> : <SignupPage />} />
+      <Route path="/login" element={user ? <Navigate to="/calendar" replace /> : <LoginPage />} />
+      <Route path="/signup" element={user ? <Navigate to="/calendar" replace /> : <SignupPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/update-password" element={<UpdatePasswordPage />} />
+      <Route
+        path="/calendar"
+        element={
+          <ProtectedRoute user={user} loading={loading}>
+            <CalendarPage />
+          </ProtectedRoute>
+        }
+      />
       <Route
         path="/groups/create"
         element={
@@ -80,7 +77,7 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Navigate to={user ? '/calendar' : '/'} replace />} />
     </Routes>
   );
 }

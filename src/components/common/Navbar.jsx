@@ -55,7 +55,7 @@ function Navbar({ profile, onMenuClick }) {
           fontWeight={700}
           color="primary.main"
           sx={{ cursor: 'pointer', flexShrink: 0 }}
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/calendar')}
         >
           TeamSync
         </Typography>

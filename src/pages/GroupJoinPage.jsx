@@ -81,7 +81,7 @@ function GroupJoinPage() {
         <Paper elevation={2} sx={{ p: 4, borderRadius: 3 }}>
           {/* 헤더 */}
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-            <IconButton onClick={() => navigate('/')} sx={{ mr: 1 }}>
+            <IconButton onClick={() => navigate('/calendar')} sx={{ mr: 1 }}>
               <ArrowBack />
             </IconButton>
             <Typography variant="h6" fontWeight={700}>그룹 가입</Typography>

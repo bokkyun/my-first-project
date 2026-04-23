@@ -40,7 +40,7 @@ function UpdatePasswordPage() {
       return;
     }
     setDone(true);
-    setTimeout(() => navigate('/', { replace: true }), 1500);
+    setTimeout(() => navigate('/calendar', { replace: true }), 1500);
   };
 
   return (
