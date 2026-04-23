@@ -1,0 +1,139 @@
+================================================================================
+  TeamSync (my-first-project) — 구글 로그인 및 인증 관련 작업 요약
+  작성 목적: 변경한 코드와 그 이유를 한 파일에서 참고할 수 있도록 정리
+================================================================================
+
+■ 1. 메인 페이지 / 캘린더 혼동 정리
+--------------------------------------------------------------------------------
+  상황
+    - 처음 요청에서 "로그인 후 메인 페이지 제거"를 캘린더(/calendar)로 이해해
+      CalendarPage 라우트를 잠시 제거하고 AppHomePlaceholder만 보이게 바꿨음.
+    - 사용자 의도는 Cloudflare Pages URL 등 "다른 메인"에 가까웠고, 캘린더는 유지가 맞음.
+
+  조치
+    - /calendar + CalendarPage 복구, 로그인 후 이동 경로를 다시 /calendar 로 통일.
+    - AppHomePlaceholder.jsx 는 삭제됨.
+
+  관련 파일
+    - src/App.jsx (라우트)
+    - src/pages/LoginPage.jsx, Navbar, Group*, ProfilePage, UpdatePasswordPage 등 navigate 대상
+
+
+■ 2. OAuth 콜백 URL (?code=...) 정리 + 구글 리다이렉트 대상
+--------------------------------------------------------------------------------
+  상황
+    - 구글 로그인 후 주소에 ?code=... 가 남아 보기 싫고, 루트에 잠깐 머무는 문제.
+
+  조치
+    - src/utils/stripSupabaseOAuthUrl.js
+        * code, state, error 등 OAuth 쿼리를 history.replaceState 로 제거.
+    - stripSupabaseOAuthFromUrlWhenReady(session)
+        * **세션이 아직 없는데 code 만 있으면 절대 지우지 않음.**
+          (교환 전에 지우면 PKCE 가 깨져 구글 로그인이 실패함.)
+        * 세션이 생긴 뒤이거나, error 쿼리만 있을 때 정리.
+    - src/hooks/useAuth.js — signInWithOAuth 의 redirectTo
+        * `${getAppBaseUrl()}/calendar` 로 지정해, 복귀 후 캘린더로 오게 함.
+
+  Supabase 대시보드에서 할 일
+    - Authentication → URL Configuration → Redirect URLs 에
+      실제 배포 주소 기준으로 예:
+      https://(프로젝트).pages.dev/calendar
+      를 등록해야 함.
+
+
+■ 3. PKCE 복귀 직후 로그인 화면으로 튕기는 문제 (핵심 버그)
+--------------------------------------------------------------------------------
+  증상
+    - /calendar?code=... 로 잠깐 갔다가 바로 /login 으로 돌아옴.
+
+  원인
+    - getSession() 이 세션 교환 완료 전에 null 로 끝나는 순간이 있음.
+    - 그때 loading 이 false 가 되면 ProtectedRoute 가 "비로그인"으로 보고
+      Navigate to /login 을 실행함.
+    - /login 으로 이동하면서 URL 에서 code 가 사라져 PKCE 교환이 끊김.
+
+  조치 (src/hooks/useAuth.js)
+    - 첫 로드 시 URL 에 ?code= 가 있으면(pkcePending) 세션이 잡힐 때까지
+      loading 을 false 로 내리지 않음.
+    - onAuthStateChange 로 session 이 생기면 loading 종료.
+    - 최대 20초 타임아웃 후에는 로딩 종료(교환 실패·환경 문제 대비).
+
+  관련 파일
+    - src/App.jsx 의 ProtectedRoute (loading 동안 스피너, 끝나고 user 없으면 /login)
+
+
+■ 4. 프로필(아이디·닉네임)이 안 보이던 문제
+--------------------------------------------------------------------------------
+  원인
+    - GroupCreatePage, GroupJoinPage 에서 프로필 로드를 useEffect 가 아니라
+      잘못된 useState(() => { ... }) 패턴으로 넣어 두어 프로필이 거의 안 불려옴.
+    - profiles 행이 없을 때(구글 최초 로그인 등) UI 가 비어 보임.
+    - Navbar 가 profile?.email 만 보는데 DB 에 email 컬럼이 없으면 이메일이 안 나옴.
+
+  조치
+    - src/utils/profileDisplay.js — auth 메타데이터·이메일 기반 표시명 헬퍼.
+    - src/hooks/useUserProfile.js — profiles maybeSingle + 없으면 user 기준 임시 표시.
+    - Navbar — user 와 profile 을 합쳐 닉네임·이메일 표시.
+    - ProfilePage — upsert 로 첫 저장 시에도 행 생성, 이메일은 user.email 폴백.
+    - CalendarPage, GroupCreatePage, GroupJoinPage — useUserProfile 사용.
+
+
+■ 5. fetch "Invalid value" 오류 (Supabase URL)
+--------------------------------------------------------------------------------
+  증상
+    - Failed to execute 'fetch' on 'Window': Invalid value
+
+  원인
+    - .env 나 배포 환경 변수에 줄바꿈(CRLF), 공백, 잘못된 문자열이 붙어
+      Supabase URL 이 fetch 에 유효하지 않게 넘어가는 경우.
+
+  조치 (src/lib/supabase.js)
+    - VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY 를 trim, BOM·\r 제거.
+    - 문자열 "undefined" 거부, new URL() 로 형식 검증 후 친절한 에러 메시지.
+    - getAppBaseUrl() — BASE_URL 쪽 줄바꿈 제거.
+
+  배포 시
+    - Cloudflare Pages 등에서 VITE_* 는 빌드 시 주입. 값에 따옴표·공백 없이 확인.
+
+
+■ 6. 배포 관련 (참고)
+--------------------------------------------------------------------------------
+  - GitHub 저장소: bokkyun/my-first-project (브랜치 master 에 푸시).
+  - GitHub Pages 용 워크플로·서브모듈 등은 모노레포 the_first-project 쪽에도
+    시도한 이력이 있음(원격 푸시 환경에 따라 다름).
+  - 실제 서비스 URL 예: Cloudflare Pages (my-first-project-4bt.pages.dev 등).
+
+
+■ 7. 파일 변경 목록 (요약)
+--------------------------------------------------------------------------------
+  추가
+    - src/utils/stripSupabaseOAuthUrl.js
+    - src/utils/profileDisplay.js
+    - src/hooks/useUserProfile.js
+    - .github/workflows/deploy.yml (GitHub Pages 시)
+
+  주요 수정
+    - src/hooks/useAuth.js — PKCE 대기, OAuth URL 정리 타이밍, redirectTo, getAppBaseUrl
+    - src/lib/supabase.js — 환경변수 정규화·URL 검증
+    - src/App.jsx — 라우트·ProtectedRoute
+    - src/main.jsx — BrowserRouter basename (서브패스 배포 시)
+    - src/pages/LoginPage.jsx — 오류 메시지
+    - src/components/common/Navbar.jsx — 표시 폴백
+    - src/pages/CalendarPage.jsx, ProfilePage.jsx, GroupCreatePage.jsx, GroupJoinPage.jsx
+    - vite.config.js — VITE_BASE (GitHub Pages 서브패스용)
+
+  삭제됐던 것(복구 과정)
+    - AppHomePlaceholder.jsx (최종적으로 삭제, 캘린더 복구 후 불필요)
+
+
+■ 8. 구글·Supabase 콘솔 체크리스트
+--------------------------------------------------------------------------------
+  [ ] Supabase Redirect URLs 에 배포 origin + /calendar
+  [ ] Google Cloud Console — OAuth 클라이언트의 리디렉션 URI 에
+      https://<프로젝트ref>.supabase.co/auth/v1/callback
+  [ ] 배포 환경에 VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY (빌드 시 사용)
+
+
+================================================================================
+  끝. 이후 수정 시 이 파일을 갱신하거나 별도 CHANGELOG 에 이어 쓰면 됩니다.
+================================================================================
