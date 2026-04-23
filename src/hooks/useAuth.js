@@ -4,7 +4,8 @@ import { stripSupabaseOAuthFromUrlWhenReady } from '../utils/stripSupabaseOAuthU
 
 /** 서브패스 배포(GitHub Pages 등) 시 OAuth·이메일 리다이렉트용 앱 절대 URL */
 function getAppBaseUrl() {
-  const path = import.meta.env.BASE_URL.replace(/\/$/, '');
+  const base = String(import.meta.env.BASE_URL || '/').replace(/\r/g, '').replace(/\n/g, '').trim();
+  const path = base.replace(/\/$/, '');
   return `${window.location.origin}${path}`;
 }
 
