@@ -8,6 +8,11 @@ function getAppBaseUrl() {
   return `${window.location.origin}${path}`;
 }
 
+function urlHasPkceCode() {
+  if (typeof window === 'undefined') return false;
+  return new URLSearchParams(window.location.search).has('code');
+}
+
 /**
  * 인증 상태를 관리하는 커스텀 훅
  * @returns {{ user, session, loading, signIn, signUp, signOut, resetPasswordForEmail, updatePassword }}
@@ -18,23 +23,58 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
+    let loadingDone = false;
+    /** OAuth 직후 URL에 code가 있으면, 세션 교환 끝나기 전에 loading을 끄면 ProtectedRoute가 /login으로 보내 code가 날아감 */
+    const pkcePending = urlHasPkceCode();
+
+    const finishLoading = () => {
+      if (loadingDone) return;
+      loadingDone = true;
       setLoading(false);
+    };
+
+    const strip = (session) => {
       queueMicrotask(() => stripSupabaseOAuthFromUrlWhenReady(session));
-    }).catch(() => {
-      setLoading(false);
-    });
+    };
+
+    const failTimer = window.setTimeout(() => finishLoading(), 20000);
+
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        strip(session);
+        if (session || !pkcePending) {
+          window.clearTimeout(failTimer);
+          finishLoading();
+        }
+      })
+      .catch(() => {
+        window.clearTimeout(failTimer);
+        finishLoading();
+      });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false);
-      queueMicrotask(() => stripSupabaseOAuthFromUrlWhenReady(session));
+      strip(session);
+      if (session) {
+        window.clearTimeout(failTimer);
+        finishLoading();
+        return;
+      }
+      if (urlHasPkceCode()) return;
+      if (!pkcePending) {
+        window.clearTimeout(failTimer);
+        finishLoading();
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      window.clearTimeout(failTimer);
+      subscription.unsubscribe();
+    };
   }, []);
 
   /**
