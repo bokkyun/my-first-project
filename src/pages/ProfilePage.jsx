@@ -72,7 +72,7 @@ function ProfilePage() {
         {/* 프로필 수정 */}
         <Paper elevation={2} sx={{ p: 4, borderRadius: 3, mb: 3 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-            <IconButton onClick={() => navigate('/calendar')} sx={{ mr: 1 }}>
+            <IconButton onClick={() => navigate('/')} sx={{ mr: 1 }}>
               <ArrowBack />
             </IconButton>
             <Typography variant="h6" fontWeight={700}>프로필 설정</Typography>

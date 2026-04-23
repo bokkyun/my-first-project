@@ -11,9 +11,14 @@ import '@fontsource/roboto/500.css';
 import '@fontsource/roboto/700.css';
 import './index.css';
 
+const routerBasename = (() => {
+  const b = import.meta.env.BASE_URL.replace(/\/$/, '');
+  return b === '' ? undefined : b;
+})();
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <BrowserRouter basename={routerBasename}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <App />

@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 
+/** 서브패스 배포(GitHub Pages 등) 시 OAuth·이메일 리다이렉트용 앱 절대 URL */
+function getAppBaseUrl() {
+  const path = import.meta.env.BASE_URL.replace(/\/$/, '');
+  return `${window.location.origin}${path}`;
+}
+
 /**
  * 인증 상태를 관리하는 커스텀 훅
  * @returns {{ user, session, loading, signIn, signUp, signOut, resetPasswordForEmail, updatePassword }}
@@ -58,7 +64,7 @@ export function useAuth() {
   const signInWithGoogle = async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: getAppBaseUrl() },
     });
     return { data, error };
   };
@@ -72,7 +78,7 @@ export function useAuth() {
    * @param {string} email
    */
   const resetPasswordForEmail = async (email) => {
-    const redirectTo = `${window.location.origin}/update-password`;
+    const redirectTo = `${getAppBaseUrl()}/update-password`;
     return supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo });
   };
 

@@ -37,7 +37,7 @@ function LoginPage() {
     if (signInError) {
       setError('아이디 또는 비밀번호가 올바르지 않습니다.');
     } else {
-      navigate('/calendar');
+      navigate('/');
     }
   };
 
