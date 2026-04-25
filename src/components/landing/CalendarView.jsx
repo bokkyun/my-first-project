@@ -4,6 +4,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { Box, useMediaQuery, useTheme } from '@mui/material';
+import { isCoffeeEvent } from '../../utils/eventCoffee';
 
 /**
  * FullCalendar 기반 메인 캘린더 뷰
@@ -57,7 +58,7 @@ function CalendarView({
 
         return {
           id: ev.id,
-          title: ev.event_kind === 'coffee' ? `☕ ${ev.title}` : ev.title,
+          title: isCoffeeEvent(ev) ? `☕ ${ev.title}` : ev.title,
           start: ev.starts_at,
           end: ev.ends_at,
           allDay: ev.is_all_day,

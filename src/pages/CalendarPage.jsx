@@ -75,7 +75,8 @@ function CalendarPage() {
   const handleSaveEvent = async (eventData, groupIds, targetUserId = null) => {
     const { error } = await createEvent(eventData, groupIds, targetUserId);
     if (error) {
-      setSnack({ open: true, msg: '일정 저장 중 오류가 발생했습니다.', severity: 'error' });
+      const detail = error.message ? ` (${String(error.message).slice(0, 120)}${String(error.message).length > 120 ? '…' : ''})` : '';
+      setSnack({ open: true, msg: `일정 저장 중 오류가 발생했습니다.${detail}`, severity: 'error' });
     } else {
       setSnack({ open: true, msg: '일정이 저장되었습니다!', severity: 'success' });
     }
@@ -97,7 +98,8 @@ function CalendarPage() {
     if (!selectedEvent) return;
     const { error } = await updateEvent(selectedEvent.id, eventData, groupIds, isAdminOfEvent(selectedEvent));
     if (error) {
-      setSnack({ open: true, msg: '일정 수정 중 오류가 발생했습니다.', severity: 'error' });
+      const detail = error.message ? ` (${String(error.message).slice(0, 120)}${String(error.message).length > 120 ? '…' : ''})` : '';
+      setSnack({ open: true, msg: `일정 수정 중 오류가 발생했습니다.${detail}`, severity: 'error' });
     } else {
       setSnack({ open: true, msg: '일정이 수정되었습니다!', severity: 'success' });
       setSelectedEvent(null);

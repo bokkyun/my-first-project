@@ -1,12 +1,13 @@
 import {
   Dialog, DialogTitle, DialogContent, DialogActions,
-  Typography, Button, Box, Chip, Divider, IconButton,
+  Typography, Button, Box, Chip, Divider, IconButton, useMediaQuery, useTheme,
 } from '@mui/material';
 import {
   Close, Edit, Delete, LocationOn, Notes, Link, Repeat,
-  AccessTime, Circle,
+  AccessTime, Circle, LocalCafe,
 } from '@mui/icons-material';
 import CoffeeEventSection from './CoffeeEventSection';
+import { isCoffeeEvent, memoTextForForm } from '../../utils/eventCoffee';
 
 const RECURRENCE_LABELS = {
   none: '',
@@ -35,7 +36,10 @@ const RECURRENCE_LABELS = {
  * <EventDetailDialog open={open} onClose={fn} onEdit={fn} onDelete={fn} event={event} groups={groups} currentUserId={uid} adminGroupIds={ids} onShowMessage={fn} />
  */
 function EventDetailDialog({ open, onClose, onEdit, onDelete, event, groups, currentUserId, adminGroupIds = [], onShowMessage }) {
+  const theme = useTheme();
+  const isNarrow = useMediaQuery(theme.breakpoints.down('sm'));
   if (!event) return null;
+  const isCoffee = isCoffeeEvent(event);
 
   const isOwner = event.creator_id === currentUserId;
   const isGroupAdmin = (event.event_visibility || []).some((v) => adminGroupIds.includes(v.group_id));
@@ -61,19 +65,49 @@ function EventDetailDialog({ open, onClose, onEdit, onDelete, event, groups, cur
     .map((v) => groups.find((g) => g.id === v.group_id))
     .filter(Boolean);
 
+  const memoDisplay = memoTextForForm(event.memo);
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth={isCoffee ? 'sm' : 'xs'}
+      fullWidth
+      fullScreen={isCoffee && isNarrow}
+      scroll="paper"
+      PaperProps={{ sx: { borderRadius: isCoffee && isNarrow ? 0 : 3 } }}
+    >
       <DialogTitle sx={{ pb: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-          <Circle sx={{ color: eventColor, mt: 0.5, fontSize: 16, flexShrink: 0 }} />
-          <Typography fontWeight={700} sx={{ flex: 1, lineHeight: 1.4 }}>{event.title}</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, flexWrap: 'wrap' }}>
+          {isCoffee ? (
+            <LocalCafe sx={{ color: eventColor, mt: 0.5, fontSize: 20, flexShrink: 0 }} />
+          ) : (
+            <Circle sx={{ color: eventColor, mt: 0.5, fontSize: 16, flexShrink: 0 }} />
+          )}
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography fontWeight={700} sx={{ lineHeight: 1.4 }}>{event.title}</Typography>
+            {isCoffee && (
+              <Chip
+                size="small"
+                label="커피 주문 이벤트"
+                sx={{ mt: 0.5, bgcolor: 'primary.50', color: 'primary.main', fontWeight: 600 }}
+              />
+            )}
+          </Box>
           <IconButton onClick={onClose} size="small" sx={{ flexShrink: 0 }}>
             <Close fontSize="small" />
           </IconButton>
         </Box>
       </DialogTitle>
 
-      <DialogContent dividers sx={{ '& > *': { mb: 1.5 } }}>
+      <DialogContent
+        dividers
+        sx={{
+          maxHeight: isCoffee ? { xs: 'calc(100vh - 180px)', sm: 'min(70vh, 640px)' } : 'none',
+          overflowY: isCoffee ? 'auto' : 'visible',
+          '& > *': { mb: 1.5 },
+        }}
+      >
         {/* 시간 */}
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
           <AccessTime fontSize="small" color="action" sx={{ mt: 0.2 }} />
@@ -110,11 +144,11 @@ function EventDetailDialog({ open, onClose, onEdit, onDelete, event, groups, cur
           </Box>
         )}
 
-        {/* 메모 */}
-        {event.memo && (
+        {/* 메모(커피 태그는 표시용에서 제거) */}
+        {memoDisplay && (
           <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
             <Notes fontSize="small" color="action" sx={{ mt: 0.2 }} />
-            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{event.memo}</Typography>
+            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{memoDisplay}</Typography>
           </Box>
         )}
 
@@ -155,7 +189,7 @@ function EventDetailDialog({ open, onClose, onEdit, onDelete, event, groups, cur
           </>
         )}
 
-        {event.event_kind === 'coffee' && (
+        {isCoffee && (
           <>
             <Divider />
             <CoffeeEventSection

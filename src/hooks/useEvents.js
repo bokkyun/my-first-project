@@ -1,5 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
+import {
+  buildEventPayloadWithoutEventKindColumn,
+  buildEventUpdateWithoutEventKindColumn,
+  isMissingEventKindColumnError,
+} from '../utils/eventCoffee';
 
 /**
  * 이벤트(일정) 데이터를 관리하는 커스텀 훅
@@ -73,11 +78,18 @@ export function useEvents(userId, visibleGroupIds = []) {
    */
   const createEvent = async (eventData, groupIds = [], targetUserId = null) => {
     const creatorId = targetUserId || userId;
-    const { data: ev, error } = await supabase
+    const row = { ...eventData, creator_id: creatorId };
+    let { data: ev, error } = await supabase
       .from('events')
-      .insert({ ...eventData, creator_id: creatorId })
+      .insert(row)
       .select()
       .single();
+    if (error && isMissingEventKindColumnError(error)) {
+      const fallback = buildEventPayloadWithoutEventKindColumn(eventData, creatorId);
+      const r2 = await supabase.from('events').insert(fallback).select().single();
+      ev = r2.data;
+      error = r2.error;
+    }
     if (error) return { error };
 
     if (groupIds.length > 0) {
@@ -95,10 +107,16 @@ export function useEvents(userId, visibleGroupIds = []) {
    * @param {boolean} isAdminAction - 그룹 관리자 권한으로 수정 여부 [Optional, 기본값: false]
    */
   const updateEvent = async (eventId, eventData, groupIds = [], isAdminAction = false) => {
-    const query = supabase.from('events').update(eventData).eq('id', eventId);
-    const { error } = isAdminAction
-      ? await query
-      : await query.eq('creator_id', userId);
+    const run = (data) => {
+      const q = supabase.from('events').update(data).eq('id', eventId);
+      return isAdminAction ? q : q.eq('creator_id', userId);
+    };
+    let { error } = await run(eventData);
+    if (error && isMissingEventKindColumnError(error)) {
+      const fallback = buildEventUpdateWithoutEventKindColumn(eventData);
+      const r2 = await run(fallback);
+      error = r2.error;
+    }
     if (error) return { error };
 
     await supabase.from('event_visibility').delete().eq('event_id', eventId);

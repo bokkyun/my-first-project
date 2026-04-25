@@ -2,7 +2,7 @@ import { Box, Container, Typography, Button, Grid, Paper, Avatar } from '@mui/ma
 import { Link } from 'react-router-dom';
 import {
   CalendarMonth, Group, NotificationsActive, ShareOutlined,
-  AdminPanelSettings, CheckCircleOutline,
+  AdminPanelSettings, CheckCircleOutline, LocalCafe,
 } from '@mui/icons-material';
 import PublicFooter from '../components/common/PublicFooter';
 import AdBanner from '../components/common/AdBanner';
@@ -38,12 +38,17 @@ const FEATURES = [
     title: '반복 일정',
     desc: '매일·매주·매월·매년 반복되는 일정을 한 번만 등록하면 자동으로 표시됩니다.',
   },
+  {
+    icon: <LocalCafe sx={{ fontSize: 40, color: '#5d4037' }} />,
+    title: '커피 주문 모임',
+    desc: '그룹 일정을 커피 이벤트로 열면 멤버가 메뉴(아이스/핫, 기타 음료)를 고르고 집계·명단이 웹에서 바로 정리됩니다.',
+  },
 ];
 
 const STEPS = [
   { step: '01', title: '회원가입', desc: '아이디와 비밀번호로 간편하게 가입하세요.' },
   { step: '02', title: '그룹 생성 또는 가입', desc: '새 그룹을 만들거나 초대 코드로 기존 그룹에 참여하세요.' },
-  { step: '03', title: '일정 등록', desc: '캘린더에서 날짜를 클릭해 내 일정 또는 그룹 일정을 등록하세요.' },
+  { step: '03', title: '일정 등록', desc: '캘린더에서 날짜를 클릭해 일정을 등록하세요. 커피 모임이면 “커피 주문 모임”을 켜고 그룹에 공개하면 멤버가 메뉴를 선택할 수 있습니다.' },
   { step: '04', title: '함께 공유', desc: '그룹원 모두가 실시간으로 일정을 확인하고 관리합니다.' },
 ];
 

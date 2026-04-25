@@ -6,6 +6,7 @@ import {
   IconButton, CircularProgress, useMediaQuery, useTheme,
 } from '@mui/material';
 import { Close } from '@mui/icons-material';
+import { isCoffeeEvent, memoTextForForm } from '../../utils/eventCoffee';
 
 const COLORS = [
   '#1976d2', '#388e3c', '#f57c00', '#d32f2f',
@@ -76,11 +77,11 @@ function EventDialog({ open, onClose, onSave, groups, defaultDate, editEvent, ad
         starts_at: toDatetimeLocal(editEvent.starts_at),
         ends_at: toDatetimeLocal(editEvent.ends_at),
         location: editEvent.location || '',
-        memo: editEvent.memo || '',
+        memo: memoTextForForm(editEvent.memo) || '',
         url: editEvent.url || '',
         color: editEvent.color || '#1976d2',
         recurrence_type: editEvent.recurrence_type || 'none',
-        eventKind: editEvent.event_kind === 'coffee' ? 'coffee' : 'default',
+        eventKind: isCoffeeEvent(editEvent) ? 'coffee' : 'default',
       });
       setSelectedGroups((editEvent.event_visibility || []).map((v) => v.group_id));
     } else {
@@ -153,7 +154,14 @@ function EventDialog({ open, onClose, onSave, groups, defaultDate, editEvent, ad
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth fullScreen={fullScreen} PaperProps={{ sx: { borderRadius: fullScreen ? 0 : 3 } }}>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth={form.eventKind === 'coffee' ? 'md' : 'sm'}
+      fullWidth
+      fullScreen={fullScreen}
+      PaperProps={{ sx: { borderRadius: fullScreen ? 0 : 3 } }}
+    >
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1 }}>
         <Typography fontWeight={700}>{editEvent ? '일정 수정' : '새 일정 등록'}</Typography>
         <IconButton onClick={handleClose} size="small"><Close /></IconButton>
