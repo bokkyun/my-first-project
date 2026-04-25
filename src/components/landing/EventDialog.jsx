@@ -57,9 +57,11 @@ function EventDialog({ open, onClose, onSave, groups, defaultDate, editEvent, ad
     url: '',
     color: '#1976d2',
     recurrence_type: 'none',
+    eventKind: 'default',
   });
 
   const [form, setForm] = useState(initForm());
+  const [formError, setFormError] = useState('');
   const [selectedGroups, setSelectedGroups] = useState([]);
   const [saving, setSaving] = useState(false);
   const [targetUserId, setTargetUserId] = useState('');
@@ -78,6 +80,7 @@ function EventDialog({ open, onClose, onSave, groups, defaultDate, editEvent, ad
         url: editEvent.url || '',
         color: editEvent.color || '#1976d2',
         recurrence_type: editEvent.recurrence_type || 'none',
+        eventKind: editEvent.event_kind === 'coffee' ? 'coffee' : 'default',
       });
       setSelectedGroups((editEvent.event_visibility || []).map((v) => v.group_id));
     } else {
@@ -86,6 +89,11 @@ function EventDialog({ open, onClose, onSave, groups, defaultDate, editEvent, ad
       setTargetUserId('');
     }
   }, [editEvent, defaultDate, open]);
+
+  const handleClose = () => {
+    setFormError('');
+    onClose();
+  };
 
   /** 체크된 관리자 그룹의 멤버만 로드 */
   useEffect(() => {
@@ -121,6 +129,11 @@ function EventDialog({ open, onClose, onSave, groups, defaultDate, editEvent, ad
 
   const handleSave = async () => {
     if (!form.title.trim()) return;
+    setFormError('');
+    if (form.eventKind === 'coffee' && selectedGroups.length === 0) {
+      setFormError('커피 이벤트는 공개할 그룹을 하나 이상 선택해 주세요.');
+      return;
+    }
     setSaving(true);
     const payload = {
       title: form.title.trim(),
@@ -132,20 +145,25 @@ function EventDialog({ open, onClose, onSave, groups, defaultDate, editEvent, ad
       url: form.url || null,
       color: form.color,
       recurrence_type: form.recurrence_type,
+      event_kind: form.eventKind === 'coffee' ? 'coffee' : 'default',
     };
     await onSave(payload, selectedGroups, targetUserId || null);
     setSaving(false);
-    onClose();
+    handleClose();
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth fullScreen={fullScreen} PaperProps={{ sx: { borderRadius: fullScreen ? 0 : 3 } }}>
+    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth fullScreen={fullScreen} PaperProps={{ sx: { borderRadius: fullScreen ? 0 : 3 } }}>
       <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1 }}>
         <Typography fontWeight={700}>{editEvent ? '일정 수정' : '새 일정 등록'}</Typography>
-        <IconButton onClick={onClose} size="small"><Close /></IconButton>
+        <IconButton onClick={handleClose} size="small"><Close /></IconButton>
       </DialogTitle>
 
       <DialogContent dividers>
+        {formError && (
+          <Typography color="error" variant="body2" sx={{ mb: 1.5 }}>{formError}</Typography>
+        )}
+
         <TextField
           fullWidth
           label="제목"
@@ -155,6 +173,29 @@ function EventDialog({ open, onClose, onSave, groups, defaultDate, editEvent, ad
           inputProps={{ maxLength: 50 }}
           sx={{ mb: 2 }}
         />
+
+        <FormControlLabel
+          control={(
+            <Switch
+              checked={form.eventKind === 'coffee'}
+              onChange={(e) => {
+                const isCoffee = e.target.checked;
+                setForm((prev) => ({
+                  ...prev,
+                  eventKind: isCoffee ? 'coffee' : 'default',
+                  color: isCoffee && prev.eventKind === 'default' && prev.color === '#1976d2'
+                    ? '#5d4037'
+                    : prev.color,
+                }));
+              }}
+            />
+          )}
+          label="커피 주문 모임(그룹원 메뉴 선택·집계)"
+          sx={{ mb: 1, alignItems: 'flex-start' }}
+        />
+        <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 2, pl: 0.5 }}>
+          켜면 이 일정이 커피 이벤트로 열리고, 공개한 그룹원이 메뉴를 고를 수 있습니다.
+        </Typography>
 
         <FormControlLabel
           control={
@@ -318,7 +359,7 @@ function EventDialog({ open, onClose, onSave, groups, defaultDate, editEvent, ad
       </DialogContent>
 
       <DialogActions sx={{ p: 2, gap: 1 }}>
-        <Button onClick={onClose} variant="outlined" sx={{ borderRadius: 2 }}>취소</Button>
+        <Button onClick={handleClose} variant="outlined" sx={{ borderRadius: 2 }}>취소</Button>
         <Button
           onClick={handleSave}
           variant="contained"

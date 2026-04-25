@@ -57,7 +57,7 @@ function CalendarView({
 
         return {
           id: ev.id,
-          title: ev.title,
+          title: ev.event_kind === 'coffee' ? `☕ ${ev.title}` : ev.title,
           start: ev.starts_at,
           end: ev.ends_at,
           allDay: ev.is_all_day,

@@ -6,6 +6,7 @@ import {
   Close, Edit, Delete, LocationOn, Notes, Link, Repeat,
   AccessTime, Circle,
 } from '@mui/icons-material';
+import CoffeeEventSection from './CoffeeEventSection';
 
 const RECURRENCE_LABELS = {
   none: '',
@@ -28,11 +29,12 @@ const RECURRENCE_LABELS = {
  * @param {Array} groups - 내 그룹 목록 (색상 참조용, myRole 포함) [Required]
  * @param {string} currentUserId - 현재 유저 ID [Required]
  * @param {string[]} adminGroupIds - 현재 유저가 관리자인 그룹 ID 목록 [Optional, 기본값: []]
+ * @param {function} onShowMessage - (message, severity?) => void 스낵바 등 [Optional]
  *
  * Example usage:
- * <EventDetailDialog open={open} onClose={fn} onEdit={fn} onDelete={fn} event={event} groups={groups} currentUserId={uid} adminGroupIds={ids} />
+ * <EventDetailDialog open={open} onClose={fn} onEdit={fn} onDelete={fn} event={event} groups={groups} currentUserId={uid} adminGroupIds={ids} onShowMessage={fn} />
  */
-function EventDetailDialog({ open, onClose, onEdit, onDelete, event, groups, currentUserId, adminGroupIds = [] }) {
+function EventDetailDialog({ open, onClose, onEdit, onDelete, event, groups, currentUserId, adminGroupIds = [], onShowMessage }) {
   if (!event) return null;
 
   const isOwner = event.creator_id === currentUserId;
@@ -150,6 +152,17 @@ function EventDetailDialog({ open, onClose, onEdit, onDelete, event, groups, cur
                 ))}
               </Box>
             </Box>
+          </>
+        )}
+
+        {event.event_kind === 'coffee' && (
+          <>
+            <Divider />
+            <CoffeeEventSection
+              event={event}
+              currentUserId={currentUserId}
+              onMessage={onShowMessage}
+            />
           </>
         )}
       </DialogContent>

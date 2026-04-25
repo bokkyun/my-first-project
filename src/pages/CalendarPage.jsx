@@ -175,6 +175,11 @@ function CalendarPage() {
         groups={groups}
         currentUserId={user?.id}
         adminGroupIds={adminGroupIds}
+        onShowMessage={(msg, severity) => setSnack({
+          open: true,
+          msg,
+          severity: severity === 'success' ? 'success' : 'error',
+        })}
       />
 
       {/* 일정 수정 다이얼로그 */}
