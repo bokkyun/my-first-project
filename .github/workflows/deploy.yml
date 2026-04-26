@@ -47,6 +47,10 @@ jobs:
           VITE_REB_APT_API_MODE: ${{ secrets.VITE_REB_APT_API_MODE }}
           VITE_REB_APT_ODCLOUD_PATH: ${{ secrets.VITE_REB_APT_ODCLOUD_PATH }}
           VITE_REB_APT_ODCLOUD_ORIGIN: ${{ secrets.VITE_REB_APT_ODCLOUD_ORIGIN }}
+          VITE_DART_CRTFC_KEY: ${{ secrets.VITE_DART_CRTFC_KEY }}
+          VITE_DART_PBLNTF_TY: ${{ secrets.VITE_DART_PBLNTF_TY }}
+          VITE_DART_PBLNTF_DETAIL_TY: ${{ secrets.VITE_DART_PBLNTF_DETAIL_TY }}
+          VITE_DART_PAGE_COUNT: ${{ secrets.VITE_DART_PAGE_COUNT }}
         run: |
           npm install
           npm run build
