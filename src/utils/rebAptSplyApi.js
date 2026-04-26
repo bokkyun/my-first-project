@@ -102,6 +102,8 @@ export function ymd8Today() {
 export function getOdcloudReceiptEndYmd8(item) {
   if (!item || typeof item !== 'object') return '';
   const v = item.RCEPT_ENDDE
+    ?? item.SPLY_RCEPT_ENDDE
+    ?? item.SPLY_RCEPT_CLSDE
     ?? item.rceptEndde
     ?? item['접수마감일']
     ?? item['접수종료일'];
@@ -130,27 +132,52 @@ export function filterOdcloudItemsUpcoming(items) {
 export function mapOdcloudItemToCalendarEvent(item, index) {
   if (!item || typeof item !== 'object') return null;
   const t = (k) => (item[k] != null && item[k] !== '' ? String(item[k]).trim() : '');
+  const firstT = (...keys) => {
+    for (const k of keys) {
+      const v = t(k);
+      if (v) return v;
+    }
+    return '';
+  };
 
-  const titleBase = t('주택명') || t('아파트명') || t('사업명') || '아파트 분양';
-  const p1 = t('공고번호');
-  const p2 = t('주택관리번호');
+  const titleBase = firstT(
+    '주택명',
+    '아파트명',
+    'HOUSE_NM',
+    'HSMP_NM',
+    'PBLANC_NM',
+    'SPLY_HSMP_NM',
+    'HSSPLY_HSMP_NM',
+    '사업명',
+    'BIZ_NM',
+    'SPLY_BIZ_NM',
+    'BLDG_NM',
+  ) || '아파트 분양';
+  const p1 = firstT('공고번호', 'PBLANC_NO');
+  const p2 = firstT('주택관리번호', 'HOUSE_MGMT_NO', 'HSMP_MGMT_NO');
   const pbl = p1 || p2 ? ` (${[p1, p2].filter(Boolean).join(' / ')})` : '';
 
-  const startYmd =
-    t('RCEPT_BGNDE')
-    || t('rceptBgnde')
-    || t('접수시작일')
-    || t('청약접수시작일')
-    || t('입주자모집공고일')
-    || t('공고일')
-    || t('모집공고일')
-    || t('접수기간');
-  const endYmd = t('RCEPT_ENDDE')
-    || t('rceptEndde')
-    || t('접수마감일')
-    || t('접수종료일')
-    || t('청약접수마감일')
-    || startYmd;
+  const startYmd = firstT(
+    'RCEPT_BGNDE',
+    'SPLY_RCEPT_BGNDE',
+    'SPLY_RCEPT_STTDE',
+    'rceptBgnde',
+    '접수시작일',
+    '청약접수시작일',
+    '입주자모집공고일',
+    '공고일',
+    '모집공고일',
+    '접수기간',
+  );
+  const endYmd = firstT(
+    'RCEPT_ENDDE',
+    'SPLY_RCEPT_ENDDE',
+    'SPLY_RCEPT_CLSDE',
+    'rceptEndde',
+    '접수마감일',
+    '접수종료일',
+    '청약접수마감일',
+  ) || startYmd;
 
   let starts = parseYmdToIsoStart(startYmd);
   if (!starts) {
