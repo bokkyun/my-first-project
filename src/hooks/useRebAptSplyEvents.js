@@ -4,6 +4,7 @@ import {
   toRebAptAbsoluteUrl,
   parseRebAptSplyResponse,
   mapRebAptItemToCalendarEvent,
+  filterOdcloudItemsUpcoming,
 } from '../utils/rebAptSplyApi';
 
 /**
@@ -49,7 +50,11 @@ export function useRebAptSplyEvents(enabled, viewRange) {
         setRawEvents([]);
         return;
       }
-      const mapped = (items || [])
+      let list = items || [];
+      if (mode === 'odcloud') {
+        list = filterOdcloudItemsUpcoming(list);
+      }
+      const mapped = list
         .map((it, i) => mapRebAptItemToCalendarEvent(it, i, mode))
         .filter(Boolean);
       setRawEvents(mapped);

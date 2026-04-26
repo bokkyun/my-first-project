@@ -89,8 +89,42 @@ export function parseRebAptSplyResponse(json) {
   return { items: [items], error: null };
 }
 
+/** YYYYMMDD (로컬 날짜) — `20260530` 형식과 문자열 비교에 사용 */
+export function ymd8Today() {
+  const d = new Date();
+  return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+}
+
 /**
- * api.odcloud.kr 행(한글 필드명) → 캘린더 이벤트
+ * uddi 응답: 접수마감일(영문·한글) → 숫자만 8자리 또는 ''
+ */
+export function getOdcloudReceiptEndYmd8(item) {
+  if (!item || typeof item !== 'object') return '';
+  const v = item.RCEPT_ENDDE
+    ?? item.rceptEndde
+    ?? item['접수마감일']
+    ?? item['접수종료일'];
+  if (v == null || v === '') return '';
+  const s = String(v).replace(/\D/g, '');
+  return s.length >= 8 ? s.slice(0, 8) : '';
+}
+
+/**
+ * 오늘(YYYYMMDD) 이후·당일에 접수가 끝나는(진행·예정) 건만 — 클라이언트 필터
+ * @param {object[]} items
+ */
+export function filterOdcloudItemsUpcoming(items) {
+  const today = ymd8Today();
+  if (!Array.isArray(items)) return [];
+  return items.filter((row) => {
+    const end = getOdcloudReceiptEndYmd8(row);
+    if (!end) return false;
+    return end >= today;
+  });
+}
+
+/**
+ * api.odcloud.kr 행(한글·RCEPT_* 필드명) → 캘린더 이벤트
  */
 export function mapOdcloudItemToCalendarEvent(item, index) {
   if (!item || typeof item !== 'object') return null;
@@ -102,13 +136,20 @@ export function mapOdcloudItemToCalendarEvent(item, index) {
   const pbl = p1 || p2 ? ` (${[p1, p2].filter(Boolean).join(' / ')})` : '';
 
   const startYmd =
-    t('접수시작일') ||
-    t('청약접수시작일') ||
-    t('입주자모집공고일') ||
-    t('공고일') ||
-    t('모집공고일') ||
-    t('접수기간');
-  const endYmd = t('접수마감일') || t('접수종료일') || t('청약접수마감일') || startYmd;
+    t('RCEPT_BGNDE')
+    || t('rceptBgnde')
+    || t('접수시작일')
+    || t('청약접수시작일')
+    || t('입주자모집공고일')
+    || t('공고일')
+    || t('모집공고일')
+    || t('접수기간');
+  const endYmd = t('RCEPT_ENDDE')
+    || t('rceptEndde')
+    || t('접수마감일')
+    || t('접수종료일')
+    || t('청약접수마감일')
+    || startYmd;
 
   let starts = parseYmdToIsoStart(startYmd);
   if (!starts) {
