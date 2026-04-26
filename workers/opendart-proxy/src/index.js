@@ -19,7 +19,7 @@ export default {
     const target = `https://opendart.fss.or.kr${u.pathname}${u.search}`;
     const upstream = await fetch(target, {
       method: request.method,
-      redirect: 'follow',
+      redirect: 'manual',
     });
     const h = new Headers(upstream.headers);
     applyCors(h);
