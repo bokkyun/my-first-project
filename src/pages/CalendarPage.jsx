@@ -6,12 +6,14 @@ import { useGroups } from '../hooks/useGroups';
 import { useEvents } from '../hooks/useEvents';
 import { useNotifications } from '../hooks/useNotifications';
 import { useRebAptSplyEvents } from '../hooks/useRebAptSplyEvents';
+import { useDartIpoEvents } from '../hooks/useDartIpoEvents';
 import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar';
 import CalendarView from '../components/landing/CalendarView';
 import EventDialog from '../components/landing/EventDialog';
 import EventDetailDialog from '../components/landing/EventDetailDialog';
 import ExternalAptEventDialog from '../components/landing/ExternalAptEventDialog';
+import ExternalIpoEventDialog from '../components/landing/ExternalIpoEventDialog';
 
 function CalendarPage() {
   const { user } = useAuth();
@@ -31,15 +33,19 @@ function CalendarPage() {
   });
   const [aptDetailOpen, setAptDetailOpen] = useState(false);
   const [selectedAptEvent, setSelectedAptEvent] = useState(null);
+  const [ipoDetailOpen, setIpoDetailOpen] = useState(false);
+  const [selectedIpoEvent, setSelectedIpoEvent] = useState(null);
 
   const { events, createEvent, updateEvent, deleteEvent } = useEvents(user?.id, visibleGroupIds);
   const { events: aptSplyList, error: aptSplyError } = useRebAptSplyEvents(showAptSply, viewRange);
+  const { events: ipoList, error: ipoError } = useDartIpoEvents(showIpo, viewRange);
 
   const calendarEvents = useMemo(() => {
     const list = [...events];
     if (showAptSply) list.push(...aptSplyList);
+    if (showIpo) list.push(...ipoList);
     return list;
-  }, [events, aptSplyList, showAptSply]);
+  }, [events, aptSplyList, showAptSply, ipoList, showIpo]);
 
   /** 당일 스케줄 브라우저 알림 */
   useNotifications(events);
@@ -93,6 +99,8 @@ function CalendarPage() {
       return;
     }
     if (ev._external === 'ipo') {
+      setSelectedIpoEvent(ev);
+      setIpoDetailOpen(true);
       return;
     }
     setSelectedEvent(ev);
@@ -108,6 +116,12 @@ function CalendarPage() {
       setSnack({ open: true, msg: `청약 API: ${aptSplyError}`, severity: 'error' });
     }
   }, [showAptSply, aptSplyError]);
+
+  useEffect(() => {
+    if (showIpo && ipoError) {
+      setSnack({ open: true, msg: `공모(DART): ${ipoError}`, severity: 'error' });
+    }
+  }, [showIpo, ipoError]);
 
   /** 이벤트 저장 */
   const handleSaveEvent = async (eventData, groupIds, targetUserId = null) => {
@@ -215,6 +229,12 @@ function CalendarPage() {
         open={aptDetailOpen}
         onClose={() => { setAptDetailOpen(false); setSelectedAptEvent(null); }}
         event={selectedAptEvent}
+      />
+
+      <ExternalIpoEventDialog
+        open={ipoDetailOpen}
+        onClose={() => { setIpoDetailOpen(false); setSelectedIpoEvent(null); }}
+        event={selectedIpoEvent}
       />
 
       <EventDetailDialog

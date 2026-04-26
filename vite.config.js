@@ -28,6 +28,13 @@ export default defineConfig({
         secure: true,
         rewrite: (p) => p.replace(/^\/__odcloud_proxy/, ''),
       },
+      /** 금융감독원 Open DART (list.json) CORS 우회 — 개발 전용 */
+      '/__opendart_proxy': {
+        target: 'https://opendart.fss.or.kr',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (p) => p.replace(/^\/__opendart_proxy/, ''),
+      },
     },
   },
 });

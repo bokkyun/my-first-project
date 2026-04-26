@@ -98,15 +98,14 @@ function Sidebar({
                 checked={showIpo}
                 onChange={(e) => onShowIpoChange(e.target.checked)}
                 size="small"
-                disabled
                 sx={{ py: 0.5 }}
               />
             )}
             label={(
               <Box>
-                <Typography variant="body2" fontWeight={600} color="text.disabled">공모주 일정</Typography>
-                <Typography variant="caption" color="text.disabled" display="block" sx={{ lineHeight: 1.2 }}>
-                  준비 중
+                <Typography variant="body2" fontWeight={600}>공모주(공시 제출)</Typography>
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
+                  Open DART(금감원) · C001
                 </Typography>
               </Box>
             )}
