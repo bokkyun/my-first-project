@@ -55,7 +55,7 @@ export function useDartIpoEvents(enabled, viewRange) {
     } catch (e) {
       const msg = e?.message || String(e);
       if (msg.toLowerCase().includes('network') || msg.toLowerCase().includes('failed') || msg.toLowerCase().includes('cors')) {
-        setFetchError('네트워크/CORS: 개발(npm run dev)에서는 Vite 프록시(__opendart_proxy)를 쓰고, 배포 시에는 DART 서버가 브라우저 직접 호출을 막을 수 있어 백엔드/동일 출처 프록시가 필요할 수 있습니다.');
+        setFetchError('CORS(배포): opendart 직접 호출이 막혔을 수 있습니다. workers/opendart-proxy 를 Cloudflare에 올리고, 빌드 시 VITE_DART_OPENDART_ORIGIN=Worker URL(끝/ 없이) + VITE_DART_CRTFC_KEY 를 넣은 뒤 다시 배포하세요. 로컬은 npm run dev.');
       } else {
         setFetchError(msg);
       }

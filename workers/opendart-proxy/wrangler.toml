@@ -1,0 +1,5 @@
+# wrangler v3 — lecture1/my-first-project/workers/opendart-proxy 에서
+#   npm i -g wrangler && wrangler login && wrangler deploy
+name = "opendart-proxy-teamsync"
+main = "src/index.js"
+compatibility_date = "2024-12-01"
