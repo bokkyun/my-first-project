@@ -28,6 +28,10 @@ const SIDEBAR_WIDTH = 220;
  * @param {function} onDeleteGroup - (groupId) => Promise<void> [Required]
  * @param {function} onChangeAdmin - (groupId, newAdminUserId) => Promise<{data, error}> [Optional]
  * @param {function} onChangePassword - (groupId, newPassword) => Promise<{data, error}> [Optional]
+ * @param {boolean} showAptSply - 아파트 청약(분양) 일정 [Optional]
+ * @param {function} onShowAptSplyChange - (boolean) => void [Optional]
+ * @param {boolean} showIpo - 공모주 일정 [Optional]
+ * @param {function} onShowIpoChange - (boolean) => void [Optional]
  *
  * Example usage:
  * <Sidebar groups={groups} visibleGroupIds={ids} onToggleGroup={fn} onToggleAll={fn} mobileOpen={open} onMobileClose={fn} onFetchGroupMembers={fn} onLeaveGroup={fn} onDeleteGroup={fn} onChangeAdmin={fn} onChangePassword={fn} />
@@ -39,6 +43,10 @@ function Sidebar({
   onToggleAll,
   onlyMySchedules = false,
   onOnlyMySchedulesChange,
+  showAptSply = false,
+  onShowAptSplyChange,
+  showIpo = false,
+  onShowIpoChange,
   mobileOpen = false,
   onMobileClose,
   onFetchGroupMembers,
@@ -55,6 +63,58 @@ function Sidebar({
 
   const allChecked = groups.length > 0 && visibleGroupIds.length === groups.length;
   const someChecked = visibleGroupIds.length > 0 && visibleGroupIds.length < groups.length;
+
+  const externalToggles = (
+    <>
+      {onShowAptSplyChange && (
+        <ListItem disablePadding sx={{ mb: 0.5 }}>
+          <FormControlLabel
+            sx={{ alignItems: 'flex-start', m: 0 }}
+            control={(
+              <Checkbox
+                checked={showAptSply}
+                onChange={(e) => onShowAptSplyChange(e.target.checked)}
+                size="small"
+                sx={{ py: 0.5 }}
+              />
+            )}
+            label={(
+              <Box>
+                <Typography variant="body2" fontWeight={600}>아파트 청약·분양</Typography>
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
+                  청약홈(부동산원) 공공 API
+                </Typography>
+              </Box>
+            )}
+          />
+        </ListItem>
+      )}
+      {onShowIpoChange && (
+        <ListItem disablePadding sx={{ mb: 0.5 }}>
+          <FormControlLabel
+            sx={{ alignItems: 'flex-start', m: 0 }}
+            control={(
+              <Checkbox
+                checked={showIpo}
+                onChange={(e) => onShowIpoChange(e.target.checked)}
+                size="small"
+                disabled
+                sx={{ py: 0.5 }}
+              />
+            )}
+            label={(
+              <Box>
+                <Typography variant="body2" fontWeight={600} color="text.disabled">공모주 일정</Typography>
+                <Typography variant="caption" color="text.disabled" display="block" sx={{ lineHeight: 1.2 }}>
+                  준비 중
+                </Typography>
+              </Box>
+            )}
+          />
+        </ListItem>
+      )}
+    </>
+  );
 
   const content = (
     <Box sx={{ width: SIDEBAR_WIDTH, p: 2, overflowY: 'auto', height: '100%', bgcolor: 'white' }}>
@@ -104,6 +164,7 @@ function Sidebar({
               )}
             />
           )}
+          <Box sx={{ textAlign: 'left', width: '100%', mt: 1.5 }}>{externalToggles}</Box>
         </Box>
       ) : (
         <List dense disablePadding>
@@ -145,6 +206,7 @@ function Sidebar({
               />
             </ListItem>
           )}
+          {externalToggles}
           <Divider sx={{ mb: 0.5 }} />
           {groups.map((group) => (
             <ListItem key={group.id} disablePadding sx={{ display: 'flex', alignItems: 'center' }}>

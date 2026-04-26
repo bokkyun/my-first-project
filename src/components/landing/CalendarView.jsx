@@ -17,6 +17,7 @@ import { isCoffeeEvent } from '../../utils/eventCoffee';
  * @param {function} onEventClick - 이벤트 클릭 핸들러 (event) => void [Required]
  * @param {boolean} onlyMySchedules - true면 내가 등록한 일정만 표시 [Optional]
  * @param {string|null} currentUserId - 현재 로그인 유저 ID (onlyMySchedules 시 필요) [Optional]
+ * @param {function} onDatesSet - (info) => void (보이는 날짜 범위, 외부 API 범위용) [Optional]
  *
  * Example usage:
  * <CalendarView events={events} groups={groups} visibleGroupIds={ids} onDateClick={fn} onEventClick={fn} />
@@ -29,6 +30,7 @@ function CalendarView({
   onEventClick,
   onlyMySchedules = false,
   currentUserId = null,
+  onDatesSet = null,
 }) {
   const calendarRef = useRef(null);
   const theme = useTheme();
@@ -38,6 +40,10 @@ function CalendarView({
   const fcEvents = useCallback(() => {
     return events
       .filter((ev) => {
+        if (ev._external === 'reb-apt' || ev._external === 'ipo') {
+          if (onlyMySchedules) return false;
+          return true;
+        }
         /** 내 비공개 일정은 항상 표시, 공개 일정은 체크된 그룹만 */
         const sharedGroupIds = (ev.event_visibility || []).map((v) => v.group_id);
         let visible = true;
@@ -98,8 +104,10 @@ function CalendarView({
           events={fcEvents()}
           dateClick={(info) => onDateClick(info.dateStr)}
           eventClick={(info) => onEventClick(info.event.extendedProps)}
+          datesSet={onDatesSet || undefined}
           eventContent={(arg) => {
-            const nickname = arg.event.extendedProps.creatorNickname;
+            const ex = arg.event.extendedProps;
+            const nickname = ex.creatorNickname;
             return (
               <Box sx={{ px: 0.5, overflow: 'hidden', width: '100%', lineHeight: 1.2 }}>
                 <Box sx={{

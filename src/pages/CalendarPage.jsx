@@ -1,15 +1,17 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Box, Snackbar, Alert } from '@mui/material';
 import { useAuth } from '../hooks/useAuth';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useGroups } from '../hooks/useGroups';
 import { useEvents } from '../hooks/useEvents';
 import { useNotifications } from '../hooks/useNotifications';
+import { useRebAptSplyEvents } from '../hooks/useRebAptSplyEvents';
 import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar';
 import CalendarView from '../components/landing/CalendarView';
 import EventDialog from '../components/landing/EventDialog';
 import EventDetailDialog from '../components/landing/EventDetailDialog';
+import ExternalAptEventDialog from '../components/landing/ExternalAptEventDialog';
 
 function CalendarPage() {
   const { user } = useAuth();
@@ -18,8 +20,26 @@ function CalendarPage() {
   const { groups, loading: groupsLoading, leaveGroup, deleteGroup, fetchGroupMembers, changeGroupAdmin, changeGroupPassword } = useGroups(user?.id);
   const [visibleGroupIds, setVisibleGroupIds] = useState([]);
   const [onlyMySchedules, setOnlyMySchedules] = useState(false);
+  const [showAptSply, setShowAptSply] = useState(false);
+  const [showIpo, setShowIpo] = useState(false);
+  const [viewRange, setViewRange] = useState(() => {
+    const now = new Date();
+    return {
+      start: new Date(now.getFullYear(), now.getMonth(), 1),
+      end: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999),
+    };
+  });
+  const [aptDetailOpen, setAptDetailOpen] = useState(false);
+  const [selectedAptEvent, setSelectedAptEvent] = useState(null);
 
   const { events, createEvent, updateEvent, deleteEvent } = useEvents(user?.id, visibleGroupIds);
+  const { events: aptSplyList, error: aptSplyError } = useRebAptSplyEvents(showAptSply, viewRange);
+
+  const calendarEvents = useMemo(() => {
+    const list = [...events];
+    if (showAptSply) list.push(...aptSplyList);
+    return list;
+  }, [events, aptSplyList, showAptSply]);
 
   /** 당일 스케줄 브라우저 알림 */
   useNotifications(events);
@@ -66,10 +86,28 @@ function CalendarPage() {
   };
 
   /** 이벤트 클릭 */
-  const handleEventClick = (event) => {
-    setSelectedEvent(event);
+  const handleEventClick = (ev) => {
+    if (ev._external === 'reb-apt') {
+      setSelectedAptEvent(ev);
+      setAptDetailOpen(true);
+      return;
+    }
+    if (ev._external === 'ipo') {
+      return;
+    }
+    setSelectedEvent(ev);
     setDetailDialogOpen(true);
   };
+
+  const handleDatesSet = useCallback((info) => {
+    setViewRange({ start: info.start, end: info.end });
+  }, []);
+
+  useEffect(() => {
+    if (showAptSply && aptSplyError) {
+      setSnack({ open: true, msg: `청약 API: ${aptSplyError}`, severity: 'error' });
+    }
+  }, [showAptSply, aptSplyError]);
 
   /** 이벤트 저장 */
   const handleSaveEvent = async (eventData, groupIds, targetUserId = null) => {
@@ -135,6 +173,10 @@ function CalendarPage() {
           onToggleAll={handleToggleAll}
           onlyMySchedules={onlyMySchedules}
           onOnlyMySchedulesChange={setOnlyMySchedules}
+          showAptSply={showAptSply}
+          onShowAptSplyChange={setShowAptSply}
+          showIpo={showIpo}
+          onShowIpoChange={setShowIpo}
           mobileOpen={sidebarOpen}
           onMobileClose={() => setSidebarOpen(false)}
           onFetchGroupMembers={fetchGroupMembers}
@@ -145,13 +187,14 @@ function CalendarPage() {
         />
 
         <CalendarView
-          events={events}
+          events={calendarEvents}
           groups={groups}
           visibleGroupIds={visibleGroupIds}
           onDateClick={handleDateClick}
           onEventClick={handleEventClick}
           onlyMySchedules={onlyMySchedules}
           currentUserId={user?.id ?? null}
+          onDatesSet={handleDatesSet}
         />
       </Box>
 
@@ -168,6 +211,12 @@ function CalendarPage() {
       />
 
       {/* 일정 상세 다이얼로그 */}
+      <ExternalAptEventDialog
+        open={aptDetailOpen}
+        onClose={() => { setAptDetailOpen(false); setSelectedAptEvent(null); }}
+        event={selectedAptEvent}
+      />
+
       <EventDetailDialog
         open={detailDialogOpen}
         onClose={() => setDetailDialogOpen(false)}

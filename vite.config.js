@@ -12,4 +12,15 @@ function viteBase() {
 export default defineConfig({
   plugins: [react()],
   base: viteBase(),
+  server: {
+    /** 공공데이터(data.go.kr) CORS 우회: 개발 시에만 프록시 */
+    proxy: {
+      '/__public_data_go_proxy': {
+        target: 'https://apis.data.go.kr',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (p) => p.replace(/^\/__public_data_go_proxy/, ''),
+      },
+    },
+  },
 });

@@ -40,6 +40,10 @@ jobs:
           VITE_BASE: /${{ github.event.repository.name }}/
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_DATA_GO_KR_SERVICE_KEY: ${{ secrets.VITE_DATA_GO_KR_SERVICE_KEY }}
+          VITE_REB_APT_SPLY_PATH: ${{ secrets.VITE_REB_APT_SPLY_PATH }}
+          VITE_REB_APT_PAGE_SIZE: ${{ secrets.VITE_REB_APT_PAGE_SIZE }}
+          VITE_REB_APT_DATA_GO_ORIGIN: ${{ secrets.VITE_REB_APT_DATA_GO_ORIGIN }}
         run: |
           npm install
           npm run build
