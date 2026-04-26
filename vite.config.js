@@ -21,6 +21,13 @@ export default defineConfig({
         secure: true,
         rewrite: (p) => p.replace(/^\/__public_data_go_proxy/, ''),
       },
+      /** 오픈 API 포털 api.odcloud.kr CORS 우회(개발 전용) */
+      '/__odcloud_proxy': {
+        target: 'https://api.odcloud.kr',
+        changeOrigin: true,
+        secure: true,
+        rewrite: (p) => p.replace(/^\/__odcloud_proxy/, ''),
+      },
     },
   },
 });

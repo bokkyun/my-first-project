@@ -1,9 +1,19 @@
 /**
- * 한국부동산원 청약홈 분양정보(공공데이터) — 응답 파싱
- * (오퍼레이션/필드명은 포털 기술문서와 동일·유사. 없으면 VITE_REB_APT_SPLY_PATH 로 조정)
+ * 한국부동산원 청약홈 분양정보(공공데이터)
+ * - datago: apis.data.go.kr (XML/JSON 표준)
+ * - odcloud: api.odcloud.kr (REST, data 배열) — v1/uddi:…
  *
- * @see https://www.data.go.kr (한국부동산원_청약홈 분양정보 조회 서비스)
+ * @see https://www.data.go.kr
  */
+
+/** 기본: 오픈 API(스크린샷과 동일). 이전 data.gokr만 쓰려면 VITE_REB_APT_API_MODE=datago */
+const DEFAULT_MODE = 'odcloud';
+const DEFAULT_ODCLOUD_PATH =
+  '/api/15101046/v1/uddi:14a46595-03dd-47d3-a418-d64e52820598';
+
+function getApiMode() {
+  return (import.meta.env.VITE_REB_APT_API_MODE || DEFAULT_MODE).toLowerCase();
+}
 
 function parseYmdToIsoStart(v) {
   if (v == null || v === '') return null;
@@ -29,12 +39,23 @@ function parseYmdToIsoEndOfDay(v) {
 }
 
 /**
- * data.go.kr 표준 errorXml/json 구조
+ * data.go.kr 표준 response, 또는 api.odcloud.kr JSON
  */
 export function parseRebAptSplyResponse(json) {
   if (!json || typeof json !== 'object') {
     return { items: [], error: '빈 응답입니다.' };
   }
+
+  if (Object.prototype.hasOwnProperty.call(json, 'data') && Array.isArray(json.data)) {
+    if (json.code != null && Number(json.code) < 0) {
+      return { items: [], error: String(json.msg || json.message || 'API 오류') };
+    }
+    return { items: json.data, error: null };
+  }
+  if (Number(json.code) < 0 && (!json.data || (Array.isArray(json.data) && json.data.length === 0))) {
+    return { items: [], error: String(json.msg || json.message || 'API 오류') };
+  }
+
   const res = json.response;
   if (!res) {
     if (Array.isArray(json) || json.hits) {
@@ -69,7 +90,62 @@ export function parseRebAptSplyResponse(json) {
 }
 
 /**
- * 단일 분양/청약 item → 캘린더 이벤트(확장 필드)
+ * api.odcloud.kr 행(한글 필드명) → 캘린더 이벤트
+ */
+export function mapOdcloudItemToCalendarEvent(item, index) {
+  if (!item || typeof item !== 'object') return null;
+  const t = (k) => (item[k] != null && item[k] !== '' ? String(item[k]).trim() : '');
+
+  const titleBase = t('주택명') || t('아파트명') || t('사업명') || '아파트 분양';
+  const p1 = t('공고번호');
+  const p2 = t('주택관리번호');
+  const pbl = p1 || p2 ? ` (${[p1, p2].filter(Boolean).join(' / ')})` : '';
+
+  const startYmd =
+    t('접수시작일') ||
+    t('청약접수시작일') ||
+    t('입주자모집공고일') ||
+    t('공고일') ||
+    t('모집공고일') ||
+    t('접수기간');
+  const endYmd = t('접수마감일') || t('접수종료일') || t('청약접수마감일') || startYmd;
+
+  let starts = parseYmdToIsoStart(startYmd);
+  if (!starts) {
+    for (const v of Object.values(item)) {
+      if (v == null) continue;
+      const s = String(v);
+      if (/\d{4}[-/.\s]?\d{2}[-/.\s]?\d{2}/.test(s) || /\d{8}/.test(s)) {
+        starts = parseYmdToIsoStart(s);
+        if (starts) break;
+      }
+    }
+  }
+  if (!starts) {
+    const d = new Date();
+    starts = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T00:00:00`;
+  }
+  const ends = parseYmdToIsoEndOfDay(endYmd) || parseYmdToIsoEndOfDay(startYmd) || starts;
+
+  const idKey = t('주택관리번호') + t('공고번호') + String(index);
+  const id = `reb-od-${idKey.replace(/[^a-zA-Z0-9가-힣\-_]/g, '_').slice(0, 80)}-${index}`;
+
+  return {
+    id,
+    title: `🏢 ${titleBase}${pbl}`,
+    starts_at: starts,
+    ends_at: ends,
+    is_all_day: true,
+    color: '#0d47a1',
+    _external: 'reb-odcloud',
+    _rebRaw: item,
+    creator_id: null,
+    creatorNickname: '청약홈(부동산원·ODcloud)',
+  };
+}
+
+/**
+ * data.go 기존 item → 캘린더 이벤트
  */
 export function mapSplyItemToCalendarEvent(item, index) {
   if (!item || typeof item !== 'object') return null;
@@ -120,7 +196,15 @@ export function mapSplyItemToCalendarEvent(item, index) {
   };
 }
 
-export function buildRebAptSplyListUrl() {
+export function mapRebAptItemToCalendarEvent(item, index, mode) {
+  const m = mode || getApiMode();
+  if (m === 'odcloud') {
+    return mapOdcloudItemToCalendarEvent(item, index);
+  }
+  return mapSplyItemToCalendarEvent(item, index);
+}
+
+function buildDataGoListUrl() {
   const key = (import.meta.env.VITE_DATA_GO_KR_SERVICE_KEY || '').trim();
   const serviceKey = key ? `serviceKey=${encodeURIComponent(key)}` : '';
   const pageNo = 'pageNo=1';
@@ -129,15 +213,52 @@ export function buildRebAptSplyListUrl() {
   const path = (import.meta.env.VITE_REB_APT_SPLY_PATH || '/1613000/AptBasisOflsInfoService/getAptBasisOflsList')
     .replace(/^\s+/, '');
   const query = [serviceKey, pageNo, num, type].filter(Boolean).join('&');
-  return { path, query, keyPresent: Boolean(key) };
+  return { path, query, keyPresent: Boolean(key), mode: 'datago' };
+}
+
+function buildOdcloudListUrl() {
+  const key = (import.meta.env.VITE_DATA_GO_KR_SERVICE_KEY || '').trim();
+  const perPage = import.meta.env.VITE_REB_APT_PAGE_SIZE || '200';
+  const serviceKey = key ? `serviceKey=${encodeURIComponent(key)}` : '';
+  const page = 'page=1';
+  const pp = `perPage=${perPage}`;
+  const rt = 'returnType=JSON';
+  const path = (import.meta.env.VITE_REB_APT_ODCLOUD_PATH || DEFAULT_ODCLOUD_PATH)
+    .replace(/^\s+/, '');
+  const query = [page, pp, serviceKey, rt].filter(Boolean).join('&');
+  return { path, query, keyPresent: Boolean(key), mode: 'odcloud' };
 }
 
 /**
- * 개발: Vite 프록시(동일 출처) / 배포: 직접( CORS 이슈 시 서버/리라이트 필요)
+ * VITE_REB_APT_API_MODE=odcloud | datago
+ */
+export function buildRebAptSplyListUrl() {
+  if (getApiMode() === 'datago') {
+    return buildDataGoListUrl();
+  }
+  return buildOdcloudListUrl();
+}
+
+/**
+ * 개발: Vite 프록시(동일 출처) / 배포: CORS 이슈 시 origin 프록시
  */
 export function toDataGoAbsoluteUrl(path, query) {
+  return toRebAptAbsoluteUrl(path, query, 'datago');
+}
+
+export function toRebAptAbsoluteUrl(path, query, mode) {
   const p = path.startsWith('/') ? path : `/${path}`;
   const q = query ? (query.startsWith('?') ? query : `?${query}`) : '';
+  const m = mode || getApiMode();
+
+  if (m === 'odcloud') {
+    if (import.meta.env.DEV) {
+      return `/__odcloud_proxy${p}${q}`;
+    }
+    const origin = (import.meta.env.VITE_REB_APT_ODCLOUD_ORIGIN || 'https://api.odcloud.kr').replace(/\/$/, '');
+    return `${origin}${p}${q}`;
+  }
+
   if (import.meta.env.DEV) {
     return `/__public_data_go_proxy${p}${q}`;
   }

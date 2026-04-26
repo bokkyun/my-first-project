@@ -87,7 +87,7 @@ function CalendarPage() {
 
   /** 이벤트 클릭 */
   const handleEventClick = (ev) => {
-    if (ev._external === 'reb-apt') {
+    if (ev._external === 'reb-apt' || ev._external === 'reb-odcloud') {
       setSelectedAptEvent(ev);
       setAptDetailOpen(true);
       return;

@@ -1,9 +1,9 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   buildRebAptSplyListUrl,
-  toDataGoAbsoluteUrl,
+  toRebAptAbsoluteUrl,
   parseRebAptSplyResponse,
-  mapSplyItemToCalendarEvent,
+  mapRebAptItemToCalendarEvent,
 } from '../utils/rebAptSplyApi';
 
 /**
@@ -17,27 +17,32 @@ export function useRebAptSplyEvents(enabled, viewRange) {
   const [fetchError, setFetchError] = useState(null);
 
   const fetchList = useCallback(async () => {
-    const { path, query, keyPresent } = buildRebAptSplyListUrl();
+    const { path, query, keyPresent, mode } = buildRebAptSplyListUrl();
     if (!keyPresent) {
       setRawEvents([]);
-      setFetchError('서비스 키가 없습니다. .env에 VITE_DATA_GO_KR_SERVICE_KEY 를 설정하세요.');
+      setFetchError('인증키가 없습니다. 공공데이터포털에서 발급한 키를 .env 의 VITE_DATA_GO_KR_SERVICE_KEY 에 넣어 주세요.');
       return;
     }
     if (!path) {
-      setFetchError('API 경로가 없습니다. VITE_REB_APT_SPLY_PATH 를 확인하세요.');
+      setFetchError(
+        mode === 'odcloud'
+          ? 'API 경로가 없습니다. VITE_REB_APT_ODCLOUD_PATH 를 확인하세요.'
+          : 'API 경로가 없습니다. VITE_REB_APT_SPLY_PATH 를 확인하세요.',
+      );
       return;
     }
     setLoading(true);
     setFetchError(null);
     try {
-      const url = toDataGoAbsoluteUrl(path, query ? `?${query}` : '');
+      const url = toRebAptAbsoluteUrl(path, query ? `?${query}` : '', mode);
       const res = await fetch(url, { method: 'GET' });
+      const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setFetchError(`HTTP ${res.status}`);
+        const msg = json?.msg || json?.message;
+        setFetchError(msg ? `HTTP ${res.status}: ${msg}` : `HTTP ${res.status}`);
         setRawEvents([]);
         return;
       }
-      const json = await res.json();
       const { items, error } = parseRebAptSplyResponse(json);
       if (error) {
         setFetchError(error);
@@ -45,13 +50,13 @@ export function useRebAptSplyEvents(enabled, viewRange) {
         return;
       }
       const mapped = (items || [])
-        .map((it, i) => mapSplyItemToCalendarEvent(it, i))
+        .map((it, i) => mapRebAptItemToCalendarEvent(it, i, mode))
         .filter(Boolean);
       setRawEvents(mapped);
     } catch (e) {
       const msg = e?.message || String(e);
       if (msg.toLowerCase().includes('network') || msg.toLowerCase().includes('load failed') || msg.toLowerCase().includes('cors')) {
-        setFetchError('네트워크/CORS: 배포 사이트에서는 data.go.kr 직접 호출이 막힐 수 있습니다. 개발(npm run dev)에서는 Vite 프록시를 쓰거나, 동일 출처 API 프록시를 두세요.');
+        setFetchError('네트워크/CORS: 개발(npm run dev)에서는 Vite 프록시(__odcloud_proxy / __public_data_go_proxy)를 쓰고, 배포 시에는 CORS·프록시 또는 origin 환경 변수를 맞춰 주세요.');
       } else {
         setFetchError(msg);
       }
