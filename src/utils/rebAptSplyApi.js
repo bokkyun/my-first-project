@@ -140,19 +140,22 @@ export function mapOdcloudItemToCalendarEvent(item, index) {
     return '';
   };
 
-  const titleBase = firstT(
-    '주택명',
-    '아파트명',
-    'HOUSE_NM',
+  // 지역(시·도 + 시·군·구) + 단지/주택명 — 캘린더 셀에 "아파트 분양"만 나오는 경우 방지
+  const region = [t('CTPRVN_NM'), t('SIGNGU_NM')].filter(Boolean).join(' ').trim();
+  const nameForCalendar = firstT(
     'HSMP_NM',
+    'HOUSE_NM',
     'PBLANC_NM',
     'SPLY_HSMP_NM',
     'HSSPLY_HSMP_NM',
+    '주택명',
+    '아파트명',
     '사업명',
     'BIZ_NM',
     'SPLY_BIZ_NM',
     'BLDG_NM',
   ) || '아파트 분양';
+  const titleCore = [region, nameForCalendar].filter((x) => x).join(' · ');
   const p1 = firstT('공고번호', 'PBLANC_NO');
   const p2 = firstT('주택관리번호', 'HOUSE_MGMT_NO', 'HSMP_MGMT_NO');
   const pbl = p1 || p2 ? ` (${[p1, p2].filter(Boolean).join(' / ')})` : '';
@@ -196,12 +199,15 @@ export function mapOdcloudItemToCalendarEvent(item, index) {
   }
   const ends = parseYmdToIsoEndOfDay(endYmd) || parseYmdToIsoEndOfDay(startYmd) || starts;
 
-  const idKey = t('주택관리번호') + t('공고번호') + String(index);
+  const idKey =
+    firstT('주택관리번호', 'HOUSE_MGMT_NO', 'HSMP_MGMT_NO')
+    + firstT('공고번호', 'PBLANC_NO')
+    + String(index);
   const id = `reb-od-${idKey.replace(/[^a-zA-Z0-9가-힣\-_]/g, '_').slice(0, 80)}-${index}`;
 
   return {
     id,
-    title: `🏢 ${titleBase}${pbl}`,
+    title: `🏢 ${titleCore}${pbl}`,
     starts_at: starts,
     ends_at: ends,
     is_all_day: true,
