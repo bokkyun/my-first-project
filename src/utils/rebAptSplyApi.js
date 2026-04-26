@@ -1,15 +1,16 @@
 /**
  * 한국부동산원 청약홈 분양정보(공공데이터)
  * - datago: apis.data.go.kr (XML/JSON 표준)
- * - odcloud: api.odcloud.kr (REST, data 배열) — v1/uddi:…
+ * - odcloud: api.odcloud.kr (한국부동산원 청약홈·ApplyhomeInfoDetailSvc, data 배열)
+ *   기본: getAPTLttotPblancDetail (page·perPage·serviceKey / Swagger 37000 stage)
  *
  * @see https://www.data.go.kr
  */
 
-/** 기본: 오픈 API(스크린샷과 동일). 이전 data.gokr만 쓰려면 VITE_REB_APT_API_MODE=datago */
+/** 기본: 청약홈 분양정보(REST). 구 uddi·data.go 만 쓰려면 VITE_REB_APT_ODCLOUD_PATH·API_MODE로 조정 */
 const DEFAULT_MODE = 'odcloud';
 const DEFAULT_ODCLOUD_PATH =
-  '/api/15101046/v1/uddi:14a46595-03dd-47d3-a418-d64e52820598';
+  '/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail';
 
 function getApiMode() {
   return (import.meta.env.VITE_REB_APT_API_MODE || DEFAULT_MODE).toLowerCase();
@@ -263,10 +264,10 @@ function buildOdcloudListUrl() {
   const serviceKey = key ? `serviceKey=${encodeURIComponent(key)}` : '';
   const page = 'page=1';
   const pp = `perPage=${perPage}`;
-  const rt = 'returnType=JSON';
   const path = (import.meta.env.VITE_REB_APT_ODCLOUD_PATH || DEFAULT_ODCLOUD_PATH)
     .replace(/^\s+/, '');
-  const query = [page, pp, serviceKey, rt].filter(Boolean).join('&');
+  /** 브라우저 테스트와 동일: page, perPage, serviceKey (returnType는 엔드포인트에 따라 생략) */
+  const query = [page, pp, serviceKey].filter(Boolean).join('&');
   return { path, query, keyPresent: Boolean(key), mode: 'odcloud' };
 }
 
