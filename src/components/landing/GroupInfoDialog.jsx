@@ -3,7 +3,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   Box, Typography, List, ListItem, Avatar, Chip,
   Button, CircularProgress, Divider, MenuItem, Select, FormControl, InputLabel,
-  TextField, InputAdornment, IconButton,
+  TextField, InputAdornment, IconButton, Alert,
 } from '@mui/material';
 import { Circle, AdminPanelSettings, Lock, Visibility, VisibilityOff } from '@mui/icons-material';
 
@@ -37,6 +37,8 @@ function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave, onDele
   const [newPw, setNewPw] = useState('');
   const [showNewPw, setShowNewPw] = useState(false);
   const [changingPw, setChangingPw] = useState(false);
+  const [leaveError, setLeaveError] = useState('');
+  const [deleteError, setDeleteError] = useState('');
 
   useEffect(() => {
     if (!open || !group) return;
@@ -44,6 +46,8 @@ function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave, onDele
     setMembers([]);
     setConfirmLeave(false);
     setConfirmDelete(false);
+    setLeaveError('');
+    setDeleteError('');
     setChangeAdminOpen(false);
     setNewAdminId('');
     setChangePwOpen(false);
@@ -56,17 +60,37 @@ function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave, onDele
   }, [open, group]);
 
   const handleLeave = async () => {
+    setLeaveError('');
     setLeaving(true);
-    await onLeave(group.id);
+    const result = await onLeave(group.id);
     setLeaving(false);
+    if (result?.error) {
+      const msg = result.error.message || String(result.error);
+      setLeaveError(
+        msg.includes('permission') || msg.includes('policy') || msg.includes('RLS')
+          ? '권한이 없어 탈퇴할 수 없습니다. Supabase에서 group_members 삭제 정책을 확인해 주세요.'
+          : `탈퇴에 실패했습니다: ${msg}`,
+      );
+      return;
+    }
     setConfirmLeave(false);
     onClose();
   };
 
   const handleDelete = async () => {
+    setDeleteError('');
     setDeleting(true);
-    await onDelete(group.id);
+    const result = await onDelete(group.id);
     setDeleting(false);
+    if (result?.error) {
+      const msg = result.error.message || String(result.error);
+      setDeleteError(
+        msg.includes('permission') || msg.includes('policy') || msg.includes('RLS')
+          ? '권한이 없어 삭제할 수 없습니다. Supabase RLS 정책을 확인해 주세요.'
+          : `삭제에 실패했습니다: ${msg}`,
+      );
+      return;
+    }
     setConfirmDelete(false);
     onClose();
   };
@@ -196,6 +220,17 @@ function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave, onDele
                     비밀번호 변경
                   </Button>
                 )}
+                {!loading && members.length === 1 && (
+                  <Button
+                    variant='outlined'
+                    color='error'
+                    size='small'
+                    onClick={() => { setLeaveError(''); setConfirmLeave(true); }}
+                    sx={{ borderRadius: 2 }}
+                  >
+                    그룹 탈퇴
+                  </Button>
+                )}
                 <Button
                   variant='outlined'
                   color='error'
@@ -205,6 +240,16 @@ function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave, onDele
                 >
                   그룹 삭제
                 </Button>
+                {!loading && nonAdminMembers.length > 0 && (
+                  <Typography
+                    component='div'
+                    variant='caption'
+                    color='text.secondary'
+                    sx={{ width: '100%', flexBasis: '100%', lineHeight: 1.4 }}
+                  >
+                    멤버가 있는 동안 관리자는 나갈 수 없습니다. 먼저「관리자 변경」으로 다른 멤버에게 넘긴 뒤, 일반 멤버처럼「그룹 탈퇴」를 이용해 주세요.
+                  </Typography>
+                )}
               </>
             ) : (
               <Button
@@ -225,43 +270,65 @@ function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave, onDele
         )}
 
         {confirmLeave && (
-          <>
-            <Typography variant='body2' color='error.main' sx={{ flex: 1 }}>
-              정말 탈퇴하시겠습니까?
-            </Typography>
-            <Button onClick={() => setConfirmLeave(false)} variant='outlined' sx={{ borderRadius: 2 }}>
-              취소
-            </Button>
-            <Button
-              onClick={handleLeave}
-              variant='contained'
-              color='error'
-              disabled={leaving}
-              sx={{ borderRadius: 2 }}
-            >
-              {leaving ? <CircularProgress size={16} color='inherit' /> : '탈퇴'}
-            </Button>
-          </>
+          <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {leaveError ? (
+              <Alert severity='error' onClose={() => setLeaveError('')}>
+                {leaveError}
+              </Alert>
+            ) : null}
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
+              <Typography variant='body2' color='error.main' sx={{ flex: 1, minWidth: 200 }}>
+                정말 탈퇴하시겠습니까?
+              </Typography>
+              <Button
+                onClick={() => { setConfirmLeave(false); setLeaveError(''); }}
+                variant='outlined'
+                sx={{ borderRadius: 2 }}
+              >
+                취소
+              </Button>
+              <Button
+                onClick={handleLeave}
+                variant='contained'
+                color='error'
+                disabled={leaving}
+                sx={{ borderRadius: 2 }}
+              >
+                {leaving ? <CircularProgress size={16} color='inherit' /> : '탈퇴'}
+              </Button>
+            </Box>
+          </Box>
         )}
 
         {confirmDelete && (
-          <>
-            <Typography variant='body2' color='error.main' sx={{ flex: 1 }}>
-              그룹을 삭제하면 복구할 수 없습니다.
-            </Typography>
-            <Button onClick={() => setConfirmDelete(false)} variant='outlined' sx={{ borderRadius: 2 }}>
-              취소
-            </Button>
-            <Button
-              onClick={handleDelete}
-              variant='contained'
-              color='error'
-              disabled={deleting}
-              sx={{ borderRadius: 2 }}
-            >
-              {deleting ? <CircularProgress size={16} color='inherit' /> : '삭제'}
-            </Button>
-          </>
+          <Box sx={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 1 }}>
+            {deleteError ? (
+              <Alert severity='error' onClose={() => setDeleteError('')}>
+                {deleteError}
+              </Alert>
+            ) : null}
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
+              <Typography variant='body2' color='error.main' sx={{ flex: 1, minWidth: 200 }}>
+                그룹을 삭제하면 복구할 수 없습니다.
+              </Typography>
+              <Button
+                onClick={() => { setConfirmDelete(false); setDeleteError(''); }}
+                variant='outlined'
+                sx={{ borderRadius: 2 }}
+              >
+                취소
+              </Button>
+              <Button
+                onClick={handleDelete}
+                variant='contained'
+                color='error'
+                disabled={deleting}
+                sx={{ borderRadius: 2 }}
+              >
+                {deleting ? <CircularProgress size={16} color='inherit' /> : '삭제'}
+              </Button>
+            </Box>
+          </Box>
         )}
 
         {changeAdminOpen && (

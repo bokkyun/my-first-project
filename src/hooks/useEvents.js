@@ -16,7 +16,11 @@ export function useEvents(userId, visibleGroupIds = []) {
   const [loading, setLoading] = useState(false);
 
   const fetchEvents = useCallback(async () => {
-    if (!userId) return;
+    if (!userId) {
+      setEvents([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
 
     /** 내 일정 */

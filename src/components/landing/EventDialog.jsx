@@ -58,7 +58,8 @@ function EventDialog({ open, onClose, onSave, groups, defaultDate, editEvent, ad
     url: '',
     color: '#1976d2',
     recurrence_type: 'none',
-    eventKind: 'default',
+    /** DB CHECK·모바일 앱과 동일: 일반 일정은 `schedule` (`default` 는 제약 위반) */
+    eventKind: 'schedule',
   });
 
   const [form, setForm] = useState(initForm());
@@ -81,7 +82,7 @@ function EventDialog({ open, onClose, onSave, groups, defaultDate, editEvent, ad
         url: editEvent.url || '',
         color: editEvent.color || '#1976d2',
         recurrence_type: editEvent.recurrence_type || 'none',
-        eventKind: isCoffeeEvent(editEvent) ? 'coffee' : 'default',
+        eventKind: isCoffeeEvent(editEvent) ? 'coffee' : (editEvent.event_kind === 'default' ? 'schedule' : (editEvent.event_kind || 'schedule')),
       });
       setSelectedGroups((editEvent.event_visibility || []).map((v) => v.group_id));
     } else {
@@ -146,7 +147,7 @@ function EventDialog({ open, onClose, onSave, groups, defaultDate, editEvent, ad
       url: form.url || null,
       color: form.color,
       recurrence_type: form.recurrence_type,
-      event_kind: form.eventKind === 'coffee' ? 'coffee' : 'default',
+      event_kind: form.eventKind === 'coffee' ? 'coffee' : (form.eventKind || 'schedule'),
     };
     await onSave(payload, selectedGroups, targetUserId || null);
     setSaving(false);
@@ -190,8 +191,8 @@ function EventDialog({ open, onClose, onSave, groups, defaultDate, editEvent, ad
                 const isCoffee = e.target.checked;
                 setForm((prev) => ({
                   ...prev,
-                  eventKind: isCoffee ? 'coffee' : 'default',
-                  color: isCoffee && prev.eventKind === 'default' && prev.color === '#1976d2'
+                  eventKind: isCoffee ? 'coffee' : 'schedule',
+                  color: isCoffee && prev.eventKind === 'schedule' && prev.color === '#1976d2'
                     ? '#5d4037'
                     : prev.color,
                 }));

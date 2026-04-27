@@ -85,12 +85,22 @@ function CalendarPage() {
   /** 당일 스케줄 브라우저 알림 */
   useNotifications(events);
 
-  /** 그룹 로드 완료 시 전체 체크 */
+  /** 그룹 배열 참조가 바뀌어도 ID 집합이 같으면 필터 선택을 유지하기 위한 키 */
+  const myGroupIdsKey = [...groups].map((g) => g.id).sort().join(',');
+
+  /**
+   * 로그인 사용자·내 그룹 ID 집합이 바뀔 때 표시 그룹을 동기화합니다.
+   * 예전에는 groups.length 만 봐서 계정 전환 후 이전 사용자의 그룹 UUID가 남아
+   * 다른 사람 일정(그룹 공유)이 보일 수 있었습니다.
+   * groupsLoading 은 deps 에 넣지 않습니다(로딩 종료마다 필터가 전체로 초기화되는 것 방지).
+   */
   useEffect(() => {
-    if (!groupsLoading && groups.length > 0) {
-      setVisibleGroupIds(groups.map((g) => g.id));
+    if (!user?.id) {
+      setVisibleGroupIds([]);
+      return;
     }
-  }, [groupsLoading, groups.length]);
+    setVisibleGroupIds(groups.length > 0 ? groups.map((g) => g.id) : []);
+  }, [user?.id, myGroupIdsKey]);
 
   /** 그룹 필터 토글 */
   const handleToggleGroup = (groupId) => {

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
 /**
@@ -10,7 +10,11 @@ export function useGroups(userId) {
   const [loading, setLoading] = useState(false);
 
   const fetchGroups = useCallback(async () => {
-    if (!userId) return;
+    if (!userId) {
+      setGroups([]);
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     const { data, error } = await supabase
       .from('group_members')
@@ -22,7 +26,18 @@ export function useGroups(userId) {
     setLoading(false);
   }, [userId]);
 
+  /** 계정 전환 직후 첫 페인트 전에 이전 사용자 그룹이 잠깐 보이지 않도록 */
+  useLayoutEffect(() => {
+    if (!userId) {
+      setGroups([]);
+      setLoading(false);
+      return;
+    }
+    setGroups([]);
+  }, [userId]);
+
   useEffect(() => {
+    if (!userId) return;
     fetchGroups();
   }, [fetchGroups]);
 
@@ -72,6 +87,7 @@ export function useGroups(userId) {
    * @param {string} groupId
    */
   const leaveGroup = async (groupId) => {
+    if (!userId) return { error: { message: '로그인이 필요합니다.' } };
     const { error } = await supabase
       .from('group_members')
       .delete()
