@@ -1,5 +1,5 @@
 import {
-  Dialog, DialogTitle, DialogContent, IconButton, Typography, Box, Divider, Chip, Paper,
+  Dialog, DialogTitle, DialogContent, IconButton, Typography, Box, Divider, Paper,
 } from '@mui/material';
 import { Close, InfoOutlined } from '@mui/icons-material';
 import { getRebAptDialogSections } from '../../utils/rebAptFieldLabels';
@@ -67,14 +67,13 @@ function ExternalAptEventDialog({ open, onClose, event }) {
       <DialogTitle sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, pb: 1 }}>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography fontWeight={700} sx={{ pr: 1 }}>{event.title?.replace(/^🏢\s*/, '') || '아파트 청약'}</Typography>
-          <Chip size="small" label="한국부동산원·청약홈 API" color="primary" variant="outlined" sx={{ mt: 0.5 }} />
         </Box>
         <IconButton onClick={onClose} size="small"><Close /></IconButton>
       </DialogTitle>
       <DialogContent dividers sx={{ maxHeight: { xs: '80vh', sm: 560 }, overflow: 'auto' }}>
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1, color: 'text.secondary' }}>
           <InfoOutlined fontSize="small" />
-          <Typography variant="caption">편집·삭제는 캘린더 일정과 별도입니다(외부 공공 데이터).</Typography>
+          <Typography variant="caption">편집·삭제는 캘린더 일정과 별도입니다.</Typography>
         </Box>
         {dateText && (
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>

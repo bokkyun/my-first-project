@@ -215,7 +215,7 @@ export function mapOdcloudItemToCalendarEvent(item, index) {
     _external: 'reb-odcloud',
     _rebRaw: item,
     creator_id: null,
-    creatorNickname: '청약홈(부동산원·ODcloud)',
+    creatorNickname: null,
   };
 }
 
@@ -267,7 +267,7 @@ export function mapSplyItemToCalendarEvent(item, index) {
     _external: 'reb-apt',
     _rebRaw: item,
     creator_id: null,
-    creatorNickname: '청약홈(부동산원)',
+    creatorNickname: null,
   };
 }
 

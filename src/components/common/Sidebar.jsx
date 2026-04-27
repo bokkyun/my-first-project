@@ -69,7 +69,7 @@ function Sidebar({
       {onShowAptSplyChange && (
         <ListItem disablePadding sx={{ mb: 0.5 }}>
           <FormControlLabel
-            sx={{ alignItems: 'flex-start', m: 0 }}
+            sx={{ alignItems: 'center', m: 0 }}
             control={(
               <Checkbox
                 checked={showAptSply}
@@ -79,12 +79,7 @@ function Sidebar({
               />
             )}
             label={(
-              <Box>
-                <Typography variant="body2" fontWeight={600}>아파트 청약·분양</Typography>
-                <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
-                  청약홈(부동산원) 공공 API
-                </Typography>
-              </Box>
+              <Typography variant="body2" fontWeight={600}>아파트 청약·분양</Typography>
             )}
           />
         </ListItem>
@@ -92,7 +87,7 @@ function Sidebar({
       {onShowIpoChange && (
         <ListItem disablePadding sx={{ mb: 0.5 }}>
           <FormControlLabel
-            sx={{ alignItems: 'flex-start', m: 0 }}
+            sx={{ alignItems: 'center', m: 0 }}
             control={(
               <Checkbox
                 checked={showIpo}
@@ -102,12 +97,7 @@ function Sidebar({
               />
             )}
             label={(
-              <Box>
-                <Typography variant="body2" fontWeight={600}>공모주(공시 제출)</Typography>
-                <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
-                  Open DART · 증권신고서(지분증권)만 · C001
-                </Typography>
-              </Box>
+              <Typography variant="body2" fontWeight={600}>공모주(공시 제출)</Typography>
             )}
           />
         </ListItem>

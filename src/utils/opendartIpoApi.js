@@ -83,7 +83,7 @@ export function mapDartListItemToCalendarEvent(row, index) {
     _external: 'ipo',
     _dartRaw: row,
     creator_id: null,
-    creatorNickname: '금감원·Open DART',
+    creatorNickname: null,
   };
 }
 

@@ -1,5 +1,5 @@
 import {
-  Dialog, DialogTitle, DialogContent, IconButton, Typography, Box, Divider, Chip, Paper, Button,
+  Dialog, DialogTitle, DialogContent, IconButton, Typography, Box, Divider, Paper, Button,
 } from '@mui/material';
 import { Close, InfoOutlined, OpenInNew } from '@mui/icons-material';
 
@@ -53,14 +53,13 @@ function ExternalIpoEventDialog({ open, onClose, event }) {
       <DialogTitle sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, pb: 1 }}>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography fontWeight={700} sx={{ pr: 1 }}>{event.title?.replace(/^📈\s*/, '') || raw.corp_name || '공시'}</Typography>
-          <Chip size="small" label="금융감독원 Open DART" color="success" variant="outlined" sx={{ mt: 0.5 }} />
         </Box>
         <IconButton onClick={onClose} size="small"><Close /></IconButton>
       </DialogTitle>
       <DialogContent dividers sx={{ maxHeight: { xs: '80vh', sm: 560 }, overflow: 'auto' }}>
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1, color: 'text.secondary' }}>
           <InfoOutlined fontSize="small" />
-          <Typography variant="caption">편집·삭제는 캘린더 일정과 별도입니다(전자공시 공개 데이터).</Typography>
+          <Typography variant="caption">편집·삭제는 캘린더 일정과 별도입니다.</Typography>
         </Box>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>{formatRange()}</Typography>
         <Divider sx={{ my: 1 }} />
