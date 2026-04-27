@@ -88,12 +88,25 @@ export function useGroups(userId) {
    */
   const leaveGroup = async (groupId) => {
     if (!userId) return { error: { message: '로그인이 필요합니다.' } };
-    const { error } = await supabase
+    /**
+     * PostgREST DELETE 는 삭제된 행이 0개여도 error 가 없을 수 있습니다(RLS로 막혀도
+     * "조건에 안 맞아서 0행"으로 처리되는 경우 등). count 로 실제 삭제 여부를 확인합니다.
+     */
+    const { error, count } = await supabase
       .from('group_members')
-      .delete()
+      .delete({ count: 'exact' })
       .eq('group_id', groupId)
       .eq('user_id', userId);
     if (error) return { error };
+    if (count === 0) {
+      return {
+        error: {
+          message:
+            '멤버십이 삭제되지 않았습니다. 로그인 계정과 그룹 멤버 user_id가 일치하는지, '
+            + 'RLS DELETE 정책이 본인 행을 허용하는지 확인해 주세요.',
+        },
+      };
+    }
     await fetchGroups();
     return { data: true };
   };

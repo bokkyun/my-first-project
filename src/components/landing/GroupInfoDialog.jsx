@@ -65,11 +65,21 @@ function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave, onDele
     const result = await onLeave(group.id);
     setLeaving(false);
     if (result?.error) {
-      const msg = result.error.message || String(result.error);
+      const raw = result.error;
+      const msg = raw.message || String(raw);
+      const code = raw.code != null ? String(raw.code) : '';
+      const lower = msg.toLowerCase();
+      const looksLikeRls =
+        code === '42501'
+        || lower.includes('permission')
+        || lower.includes('policy')
+        || lower.includes('rls')
+        || lower.includes('row-level security')
+        || lower.includes('violates row-level');
       setLeaveError(
-        msg.includes('permission') || msg.includes('policy') || msg.includes('RLS')
-          ? '권한이 없어 탈퇴할 수 없습니다. Supabase에서 group_members 삭제 정책을 확인해 주세요.'
-          : `탈퇴에 실패했습니다: ${msg}`,
+        looksLikeRls
+          ? '권한이 없어 탈퇴할 수 없습니다. Supabase에서 group_members DELETE 정책을 확인해 주세요.'
+          : msg,
       );
       return;
     }
@@ -83,11 +93,21 @@ function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave, onDele
     const result = await onDelete(group.id);
     setDeleting(false);
     if (result?.error) {
-      const msg = result.error.message || String(result.error);
+      const raw = result.error;
+      const msg = raw.message || String(raw);
+      const code = raw.code != null ? String(raw.code) : '';
+      const lower = msg.toLowerCase();
+      const looksLikeRls =
+        code === '42501'
+        || lower.includes('permission')
+        || lower.includes('policy')
+        || lower.includes('rls')
+        || lower.includes('row-level security')
+        || lower.includes('violates row-level');
       setDeleteError(
-        msg.includes('permission') || msg.includes('policy') || msg.includes('RLS')
+        looksLikeRls
           ? '권한이 없어 삭제할 수 없습니다. Supabase RLS 정책을 확인해 주세요.'
-          : `삭제에 실패했습니다: ${msg}`,
+          : msg,
       );
       return;
     }
