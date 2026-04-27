@@ -154,16 +154,6 @@ export async function fetchDartListAllPages(path, ymd, maxPages = 20, fetchImpl 
   if (!key) {
     return { items: [], error: 'DART API 인증키가 없습니다. VITE_DART_CRTFC_KEY 를 설정하세요.' };
   }
-  if (import.meta.env.PROD && !(import.meta.env.VITE_DART_OPENDART_ORIGIN || '').trim()) {
-    return {
-      items: [],
-      error:
-        '배포 사이트에서는 Open DART를 브라우저가 직접 호출할 수 없습니다(CORS). '
-        + 'GitHub → 이 저장소 Settings → Secrets → Actions 에 '
-        + 'VITE_DART_OPENDART_ORIGIN 을 추가하세요. 값은 Cloudflare **Worker** 주소(예: …workers.dev, 끝 / 없음)이며 '
-        + '**Pages 주소(…pages.dev)가 아닙니다.** Worker 배포 후 Actions를 다시 실행하세요.',
-    };
-  }
   const pblntfTy = (import.meta.env.VITE_DART_PBLNTF_TY || 'C').trim() || 'C';
   const detailTy = (import.meta.env.VITE_DART_PBLNTF_DETAIL_TY || 'C001').trim() || 'C001';
   const pageCount = String(import.meta.env.VITE_DART_PAGE_COUNT || '100');
