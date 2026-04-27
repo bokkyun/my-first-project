@@ -40,8 +40,8 @@ function CalendarPage() {
   const { groups, loading: groupsLoading, leaveGroup, deleteGroup, fetchGroupMembers, changeGroupAdmin, changeGroupPassword } = useGroups(user?.id);
   const [visibleGroupIds, setVisibleGroupIds] = useState([]);
   const [onlyMySchedules, setOnlyMySchedules] = useState(false);
-  const [showAptSply, setShowAptSply] = useState(false);
-  const [showIpo, setShowIpo] = useState(false);
+  const [showAptSply, setShowAptSply] = useState(true);
+  const [showIpo, setShowIpo] = useState(true);
   const [viewRange, setViewRange] = useState(() => {
     const now = new Date();
     return {
