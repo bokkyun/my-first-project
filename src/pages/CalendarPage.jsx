@@ -52,6 +52,17 @@ function CalendarPage() {
   const [selectedAptEvent, setSelectedAptEvent] = useState(null);
   const [ipoDetailOpen, setIpoDetailOpen] = useState(false);
   const [selectedIpoEvent, setSelectedIpoEvent] = useState(null);
+  /** 모바일 사이드바 */
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  /** 다이얼로그·시트 — selectedDate 는 dayEventsForSheet 보다 먼저 선언해야 함 */
+  const [newDialogOpen, setNewDialogOpen] = useState(false);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  const [dayAgendaOpen, setDayAgendaOpen] = useState(false);
+  /** 스낵바 */
+  const [snack, setSnack] = useState({ open: false, msg: '', severity: 'success' });
 
   const { events, createEvent, updateEvent, deleteEvent } = useEvents(user?.id, visibleGroupIds);
   const { events: aptSplyList, error: aptSplyError } = useRebAptSplyEvents(showAptSply, viewRange);
@@ -73,20 +84,6 @@ function CalendarPage() {
 
   /** 당일 스케줄 브라우저 알림 */
   useNotifications(events);
-
-  /** 모바일 사이드바 */
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-
-  /** 다이얼로그 상태 */
-  const [newDialogOpen, setNewDialogOpen] = useState(false);
-  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [selectedEvent, setSelectedEvent] = useState(null);
-  const [dayAgendaOpen, setDayAgendaOpen] = useState(false);
-
-  /** 스낵바 */
-  const [snack, setSnack] = useState({ open: false, msg: '', severity: 'success' });
 
   /** 그룹 로드 완료 시 전체 체크 */
   useEffect(() => {
@@ -150,6 +147,8 @@ function CalendarPage() {
       if (dateStr) {
         setSelectedDate(dateStr);
         setDayAgendaOpen(true);
+      } else {
+        openEventDetail(ev);
       }
       return;
     }
