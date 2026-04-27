@@ -25,8 +25,6 @@ const EMPTY_ROUTE = {
   transferStation: '',
   transferFrCode: '',
   direction: '1',
-  activeHourStart: 7,
-  activeHourEnd: 10,
 };
 
 function formatMinutesLeft(arriveMin, nowMin) {
@@ -153,37 +151,17 @@ function SettingsModal({ routes, onSave, onClose }) {
               </Box>
             ))}
 
-            <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', mt: 1 }}>
-              <FormControl size="small" sx={{ minWidth: 100 }}>
-                <InputLabel>방향</InputLabel>
-                <Select
-                  label="방향"
-                  value={route.direction}
-                  onChange={(e) => updateRoute(route.id, 'direction', e.target.value)}
-                >
-                  <MenuItem value="1">상행</MenuItem>
-                  <MenuItem value="2">하행</MenuItem>
-                </Select>
-              </FormControl>
-              <TextField
-                size="small"
-                type="number"
-                label="표시 시작(시)"
-                inputProps={{ min: 0, max: 23 }}
-                value={route.activeHourStart}
-                onChange={(e) => updateRoute(route.id, 'activeHourStart', parseInt(e.target.value, 10) || 0)}
-                sx={{ width: 120 }}
-              />
-              <TextField
-                size="small"
-                type="number"
-                label="표시 종료(시)"
-                inputProps={{ min: 0, max: 23 }}
-                value={route.activeHourEnd}
-                onChange={(e) => updateRoute(route.id, 'activeHourEnd', parseInt(e.target.value, 10) || 0)}
-                sx={{ width: 120 }}
-              />
-            </Box>
+            <FormControl size="small" sx={{ minWidth: 100, mt: 1 }}>
+              <InputLabel>방향</InputLabel>
+              <Select
+                label="방향"
+                value={route.direction}
+                onChange={(e) => updateRoute(route.id, 'direction', e.target.value)}
+              >
+                <MenuItem value="1">상행</MenuItem>
+                <MenuItem value="2">하행</MenuItem>
+              </Select>
+            </FormControl>
           </Paper>
         ))}
 
@@ -219,10 +197,7 @@ export default function SubwayScheduleBar() {
   const configured = isSeoulSubwayConfigured();
 
   const loadTrains = useCallback(async () => {
-    const hour = new Date().getHours();
-    const active = routes.filter(
-      (r) => r.departureFrCode && hour >= r.activeHourStart && hour < r.activeHourEnd,
-    );
+    const active = routes.filter((r) => r.departureFrCode);
     if (!active.length || !configured) {
       setNextTrains({});
       return;
@@ -256,10 +231,7 @@ export default function SubwayScheduleBar() {
     return null;
   }
 
-  const currentHour = new Date().getHours();
-  const activeRoutes = routes.filter(
-    (r) => r.departureFrCode && currentHour >= r.activeHourStart && currentHour < r.activeHourEnd,
-  );
+  const activeRoutes = routes.filter((r) => r.departureFrCode);
   const nowMin = getCurrentMinutes();
 
   const barSx = {
@@ -300,7 +272,7 @@ export default function SubwayScheduleBar() {
         <Typography component="span" sx={{ fontSize: 18 }} aria-hidden>🚇</Typography>
         {activeRoutes.length === 0 ? (
           <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
-            현재 시간대에 표시할 노선이 없습니다
+            설정에서 출발역을 검색해 선택해 주세요
           </Typography>
         ) : (
           activeRoutes.map((route) => {
