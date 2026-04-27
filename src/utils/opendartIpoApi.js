@@ -47,15 +47,17 @@ function rceptYmdToIsoEnd(ymd8) {
  * @returns {object|null} 캘린더 이벤트 형태
  */
 /**
- * 지분증권(C001) 위주 — 파생결합·채무증권·실적보고 등은 보고서명으로 제외.
- * (API는 기본 C001만 요청하지만, 혼입 시 제목으로 한 번 더 거름)
+ * 증권신고서 계열만 (보고서명에 «증권신고» 포함).
+ * 파생·채무·실적·소액공모 실적 등은 제목 키워드로 제외.
  */
 export function isDartIpoSecuritiesRegistrationRow(row) {
-  const nm = row && row.report_nm != null ? String(row.report_nm) : '';
+  const nm = row && row.report_nm != null ? String(row.report_nm).trim() : '';
+  if (!nm) return false;
   if (nm.includes('파생결합')) return false;
   if (nm.includes('채무증권')) return false;
   if (nm.includes('증권발행실적')) return false;
   if (nm.includes('소액공모실적')) return false;
+  if (!nm.includes('증권신고')) return false;
   return true;
 }
 
