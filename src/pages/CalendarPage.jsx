@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Box, Snackbar, Alert } from '@mui/material';
+import { Box, Snackbar, Alert, useTheme } from '@mui/material';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import { useAuth } from '../hooks/useAuth';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useGroups } from '../hooks/useGroups';
@@ -14,8 +15,24 @@ import EventDialog from '../components/landing/EventDialog';
 import EventDetailDialog from '../components/landing/EventDetailDialog';
 import ExternalAptEventDialog from '../components/landing/ExternalAptEventDialog';
 import ExternalIpoEventDialog from '../components/landing/ExternalIpoEventDialog';
+import DayAgendaDialog from '../components/landing/DayAgendaDialog';
+
+/** `dateStr` YYYY-MM-DD 가 로컬 달력 날짜와 겹치는지 */
+function eventOccursOnDate(ev, dateStr) {
+  if (!dateStr || !ev?.starts_at) return false;
+  const start = new Date(ev.starts_at);
+  const end = ev.ends_at ? new Date(ev.ends_at) : start;
+  const parts = dateStr.split('-').map(Number);
+  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return false;
+  const [y, m, d] = parts;
+  const dayStart = new Date(y, m - 1, d, 0, 0, 0, 0);
+  const dayEnd = new Date(y, m - 1, d, 23, 59, 59, 999);
+  return start <= dayEnd && end >= dayStart;
+}
 
 function CalendarPage() {
+  const theme = useTheme();
+  const isMobileCalendarUx = useMediaQuery(theme.breakpoints.down('md'));
   const { user } = useAuth();
   const { profile } = useUserProfile(user);
 
@@ -47,6 +64,13 @@ function CalendarPage() {
     return list;
   }, [events, aptSplyList, showAptSply, ipoList, showIpo]);
 
+  const dayEventsForSheet = useMemo(() => {
+    if (!selectedDate) return [];
+    return calendarEvents
+      .filter((ev) => eventOccursOnDate(ev, selectedDate))
+      .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
+  }, [calendarEvents, selectedDate]);
+
   /** 당일 스케줄 브라우저 알림 */
   useNotifications(events);
 
@@ -59,6 +83,7 @@ function CalendarPage() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
+  const [dayAgendaOpen, setDayAgendaOpen] = useState(false);
 
   /** 스낵바 */
   const [snack, setSnack] = useState({ open: false, msg: '', severity: 'success' });
@@ -85,14 +110,18 @@ function CalendarPage() {
     }
   };
 
-  /** 날짜 클릭 */
+  /** 날짜 클릭 — 모바일: 하루 일정 시트, 데스크톱: 바로 새 일정 */
   const handleDateClick = (dateStr) => {
     setSelectedDate(dateStr);
-    setNewDialogOpen(true);
+    if (isMobileCalendarUx) {
+      setDayAgendaOpen(true);
+    } else {
+      setNewDialogOpen(true);
+    }
   };
 
-  /** 이벤트 클릭 */
-  const handleEventClick = (ev) => {
+  /** 일정 상세 다이얼로그 열기 */
+  const openEventDetail = (ev) => {
     if (ev._external === 'reb-apt' || ev._external === 'reb-odcloud') {
       setSelectedAptEvent(ev);
       setAptDetailOpen(true);
@@ -105,6 +134,36 @@ function CalendarPage() {
     }
     setSelectedEvent(ev);
     setDetailDialogOpen(true);
+  };
+
+  /**
+   * 캘린더에서 이벤트 블록 클릭 — 모바일: 해당 날짜 시트(넓은 터치 영역),
+   * 데스크톱: 기존처럼 바로 상세
+   */
+  const handleCalendarEventClick = (ev, clickedDateStr) => {
+    if (isMobileCalendarUx) {
+      let dateStr = clickedDateStr;
+      if (!dateStr && ev.starts_at) {
+        const d = new Date(ev.starts_at);
+        dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      }
+      if (dateStr) {
+        setSelectedDate(dateStr);
+        setDayAgendaOpen(true);
+      }
+      return;
+    }
+    openEventDetail(ev);
+  };
+
+  const handleDayAgendaNewEvent = () => {
+    setDayAgendaOpen(false);
+    setNewDialogOpen(true);
+  };
+
+  const handleDayAgendaPickEvent = (ev) => {
+    setDayAgendaOpen(false);
+    openEventDetail(ev);
   };
 
   const handleDatesSet = useCallback((info) => {
@@ -205,12 +264,22 @@ function CalendarPage() {
           groups={groups}
           visibleGroupIds={visibleGroupIds}
           onDateClick={handleDateClick}
-          onEventClick={handleEventClick}
+          onEventClick={handleCalendarEventClick}
           onlyMySchedules={onlyMySchedules}
           currentUserId={user?.id ?? null}
           onDatesSet={handleDatesSet}
         />
       </Box>
+
+      <DayAgendaDialog
+        open={dayAgendaOpen}
+        onClose={() => setDayAgendaOpen(false)}
+        dateStr={selectedDate}
+        dayEvents={dayEventsForSheet}
+        groups={groups}
+        onNewEvent={handleDayAgendaNewEvent}
+        onEventPick={handleDayAgendaPickEvent}
+      />
 
       {/* 새 일정 다이얼로그 */}
       <EventDialog

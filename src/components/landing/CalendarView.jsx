@@ -14,7 +14,7 @@ import { isCoffeeEvent } from '../../utils/eventCoffee';
  * @param {Array} groups - 내 그룹 목록 (색상 참조용) [Required]
  * @param {string[]} visibleGroupIds - 표시할 그룹 ID [Required]
  * @param {function} onDateClick - 날짜 클릭 핸들러 (dateStr) => void [Required]
- * @param {function} onEventClick - 이벤트 클릭 핸들러 (event) => void [Required]
+ * @param {function} onEventClick - 이벤트 클릭 (event, clickedDateStr?) => void [Required] — 모바일에서 날짜 칸 기준 시트용
  * @param {boolean} onlyMySchedules - true면 내가 등록한 일정만 표시 [Optional]
  * @param {string|null} currentUserId - 현재 로그인 유저 ID (onlyMySchedules 시 필요) [Optional]
  * @param {function} onDatesSet - (info) => void (보이는 날짜 범위, 외부 API 범위용) [Optional]
@@ -103,7 +103,11 @@ function CalendarView({
           }}
           events={fcEvents()}
           dateClick={(info) => onDateClick(info.dateStr)}
-          eventClick={(info) => onEventClick(info.event.extendedProps)}
+          eventClick={(info) => {
+            const cell = info.el?.closest?.('[data-date]');
+            const clickedDateStr = cell?.getAttribute?.('data-date') || null;
+            onEventClick(info.event.extendedProps, clickedDateStr);
+          }}
           datesSet={onDatesSet || undefined}
           eventContent={(arg) => {
             const ex = arg.event.extendedProps;
