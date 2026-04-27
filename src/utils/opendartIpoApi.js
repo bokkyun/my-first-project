@@ -47,7 +47,7 @@ function rceptYmdToIsoEnd(ymd8) {
  * @returns {object|null} 캘린더 이벤트 형태
  */
 /**
- * 보고서명에 «증권신고서»가 들어간 항목만 (다른 증권신고 표기 제외).
+ * 보고서명에 «증권신고서»와 «지분증권»이 모두 포함된 항목만 (대표 형식: 증권신고서(지분증권)).
  * 파생·채무·실적·소액공모 실적 등은 제목 키워드로 제외.
  */
 export function isDartIpoSecuritiesRegistrationRow(row) {
@@ -57,7 +57,7 @@ export function isDartIpoSecuritiesRegistrationRow(row) {
   if (nm.includes('채무증권')) return false;
   if (nm.includes('증권발행실적')) return false;
   if (nm.includes('소액공모실적')) return false;
-  if (!nm.includes('증권신고서')) return false;
+  if (!nm.includes('증권신고서') || !nm.includes('지분증권')) return false;
   return true;
 }
 
