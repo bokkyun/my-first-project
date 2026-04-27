@@ -105,7 +105,7 @@ function Sidebar({
               <Box>
                 <Typography variant="body2" fontWeight={600}>공모주(공시 제출)</Typography>
                 <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
-                  Open DART(금감원) · C001
+                  Open DART · 증권신고(지분증권, C001)
                 </Typography>
               </Box>
             )}

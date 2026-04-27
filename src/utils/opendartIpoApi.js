@@ -47,11 +47,13 @@ function rceptYmdToIsoEnd(ymd8) {
  * @returns {object|null} 캘린더 이벤트 형태
  */
 /**
- * 발행공시(C001) 응답에 끼는 잡음만 제거. (보고서명 표기가 환경마다 달라
- * '증권신고' 미포함 행을 전부 버리면 캘린더가 비는 경우가 있음)
+ * 지분증권(C001) 위주 — 파생결합·채무증권·실적보고 등은 보고서명으로 제외.
+ * (API는 기본 C001만 요청하지만, 혼입 시 제목으로 한 번 더 거름)
  */
 export function isDartIpoSecuritiesRegistrationRow(row) {
   const nm = row && row.report_nm != null ? String(row.report_nm) : '';
+  if (nm.includes('파생결합')) return false;
+  if (nm.includes('채무증권')) return false;
   if (nm.includes('증권발행실적')) return false;
   if (nm.includes('소액공모실적')) return false;
   return true;
