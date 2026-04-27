@@ -1,5 +1,2 @@
-# moneycal.uk 등 커스텀 도메인: 루트 접속 시 캘린더로 이동 (소개/랜딩은 별도 경로로 두고 싶다면 이 줄만 제거)
-/ /calendar 302
-
-# React Router(SPA): 실제 파일이 없는 경로는 index.html
+# 루트(/)는 랜딩(애드센스), 캘린더는 /calendar — SPA 폴백만 유지
 /* /index.html 200

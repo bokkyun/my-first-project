@@ -2,7 +2,7 @@ import { Box, Container, Typography, Button, Grid, Paper, Avatar } from '@mui/ma
 import { Link } from 'react-router-dom';
 import {
   CalendarMonth, Group, NotificationsActive, ShareOutlined,
-  AdminPanelSettings, CheckCircleOutline, LocalCafe,
+  AdminPanelSettings, CheckCircleOutline, LocalCafe, ArrowForward,
 } from '@mui/icons-material';
 import PublicFooter from '../components/common/PublicFooter';
 import AdBanner from '../components/common/AdBanner';
@@ -127,6 +127,23 @@ function LandingPage() {
               sx={{ color: 'white', borderColor: 'white', borderRadius: 3, px: 4, '&:hover': { borderColor: 'grey.300' } }}
             >
               로그인
+            </Button>
+            <Button
+              component={Link}
+              to="/calendar"
+              variant="outlined"
+              size="large"
+              endIcon={<ArrowForward />}
+              sx={{
+                color: 'white',
+                borderColor: 'rgba(255,255,255,0.85)',
+                borderRadius: 3,
+                px: 4,
+                fontWeight: 700,
+                '&:hover': { borderColor: 'white', bgcolor: 'rgba(255,255,255,0.12)' },
+              }}
+            >
+              캘린더 바로가기
             </Button>
           </Box>
         </Container>
