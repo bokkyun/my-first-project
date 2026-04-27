@@ -2,7 +2,8 @@
  * 금융감독원 전자공시 Open DART — 공시 목록 API
  * @see https://opendart.fss.or.kr/
  *
- * 공모(지분증권) 관련: pblntf_ty=C, pblntf_detail_ty=C001 (증권신고서·지분증권 등)
+ * 공모·IPO에 쓰는 조합: pblntf_ty=C(발행공시), pblntf_detail_ty=C001(증권신고·지분증권)
+ * ※ Open DART 공식: F=외부감사관련 (증권신고 아님). Claude 등이 F를 증권신고로 안내한 경우 오류입니다.
  * `rcept_dt`: 공시 접수일(캘린더 일정일)
  *
  * 인증키는 VITE_DART_CRTFC_KEY (절대 소스에 하드코딩하지 않음)
@@ -45,8 +46,19 @@ function rceptYmdToIsoEnd(ymd8) {
  * @param {number} index
  * @returns {object|null} 캘린더 이벤트 형태
  */
+/** 증권신고(공모) 일정만 쓰고, 증권발행실적·실적보고 등은 제외 */
+export function isDartIpoSecuritiesRegistrationRow(row) {
+  const nm = row && row.report_nm != null ? String(row.report_nm) : '';
+  if (!nm.trim()) return true;
+  if (nm.includes('증권발행실적')) return false;
+  if (nm.includes('소액공모실적')) return false;
+  if (!nm.includes('증권신고')) return false;
+  return true;
+}
+
 export function mapDartListItemToCalendarEvent(row, index) {
   if (!row || typeof row !== 'object') return null;
+  if (!isDartIpoSecuritiesRegistrationRow(row)) return null;
   const rcept = row.rcept_dt != null ? String(row.rcept_dt).trim() : '';
   if (!rcept) return null;
   const starts = parseRceptYmdToIso(rcept);
@@ -140,6 +152,15 @@ export async function fetchDartListAllPages(path, ymd, maxPages = 20, fetchImpl 
   const key = (import.meta.env.VITE_DART_CRTFC_KEY || '').trim();
   if (!key) {
     return { items: [], error: 'DART API 인증키가 없습니다. VITE_DART_CRTFC_KEY 를 설정하세요.' };
+  }
+  if (import.meta.env.PROD && !(import.meta.env.VITE_DART_OPENDART_ORIGIN || '').trim()) {
+    return {
+      items: [],
+      error:
+        '배포(프로덕션) 빌드에서는 브라우저 CORS 때문에 Open DART 직접 호출이 되지 않습니다. '
+        + 'workers/opendart-proxy 를 Cloudflare에 올리고, 빌드 시 VITE_DART_OPENDART_ORIGIN=Worker URL(끝/ 없이) '
+        + '와 VITE_DART_CRTFC_KEY 를 넣은 뒤 다시 배포하세요. 로컬은 npm run dev.',
+    };
   }
   const pblntfTy = (import.meta.env.VITE_DART_PBLNTF_TY || 'C').trim() || 'C';
   const detailTy = (import.meta.env.VITE_DART_PBLNTF_DETAIL_TY || 'C001').trim() || 'C001';
