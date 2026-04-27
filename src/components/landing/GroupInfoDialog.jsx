@@ -69,11 +69,14 @@ function GroupInfoDialog({ open, onClose, group, onFetchMembers, onLeave, onDele
       const msg = raw.message || String(raw);
       const code = raw.code != null ? String(raw.code) : '';
       const lower = msg.toLowerCase();
+      /** useGroups 가 count===0 일 때 넣는 안내(내부에 "RLS" 문자열이 있어 includes('rls') 와 충돌했음) */
+      if (msg.includes('멤버십이 삭제되지 않았습니다')) {
+        setLeaveError(msg);
+        return;
+      }
       const looksLikeRls =
         code === '42501'
-        || lower.includes('permission')
-        || lower.includes('policy')
-        || lower.includes('rls')
+        || lower.includes('permission denied')
         || lower.includes('row-level security')
         || lower.includes('violates row-level');
       setLeaveError(

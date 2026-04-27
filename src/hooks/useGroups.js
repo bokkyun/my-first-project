@@ -102,8 +102,9 @@ export function useGroups(userId) {
       return {
         error: {
           message:
-            '멤버십이 삭제되지 않았습니다. 로그인 계정과 그룹 멤버 user_id가 일치하는지, '
-            + 'RLS DELETE 정책이 본인 행을 허용하는지 확인해 주세요.',
+            '멤버십이 삭제되지 않았습니다. (1) 지금 로그인한 계정 UUID와 group_members.user_id가 같은지 '
+            + '(2) 이 그룹에 실제로 가입된 행이 있는지 Supabase 테이블에서 확인해 주세요. '
+            + 'DELETE 정책은 본인 행(user_id = auth.uid())을 허용하는지도 봐 주세요.',
         },
       };
     }
