@@ -1,7 +1,7 @@
 import {
   Dialog, DialogTitle, DialogContent, IconButton, Typography, Box, Divider, Chip, Paper, Button,
 } from '@mui/material';
-import { Close, ShowChart, InfoOutlined, OpenInNew } from '@mui/icons-material';
+import { Close, InfoOutlined, OpenInNew } from '@mui/icons-material';
 
 const LABELS = {
   corp_name: '기업명',
@@ -51,9 +51,8 @@ function ExternalIpoEventDialog({ open, onClose, event }) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
       <DialogTitle sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, pb: 1 }}>
-        <ShowChart color="success" sx={{ mt: 0.3 }} />
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography fontWeight={700} sx={{ pr: 1 }}>{event.title?.replace(/^📈\s*/, '') || '공시'}</Typography>
+          <Typography fontWeight={700} sx={{ pr: 1 }}>{event.title?.replace(/^📈\s*/, '') || raw.corp_name || '공시'}</Typography>
           <Chip size="small" label="금융감독원 Open DART" color="success" variant="outlined" sx={{ mt: 0.5 }} />
         </Box>
         <IconButton onClick={onClose} size="small"><Close /></IconButton>

@@ -207,7 +207,7 @@ export function mapOdcloudItemToCalendarEvent(item, index) {
 
   return {
     id,
-    title: `🏢 ${titleCore}${pbl}`,
+    title: `${titleCore}${pbl}`,
     starts_at: starts,
     ends_at: ends,
     is_all_day: true,
@@ -259,7 +259,7 @@ export function mapSplyItemToCalendarEvent(item, index) {
 
   return {
     id,
-    title: `🏢 ${String(titleBase).trim()}${pbl}`,
+    title: `${String(titleBase).trim()}${pbl}`,
     starts_at: starts,
     ends_at: ends,
     is_all_day: true,

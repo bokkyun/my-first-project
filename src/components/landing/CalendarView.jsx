@@ -108,18 +108,32 @@ function CalendarView({
           eventContent={(arg) => {
             const ex = arg.event.extendedProps;
             const nickname = ex.creatorNickname;
+            const isIpo = ex._external === 'ipo';
+            const displayTitle = String(arg.event.title || '').replace(/^(📈|🏢)\s*/u, '');
+            const ipoMobileTitleSx = isMobile && isIpo ? {
+              fontWeight: 800,
+              fontSize: '0.8125rem',
+              lineHeight: 1.25,
+              whiteSpace: 'normal',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              wordBreak: 'break-word',
+            } : {
+              fontWeight: 600,
+              fontSize: '0.75rem',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            };
+            const showNickname = nickname && !(isMobile && isIpo);
             return (
               <Box sx={{ px: 0.5, overflow: 'hidden', width: '100%', lineHeight: 1.2 }}>
-                <Box sx={{
-                  fontWeight: 600,
-                  fontSize: '0.75rem',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                }}>
-                  {arg.event.title}
+                <Box sx={ipoMobileTitleSx}>
+                  {displayTitle}
                 </Box>
-                {nickname && (
+                {showNickname && (
                   <Box sx={{
                     fontSize: '0.65rem',
                     opacity: 0.9,

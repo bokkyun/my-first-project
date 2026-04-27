@@ -1,7 +1,7 @@
 import {
   Dialog, DialogTitle, DialogContent, IconButton, Typography, Box, Divider, Chip, Paper,
 } from '@mui/material';
-import { Close, Apartment, InfoOutlined } from '@mui/icons-material';
+import { Close, InfoOutlined } from '@mui/icons-material';
 import { getRebAptDialogSections } from '../../utils/rebAptFieldLabels';
 
 function formatKoDateRange(startsAt, endsAt, allDay) {
@@ -65,7 +65,6 @@ function ExternalAptEventDialog({ open, onClose, event }) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
       <DialogTitle sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, pb: 1 }}>
-        <Apartment color="primary" sx={{ mt: 0.3 }} />
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography fontWeight={700} sx={{ pr: 1 }}>{event.title?.replace(/^🏢\s*/, '') || '아파트 청약'}</Typography>
           <Chip size="small" label="한국부동산원·청약홈 API" color="primary" variant="outlined" sx={{ mt: 0.5 }} />

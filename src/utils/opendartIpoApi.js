@@ -75,7 +75,7 @@ export function mapDartListItemToCalendarEvent(row, index) {
 
   return {
     id,
-    title: `📈 ${corp}`,
+    title: corp,
     starts_at: starts,
     ends_at: ends,
     is_all_day: true,
