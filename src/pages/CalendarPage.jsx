@@ -16,6 +16,7 @@ import EventDetailDialog from '../components/landing/EventDetailDialog';
 import ExternalAptEventDialog from '../components/landing/ExternalAptEventDialog';
 import ExternalIpoEventDialog from '../components/landing/ExternalIpoEventDialog';
 import DayAgendaDialog from '../components/landing/DayAgendaDialog';
+import SubwayScheduleBar from '../components/common/SubwayScheduleBar';
 
 /** `dateStr` YYYY-MM-DD 가 로컬 달력 날짜와 겹치는지 */
 function eventOccursOnDate(ev, dateStr) {
@@ -244,7 +245,15 @@ function CalendarPage() {
   };
 
   return (
-    <Box sx={{ width: '100%', minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
+    <Box sx={{
+      width: '100%',
+      minHeight: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      bgcolor: 'background.default',
+      /** 하단 SubwayScheduleBar(고정)에 가리지 않도록 */
+      pb: { xs: 8, md: 7 },
+    }}>
       <Navbar profile={profile} onMenuClick={() => setSidebarOpen(true)} />
 
       <Box sx={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
@@ -346,10 +355,12 @@ function CalendarPage() {
         open={snack.open}
         autoHideDuration={3000}
         onClose={() => setSnack((prev) => ({ ...prev, open: false }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         <Alert severity={snack.severity} sx={{ borderRadius: 2 }}>{snack.msg}</Alert>
       </Snackbar>
+
+      <SubwayScheduleBar />
     </Box>
   );
 }
