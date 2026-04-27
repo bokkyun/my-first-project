@@ -46,13 +46,14 @@ function rceptYmdToIsoEnd(ymd8) {
  * @param {number} index
  * @returns {object|null} 캘린더 이벤트 형태
  */
-/** 증권신고(공모) 일정만 쓰고, 증권발행실적·실적보고 등은 제외 */
+/**
+ * 발행공시(C001) 응답에 끼는 잡음만 제거. (보고서명 표기가 환경마다 달라
+ * '증권신고' 미포함 행을 전부 버리면 캘린더가 비는 경우가 있음)
+ */
 export function isDartIpoSecuritiesRegistrationRow(row) {
   const nm = row && row.report_nm != null ? String(row.report_nm) : '';
-  if (!nm.trim()) return true;
   if (nm.includes('증권발행실적')) return false;
   if (nm.includes('소액공모실적')) return false;
-  if (!nm.includes('증권신고')) return false;
   return true;
 }
 
@@ -157,9 +158,10 @@ export async function fetchDartListAllPages(path, ymd, maxPages = 20, fetchImpl 
     return {
       items: [],
       error:
-        '배포(프로덕션) 빌드에서는 브라우저 CORS 때문에 Open DART 직접 호출이 되지 않습니다. '
-        + 'workers/opendart-proxy 를 Cloudflare에 올리고, 빌드 시 VITE_DART_OPENDART_ORIGIN=Worker URL(끝/ 없이) '
-        + '와 VITE_DART_CRTFC_KEY 를 넣은 뒤 다시 배포하세요. 로컬은 npm run dev.',
+        '배포 사이트에서는 Open DART를 브라우저가 직접 호출할 수 없습니다(CORS). '
+        + 'GitHub → 이 저장소 Settings → Secrets → Actions 에 '
+        + 'VITE_DART_OPENDART_ORIGIN 을 추가하세요. 값은 Cloudflare **Worker** 주소(예: …workers.dev, 끝 / 없음)이며 '
+        + '**Pages 주소(…pages.dev)가 아닙니다.** Worker 배포 후 Actions를 다시 실행하세요.',
     };
   }
   const pblntfTy = (import.meta.env.VITE_DART_PBLNTF_TY || 'C').trim() || 'C';
