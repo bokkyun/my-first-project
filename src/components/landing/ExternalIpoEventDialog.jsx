@@ -1,7 +1,7 @@
 import {
-  Dialog, DialogTitle, DialogContent, IconButton, Typography, Box, Divider, Chip, Paper,
+  Dialog, DialogTitle, DialogContent, IconButton, Typography, Box, Divider, Chip, Paper, Button,
 } from '@mui/material';
-import { Close, ShowChart, InfoOutlined } from '@mui/icons-material';
+import { Close, ShowChart, InfoOutlined, OpenInNew } from '@mui/icons-material';
 
 const LABELS = {
   corp_name: '기업명',
@@ -29,6 +29,13 @@ function ExternalIpoEventDialog({ open, onClose, event }) {
       return { k, label, v: String(v) };
     })
     .filter(Boolean);
+
+  const rceptNo = raw.rcept_no != null && String(raw.rcept_no).trim() !== ''
+    ? String(raw.rcept_no).trim()
+    : null;
+  const dartViewerUrl = rceptNo
+    ? `https://dart.fss.or.kr/dsaf001/main.do?rcpNo=${encodeURIComponent(rceptNo)}`
+    : null;
 
   const formatRange = () => {
     if (!event.starts_at) return '';
@@ -67,6 +74,22 @@ function ExternalIpoEventDialog({ open, onClose, event }) {
             </Box>
           ))}
         </Paper>
+        {dartViewerUrl && (
+          <Box sx={{ mt: 2 }}>
+            <Button
+              component="a"
+              href={dartViewerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              variant="contained"
+              color="success"
+              fullWidth
+              startIcon={<OpenInNew />}
+            >
+              전자공시에서 보기
+            </Button>
+          </Box>
+        )}
       </DialogContent>
     </Dialog>
   );
