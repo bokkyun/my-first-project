@@ -35,6 +35,17 @@ function eventOccursOnDate(ev, dateStr) {
   return start <= dayEnd && end >= dayStart;
 }
 
+/**
+ * 헤더에 표시된 기간(FullCalendar view.currentStart ~ currentEnd, end 제외)과 일정이 겹치는지.
+ * 월 뷰에서는 해당 월만 표시하고 전·익월 패딩 칸 일정은 숨길 때 사용합니다.
+ */
+function eventOverlapsFocusedRange(ev, rangeStart, rangeEndExclusive) {
+  if (!ev?.starts_at) return false;
+  const start = new Date(ev.starts_at);
+  const end = ev.ends_at ? new Date(ev.ends_at) : start;
+  return start < rangeEndExclusive && end >= rangeStart;
+}
+
 function CalendarPage() {
   const theme = useTheme();
   const isMobileCalendarUx = useMediaQuery(theme.breakpoints.down('md'));
@@ -51,6 +62,16 @@ function CalendarPage() {
     return {
       start: new Date(now.getFullYear(), now.getMonth(), 1),
       end: new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999),
+    };
+  });
+  /** 그리드에 그릴 일정 범위 — FullCalendar 의 currentStart/currentEnd(표시 중인 달·주·일), end 는 배타 */
+  const [focusedViewRange, setFocusedViewRange] = useState(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    return {
+      start: new Date(y, m, 1),
+      end: new Date(y, m + 1, 1),
     };
   });
   const [aptDetailOpen, setAptDetailOpen] = useState(false);
@@ -82,12 +103,20 @@ function CalendarPage() {
     return list;
   }, [events, aptSplyList, showAptSply, ipoList, showIpo]);
 
+  /** 표시 중인 뷰 구간에 속하는 일정만(월 뷰에서는 해당 월만, 전·익월 칸 제외) */
+  const calendarEventsForGrid = useMemo(() => {
+    const { start, end } = focusedViewRange;
+    return calendarEvents.filter((ev) => eventOverlapsFocusedRange(ev, start, end));
+  }, [calendarEvents, focusedViewRange]);
+
   const dayEventsForSheet = useMemo(() => {
     if (!selectedDate) return [];
+    const { start, end } = focusedViewRange;
     return calendarEvents
+      .filter((ev) => eventOverlapsFocusedRange(ev, start, end))
       .filter((ev) => eventOccursOnDate(ev, selectedDate))
       .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
-  }, [calendarEvents, selectedDate]);
+  }, [calendarEvents, selectedDate, focusedViewRange]);
 
   /** 당일 스케줄 브라우저 알림 */
   useNotifications(events);
@@ -184,6 +213,11 @@ function CalendarPage() {
 
   const handleDatesSet = useCallback((info) => {
     setViewRange({ start: info.start, end: info.end });
+    const vs = info.view;
+    setFocusedViewRange({
+      start: vs.currentStart,
+      end: vs.currentEnd,
+    });
   }, []);
 
   useEffect(() => {
@@ -307,7 +341,7 @@ function CalendarPage() {
             </Button>
           </Box>
           <CalendarView
-            events={calendarEvents}
+            events={calendarEventsForGrid}
             groups={groups}
             visibleGroupIds={visibleGroupIds}
             onDateClick={handleDateClick}
