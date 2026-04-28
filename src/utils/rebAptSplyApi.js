@@ -393,6 +393,17 @@ export function getRebAptOdcloudPageSizeNum() {
 }
 
 /**
+ * odcloud에서 몇 페이지까지 병합할지. 기본 1 = 첫 응답만(가장 빠름).
+ * 예전처럼 빠른 첫 표시를 원하면 1 유지. 누락 방지를 원하면 3 등.
+ */
+export function getRebAptOdcloudMaxPagesNum() {
+  const raw = String(import.meta.env.VITE_REB_APT_ODCLOUD_MAX_PAGES ?? '1').trim();
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 1) return 1;
+  return Math.min(Math.floor(n), 5);
+}
+
+/**
  * VITE_REB_APT_API_MODE=odcloud | datago
  * @param {number} [pageNum=1] — odcloud 에서만 page 쿼리에 반영됩니다.
  */

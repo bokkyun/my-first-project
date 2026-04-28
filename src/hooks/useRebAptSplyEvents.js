@@ -6,6 +6,7 @@ import {
   mapRebAptItemToCalendarEvent,
   filterOdcloudItemsUpcoming,
   getRebAptOdcloudPageSizeNum,
+  getRebAptOdcloudMaxPagesNum,
 } from '../utils/rebAptSplyApi';
 
 /**
@@ -36,29 +37,54 @@ export function useRebAptSplyEvents(enabled, viewRange) {
     setLoading(true);
     setFetchError(null);
     try {
-      const maxPages = mode === 'odcloud' ? 3 : 1;
       const perPage = getRebAptOdcloudPageSizeNum();
-      const merged = [];
-      for (let pg = 1; pg <= maxPages; pg += 1) {
+      const maxPages = mode === 'odcloud' ? getRebAptOdcloudMaxPagesNum() : 1;
+
+      const fetchPage = async (pg) => {
         const { path: pPath, query: pQuery } = buildRebAptSplyListUrl(pg);
         const url = toRebAptAbsoluteUrl(pPath, pQuery ? `?${pQuery}` : '', mode);
         const res = await fetch(url, { method: 'GET' });
         const json = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          const msg = json?.msg || json?.message;
-          setFetchError(msg ? `HTTP ${res.status}: ${msg}` : `HTTP ${res.status}`);
-          setRawEvents([]);
-          return;
+        return { pg, res, json };
+      };
+
+      /** 1페이지 먼저 → 가득 찰 때만 나머지 병렬(불필요한 요청 방지·체감 속도 개선) */
+      const merged = [];
+      const first = await fetchPage(1);
+      if (!first.res.ok) {
+        const msg = first.json?.msg || first.json?.message;
+        setFetchError(msg ? `HTTP ${first.res.status}: ${msg}` : `HTTP ${first.res.status}`);
+        setRawEvents([]);
+        return;
+      }
+      const parsed1 = parseRebAptSplyResponse(first.json);
+      if (parsed1.error) {
+        setFetchError(parsed1.error);
+        setRawEvents([]);
+        return;
+      }
+      const batch1 = parsed1.items || [];
+      merged.push(...batch1);
+
+      if (mode === 'odcloud' && maxPages > 1 && batch1.length >= perPage) {
+        const extra = [];
+        for (let pg = 2; pg <= maxPages; pg += 1) extra.push(pg);
+        const more = await Promise.all(extra.map((pg) => fetchPage(pg)));
+        for (const { res, json } of more) {
+          if (!res.ok) {
+            const msg = json?.msg || json?.message;
+            setFetchError(msg ? `HTTP ${res.status}: ${msg}` : `HTTP ${res.status}`);
+            setRawEvents([]);
+            return;
+          }
+          const { items, error } = parseRebAptSplyResponse(json);
+          if (error) {
+            setFetchError(error);
+            setRawEvents([]);
+            return;
+          }
+          merged.push(...(items || []));
         }
-        const { items, error } = parseRebAptSplyResponse(json);
-        if (error) {
-          setFetchError(error);
-          setRawEvents([]);
-          return;
-        }
-        const batch = items || [];
-        merged.push(...batch);
-        if (mode !== 'odcloud' || batch.length < perPage) break;
       }
 
       let list = merged;

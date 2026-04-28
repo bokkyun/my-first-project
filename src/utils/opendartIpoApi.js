@@ -161,34 +161,55 @@ export async function fetchDartListAllPages(path, ymd, maxPages = 20, fetchImpl 
   const pblntfTy = (import.meta.env.VITE_DART_PBLNTF_TY || 'C').trim() || 'C';
   const detailTy = (import.meta.env.VITE_DART_PBLNTF_DETAIL_TY || 'C001').trim() || 'C001';
   const pageCount = String(import.meta.env.VITE_DART_PAGE_COUNT || '100');
-  const all = [];
-  let pageNo = 1;
-  let totalPage = 1;
 
-  do {
-    const q = new URLSearchParams({
-      crtfc_key: key,
-      pblntf_ty: pblntfTy,
-      pblntf_detail_ty: detailTy,
-      bgn_de: ymd.bgn_de,
-      end_de: ymd.end_de,
-      page_no: String(pageNo),
-      page_count: pageCount,
-    });
-    const url = toDartAbsoluteUrl(path, q.toString());
+  const buildQs = (pageNo) => new URLSearchParams({
+    crtfc_key: key,
+    pblntf_ty: pblntfTy,
+    pblntf_detail_ty: detailTy,
+    bgn_de: ymd.bgn_de,
+    end_de: ymd.end_de,
+    page_no: String(pageNo),
+    page_count: pageCount,
+  }).toString();
+
+  const fetchOne = async (pageNo) => {
+    const url = toDartAbsoluteUrl(path, buildQs(pageNo));
     const res = await fetchImpl(url, { method: 'GET' });
     const json = await res.json().catch(() => ({}));
+    return { pageNo, res, json };
+  };
+
+  const first = await fetchOne(1);
+  if (!first.res.ok) {
+    return { items: [], error: `HTTP ${first.res.status}` };
+  }
+  const parsed1 = parseDartListResponse(first.json);
+  if (parsed1.error) {
+    return { items: [], error: parsed1.error };
+  }
+
+  const totalPage = Number(parsed1.totalPage) || 1;
+  const lastPage = Math.min(totalPage, Math.max(1, Number(maxPages) || 20));
+  const all = [...parsed1.list];
+
+  if (lastPage <= 1) {
+    return { items: all, error: null };
+  }
+
+  const restNums = [];
+  for (let p = 2; p <= lastPage; p += 1) restNums.push(p);
+
+  const settled = await Promise.all(restNums.map((pageNo) => fetchOne(pageNo)));
+  for (const { res, json } of settled) {
     if (!res.ok) {
-      return { items: [], error: `HTTP ${res.status}` };
+      return { items: all, error: `HTTP ${res.status}` };
     }
     const parsed = parseDartListResponse(json);
     if (parsed.error) {
       return { items: all, error: parsed.error };
     }
     all.push(...parsed.list);
-    totalPage = parsed.totalPage;
-    pageNo += 1;
-  } while (pageNo <= totalPage && pageNo <= maxPages);
+  }
 
   return { items: all, error: null };
 }
