@@ -1,5 +1,5 @@
 import {
-  Box, Container, Typography, Button, Grid, Paper, Avatar, Alert,
+  Box, Container, Typography, Button, Grid, Paper, Avatar,
 } from '@mui/material';
 import { Link } from 'react-router-dom';
 import {
@@ -168,26 +168,9 @@ function LandingPage() {
           <Typography variant="h4" fontWeight={700} textAlign="center" sx={{ mb: 1 }}>
             주요 기능
           </Typography>
-          <Typography variant="body1" color="text.secondary" textAlign="center" sx={{ mb: 2 }}>
+          <Typography variant="body1" color="text.secondary" textAlign="center" sx={{ mb: 6 }}>
             투자·청약 일정과 그룹 협업에 맞춘 MoneyCal 기능을 살펴보세요.
           </Typography>
-          <Alert severity="info" sx={{ mb: 4, maxWidth: 720, mx: 'auto', textAlign: 'left' }}>
-            <Typography variant="body2" component="div" lineHeight={1.65}>
-              <strong>표시 위치:</strong> 아래 기능은 회원 로그인 뒤 <strong>캘린더</strong>에서만 실제 데이터로 붙습니다. PC는 왼쪽 사이드바, 모바일은 상단 메뉴(≡)를 열면
-              「아파트 청약·분양」「공모주(공시 제출)」표시 여부를 켤 수 있습니다.
-              <Box component="span" display="block" sx={{ mt: 1 }}>
-                <strong>안 보일 때:</strong> 서버가 아니라 브라우저에서 실행되므로, 공모·청약 목록에는 발급한 API 인증키를 Vite 환경 변수로 넣고(
-                <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                  예: VITE_DART_CRTFC_KEY, VITE_DATA_GO_KR_SERVICE_KEY
-                </Typography>
-                ) 재빌드해야 합니다. 로컬은 .env·배포는 GitHub Actions 시크릿 등에 같은 이름으로 넣습니다. 자세한 이름은 저장소{' '}
-                <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                  .env.example
-                </Typography>
-                를 확인하세요.
-              </Box>
-            </Typography>
-          </Alert>
           <Grid container spacing={3}>
             {FEATURES.map((f) => (
               <Grid key={f.title} size={{ xs: 12, sm: 6, md: 4 }}>
