@@ -6,6 +6,17 @@ import interactionPlugin from '@fullcalendar/interaction';
 import { Box, useMediaQuery, useTheme } from '@mui/material';
 import { isCoffeeEvent } from '../../utils/eventCoffee';
 
+/** 공모주(ipo) 칸: 한 줄에 3자씩만 보이도록 줄바꿈(가로 폭 한정 대응) */
+function formatIpoTitleThreeCharsPerLine(title) {
+  const s = String(title);
+  if (!s) return s;
+  const lines = [];
+  for (let i = 0; i < s.length; i += 3) {
+    lines.push(s.slice(i, i + 3));
+  }
+  return lines.join('\n');
+}
+
 /**
  * FullCalendar 기반 메인 캘린더 뷰
  *
@@ -133,19 +144,19 @@ function CalendarView({
             const nickname = ex.creatorNickname;
             const isIpo = ex._external === 'ipo';
             const displayTitle = String(arg.event.title || '').replace(/^(📈|🏢)\s*/u, '');
-            const ipoMobileTitleSx = isMobile && isIpo ? {
-              fontWeight: 800,
-              fontSize: '0.8125rem',
-              lineHeight: 1.25,
-              whiteSpace: 'normal',
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
-              overflow: 'hidden',
-              wordBreak: 'break-word',
-            } : null;
+            /** 공모주: 글자 한 단계 축소 + 줄당 3자 줄바꿈 */
+            const ipoTitleSx = isIpo
+              ? {
+                fontWeight: 700,
+                fontSize: isMobile ? '0.6875rem' : '0.625rem',
+                lineHeight: 1.3,
+                whiteSpace: 'pre-line',
+                wordBreak: 'keep-all',
+                overflow: 'hidden',
+              }
+              : null;
             /** 데스크톱: 좁은 칸에서도 제목이 잘리지 않도록 2줄까지 · 모바일(비IPO): 한 줄 */
-            const titleSx = ipoMobileTitleSx
+            const titleSx = ipoTitleSx
               || (isMobile
                 ? {
                   fontWeight: 600,
@@ -165,11 +176,12 @@ function CalendarView({
                   overflow: 'hidden',
                   wordBreak: 'break-word',
                 });
-            const showNickname = nickname && !(isMobile && isIpo);
+            const showNickname = nickname && !isIpo;
+            const titleText = isIpo ? formatIpoTitleThreeCharsPerLine(displayTitle) : displayTitle;
             return (
               <Box sx={{ pl: 0.25, pr: 0.25, overflow: 'hidden', width: '100%', minWidth: 0, lineHeight: 1.2 }}>
                 <Box sx={titleSx}>
-                  {displayTitle}
+                  {titleText}
                 </Box>
                 {showNickname && (
                   <Box sx={{
