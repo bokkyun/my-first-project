@@ -46,9 +46,24 @@ html, body {
 
 .fc-daygrid-event {
   border-radius: 4px;
-  padding: 1px 4px;
+  padding: 1px 3px;
+  margin: 1px 1px;
   font-size: 0.78rem;
   cursor: pointer;
+}
+
+/* 넓은 화면: 칸·이벤트 패딩을 줄여 가로 공간 확보 */
+@media (min-width: 900px) {
+  .fc-theme-standard td,
+  .fc-theme-standard th {
+    padding: 2px;
+  }
+
+  .fc-daygrid-event {
+    padding: 1px 2px;
+    margin: 1px 0;
+    font-size: 0.73rem;
+  }
 }
 
 .fc-daygrid-day:hover {

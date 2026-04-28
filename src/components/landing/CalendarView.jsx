@@ -76,8 +76,27 @@ function CalendarView({
   }, [events, groups, visibleGroupIds, onlyMySchedules, currentUserId]);
 
   return (
-    <Box sx={{ flex: 1, p: { xs: 1, md: 2 }, overflow: 'hidden', bgcolor: 'background.default' }}>
-      <Box sx={{ bgcolor: 'white', borderRadius: 2, p: { xs: 1, md: 2 }, boxShadow: 1, height: '100%' }}>
+    <Box
+      sx={{
+        flex: 1,
+        minWidth: 0,
+        px: { xs: 0.5, sm: 0.75, md: 0.5 },
+        py: { xs: 0.75, md: 1 },
+        overflow: 'hidden',
+        bgcolor: 'background.default',
+      }}
+    >
+      <Box
+        sx={{
+          bgcolor: 'white',
+          borderRadius: { xs: 2, md: 1 },
+          px: { xs: 0.25, sm: 0.5, md: 0.5 },
+          py: { xs: 0.75, md: 1 },
+          boxShadow: 1,
+          height: '100%',
+          minWidth: 0,
+        }}
+      >
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -124,17 +143,32 @@ function CalendarView({
               WebkitBoxOrient: 'vertical',
               overflow: 'hidden',
               wordBreak: 'break-word',
-            } : {
-              fontWeight: 600,
-              fontSize: '0.75rem',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            };
+            } : null;
+            /** 데스크톱: 좁은 칸에서도 제목이 잘리지 않도록 2줄까지 · 모바일(비IPO): 한 줄 */
+            const titleSx = ipoMobileTitleSx
+              || (isMobile
+                ? {
+                  fontWeight: 600,
+                  fontSize: '0.75rem',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                }
+                : {
+                  fontWeight: 600,
+                  fontSize: '0.72rem',
+                  lineHeight: 1.25,
+                  whiteSpace: 'normal',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  wordBreak: 'break-word',
+                });
             const showNickname = nickname && !(isMobile && isIpo);
             return (
-              <Box sx={{ px: 0.5, overflow: 'hidden', width: '100%', lineHeight: 1.2 }}>
-                <Box sx={ipoMobileTitleSx}>
+              <Box sx={{ pl: 0.25, pr: 0.25, overflow: 'hidden', width: '100%', minWidth: 0, lineHeight: 1.2 }}>
+                <Box sx={titleSx}>
                   {displayTitle}
                 </Box>
                 {showNickname && (
@@ -152,7 +186,7 @@ function CalendarView({
             );
           }}
           height="calc(100vh - 140px)"
-          dayMaxEvents={isMobile ? 2 : 3}
+          dayMaxEvents={isMobile ? 2 : 5}
           moreLinkText={(n) => `+${n}`}
           eventDisplay="block"
         />
