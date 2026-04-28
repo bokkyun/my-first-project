@@ -12,8 +12,8 @@ import PublicFooter from '../components/common/PublicFooter';
 const VALUES = [
   {
     icon: <PeopleOutlined sx={{ fontSize: 36, color: '#1976d2' }} />,
-    title: '함께하는 일정',
-    desc: '혼자만의 일정 관리를 넘어 팀과 함께 계획을 공유하고 협력할 수 있는 환경을 만들어갑니다.',
+    title: '투자 일정과 팀 일정',
+    desc: '공모 공시 등 참고 목적 표시와 팀·모임 단위 공유 일정을 한 타임라인에서 다루도록 설계했습니다.',
   },
   {
     icon: <LightbulbOutlined sx={{ fontSize: 36, color: '#f57c00' }} />,
@@ -29,7 +29,7 @@ const VALUES = [
 
 const TECH_STACK = [
   'React', 'Vite', 'MUI (Material UI)', 'Supabase',
-  'React Router', 'FullCalendar', 'Flutter', 'Cloudflare Pages',
+  'React Router', 'FullCalendar',
 ];
 
 function AboutPage() {
@@ -45,7 +45,7 @@ function AboutPage() {
             sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, textDecoration: 'none' }}
           >
             <CalendarMonth sx={{ color: 'primary.main', fontSize: 28 }} />
-            <Typography variant="h6" fontWeight={700} color="primary.main">TeamSync</Typography>
+            <Typography variant="h6" fontWeight={700} color="primary.main">MoneyCal</Typography>
           </Box>
         </Container>
       </Box>
@@ -64,8 +64,8 @@ function AboutPage() {
             서비스 소개
           </Typography>
           <Typography variant="h6" sx={{ opacity: 0.9, fontWeight: 400, fontSize: { xs: '1rem', md: '1.1rem' } }}>
-            TeamSync는 팀·그룹의 일정을 함께 공유하고 관리하는<br />
-            무료 공유 스케줄 관리 서비스입니다.
+            MoneyCal은 공모 공시 등 공모주 일정 참고 표시와<br />
+            무순위·청약 분양 일정 참고 표시를 캘린더에 제공하고, 동시에 팀 스케줄까지 묶어 보여 주는 무료 웹 서비스입니다.
           </Typography>
         </Container>
       </Box>
@@ -77,17 +77,19 @@ function AboutPage() {
           elevation={0}
           sx={{ p: { xs: 3, md: 5 }, borderRadius: 3, mb: 4, border: '1px solid', borderColor: 'grey.100' }}
         >
-          <Typography variant="h5" fontWeight={700} sx={{ mb: 2 }}>TeamSync란?</Typography>
+          <Typography variant="h5" fontWeight={700} sx={{ mb: 2 }}>MoneyCal이란?</Typography>
           <Typography variant="body1" color="text.secondary" lineHeight={2}>
-            TeamSync는 개인 일정 관리를 넘어 팀, 가족, 동아리 등 다양한 그룹의 일정을 실시간으로
-            공유하고 함께 관리할 수 있는 웹 서비스입니다. 그룹을 만들고 멤버를 초대하면 서로의
-            일정을 색상별로 구분해 한눈에 확인할 수 있습니다.
+            MoneyCal은 같은 캘린더 안에서 금융·부동산 공개 정보에 기반한 <strong>공모주 관련 안내 공시</strong> 및
+            <strong> 무순위·청약 분양</strong> 일정을 선택하여 함께 볼 수 있게 하며, 따로 작성한
+            내 일정·<strong>팀·그룹 단위 공유 일정</strong>(가족, 모임, 업무 모임 등)과도 겹쳐 확인할 수 있는 웹 서비스입니다.
+            선택한 기능은 사용자가 켜고 끌 수 있습니다.
             <br /><br />
-            그룹 관리자는 멤버의 일정을 대신 등록하고 관리하는 기능을 통해 팀 운영을 더욱 편리하게
-            할 수 있으며, 브라우저 알림 기능으로 중요한 일정을 절대 놓치지 않도록 도와드립니다.
+            그룹을 만들거나 초대 코드로 참여하면 멤버가 등록한 일정을 색으로 구분해 볼 수 있고,
+            그룹 관리자는 멤버 일정을 대신 입력하거나 관리하여 팀 운영을 돕습니다. 브라우저 알림으로
+            당일 일정 안내를 받을 수 있으며, (선택) 출퇴근 노선에 맞춰 지하철 도착 예정 정보를 확인할 수도 있습니다.
             <br /><br />
-            <strong>커피 주문 모임</strong> 일정을 만들면 그룹원이 웹에서 메뉴를 선택하고, 음료별
-            수량 집계와 누가 무엇을 주문했는지 명단이 한곳에 모입니다.
+            모임 장소가 카페인 일정이라면 <strong>커피 주문 모임</strong> 형태로 만들어 참가자가 메뉴를 고르고
+            집계·명단을 웹 한곳에서 볼 수 있습니다.
           </Typography>
         </Paper>
 
@@ -121,7 +123,7 @@ function AboutPage() {
             <Typography variant="h6" fontWeight={700}>기술 스택</Typography>
           </Box>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            TeamSync는 최신 웹 기술을 기반으로 빠르고 안정적인 서비스를 제공합니다.
+            MoneyCal은 최신 웹 기술을 기반으로 빠르고 안정적인 화면을 제공합니다.
           </Typography>
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             {TECH_STACK.map((tech) => (

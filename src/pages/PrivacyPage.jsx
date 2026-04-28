@@ -6,7 +6,7 @@ import PublicFooter from '../components/common/PublicFooter';
 const SECTIONS = [
   {
     title: '제1조 (개인정보의 처리 목적)',
-    content: `TeamSync(이하 "서비스")는 다음의 목적을 위하여 개인정보를 처리합니다. 처리하고 있는 개인정보는 다음의 목적 이외의 용도로는 이용되지 않으며, 이용 목적이 변경되는 경우에는 개인정보 보호법 제18조에 따라 별도의 동의를 받는 등 필요한 조치를 이행할 예정입니다.
+    content: `MoneyCal(이하 "서비스")는 다음의 목적을 위하여 개인정보를 처리합니다. 처리하고 있는 개인정보는 다음의 목적 이외의 용도로는 이용되지 않으며, 이용 목적이 변경되는 경우에는 개인정보 보호법 제18조에 따라 별도의 동의를 받는 등 필요한 조치를 이행할 예정입니다.
 
 1. 회원 가입 및 관리: 회원 가입 의사 확인, 회원제 서비스 제공에 따른 본인 식별·인증, 회원 자격 유지·관리
 2. 서비스 제공: 일정 등록 및 관리, 그룹 서비스 제공, 알림 서비스 제공
@@ -123,7 +123,7 @@ function PrivacyPage() {
             sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, textDecoration: 'none' }}
           >
             <CalendarMonth sx={{ color: 'primary.main', fontSize: 28 }} />
-            <Typography variant="h6" fontWeight={700} color="primary.main">TeamSync</Typography>
+            <Typography variant="h6" fontWeight={700} color="primary.main">MoneyCal</Typography>
           </Box>
         </Container>
       </Box>
@@ -135,7 +135,7 @@ function PrivacyPage() {
             시행일: 2026년 3월 30일
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 4, lineHeight: 1.8 }}>
-            TeamSync(이하 "서비스")는 「개인정보 보호법」 제30조에 따라 정보 주체의 개인정보를 보호하고
+            MoneyCal(이하 "서비스")는 「개인정보 보호법」 제30조에 따라 정보 주체의 개인정보를 보호하고
             이와 관련한 고충을 신속하고 원활하게 처리할 수 있도록 하기 위하여 다음과 같이 개인정보
             처리방침을 수립·공개합니다.
           </Typography>

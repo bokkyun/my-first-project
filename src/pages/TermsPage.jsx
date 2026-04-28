@@ -6,11 +6,11 @@ import PublicFooter from '../components/common/PublicFooter';
 const SECTIONS = [
   {
     title: '제1조 (목적)',
-    content: `이 약관은 TeamSync(이하 "서비스")가 제공하는 공유 스케줄 관리 서비스의 이용과 관련하여 서비스와 이용자의 권리, 의무 및 책임 사항, 기타 필요한 사항을 규정함을 목적으로 합니다.`,
+    content: `이 약관은 MoneyCal(이하 "서비스")가 제공하는 통합 일정 및 그룹 협업 웹 서비스의 이용과 관련하여 서비스와 이용자의 권리, 의무 및 책임 사항, 기타 필요한 사항을 규정함을 목적으로 합니다.`,
   },
   {
     title: '제2조 (정의)',
-    content: `① "서비스"란 TeamSync가 운영하는 공유 스케줄 관리 웹 서비스를 의미합니다.
+    content: `① "서비스"란 MoneyCal이 운영하는 투자·청약 참고 일정 표시 및 그룹 스케줄 기능을 포함한 웹 서비스를 의미합니다.
 ② "이용자"란 이 약관에 따라 서비스가 제공하는 서비스를 받는 회원 및 비회원을 말합니다.
 ③ "회원"이란 서비스에 개인정보를 제공하여 회원 등록을 한 자로서, 서비스의 정보를 지속적으로 제공받으며 서비스를 계속적으로 이용할 수 있는 자를 말합니다.
 ④ "그룹"이란 회원이 생성하거나 가입한 일정 공유 단위로, 그룹 내에서 일정을 공유할 수 있습니다.
@@ -36,10 +36,11 @@ const SECTIONS = [
     title: '제5조 (서비스의 제공 및 변경)',
     content: `① 서비스는 다음과 같은 업무를 수행합니다.
   1. 개인 일정 등록, 수정, 삭제 및 조회
-  2. 그룹 생성, 가입, 관리
-  3. 그룹 내 일정 공유
-  4. 일정 알림 서비스
-  5. 기타 서비스가 정하는 업무
+  2. 그룹 생성, 가입, 관리 및 그룹 내 일정 공유
+  3. 브라우저 등 알림을 통한 일정 안내(선택)
+  4. 선택 시 외부 공개 데이터(API)를 활용한 투자·부동산 관련 일정 참고 표시 기능
+  5. (선택) 출퇴근 등과 연결된 대중교통 도착 예정 참고 기능
+  6. 커피 주문 등 그룹 모임 형태 기능 및 기타 서비스가 정하는 업무
 
 ② 서비스는 서비스의 내용을 변경할 수 있으며, 이 경우에는 변경된 서비스의 내용 및 제공일자를 공지합니다.
 ③ 서비스는 무료로 제공되며, 서비스의 변경·중단에 따른 별도의 보상은 없습니다.`,
@@ -98,7 +99,7 @@ function TermsPage() {
             sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, textDecoration: 'none' }}
           >
             <CalendarMonth sx={{ color: 'primary.main', fontSize: 28 }} />
-            <Typography variant="h6" fontWeight={700} color="primary.main">TeamSync</Typography>
+            <Typography variant="h6" fontWeight={700} color="primary.main">MoneyCal</Typography>
           </Box>
         </Container>
       </Box>

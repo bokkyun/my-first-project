@@ -26,12 +26,12 @@ function PublicFooter() {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
               <CalendarMonth sx={{ color: 'primary.main', fontSize: 28 }} />
               <Typography variant="h6" fontWeight={700} color="white">
-                TeamSync
+                MoneyCal
               </Typography>
             </Box>
-            <Typography variant="body2" sx={{ maxWidth: 260, lineHeight: 1.8 }}>
-              팀과 함께하는 스마트한 일정 관리.<br />
-              그룹 스케줄을 한눈에 공유하세요.
+            <Typography variant="body2" sx={{ maxWidth: 280, lineHeight: 1.8 }}>
+              공모·청약 일정 참고부터 팀 스케줄까지.<br />
+              한 화면에서 투자·협업을 맞춰 보세요.
             </Typography>
           </Box>
 
@@ -94,7 +94,7 @@ function PublicFooter() {
           }}
         >
           <Typography variant="caption">
-            © {new Date().getFullYear()} TeamSync. All rights reserved.
+            © {new Date().getFullYear()} MoneyCal. All rights reserved.
           </Typography>
           <Box sx={{ display: 'flex', gap: 2 }}>
             <MuiLink

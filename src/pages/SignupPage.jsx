@@ -78,7 +78,7 @@ function SignupPage() {
             <Box sx={{ flex: 1, textAlign: 'center', pr: 5 }}>
               <CalendarMonth sx={{ fontSize: 36, color: 'primary.main' }} />
               <Typography variant="h6" fontWeight={700} color="primary.main">
-                TeamSync 회원가입
+                MoneyCal 회원가입
               </Typography>
             </Box>
           </Box>

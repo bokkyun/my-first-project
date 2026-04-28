@@ -1,7 +1,7 @@
 {
   "name": "MoneyCal",
   "short_name": "MoneyCal",
-  "description": "투자 일정 캘린더",
+  "description": "공모·무순위 청약과 팀 스케줄을 한 화면에",
   "start_url": "/calendar",
   "display": "standalone",
   "background_color": "#ffffff",

@@ -63,10 +63,10 @@ function LoginPage() {
           <Box sx={{ textAlign: 'center', mb: 3 }}>
             <CalendarMonth sx={{ fontSize: 48, color: 'primary.main' }} />
             <Typography variant="h5" fontWeight={700} color="primary.main">
-              TeamSync
+              MoneyCal
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              공유 스케줄 관리 서비스
+              공모·청약 참고 일정과 팀 스케줄 통합 서비스
             </Typography>
           </Box>
 

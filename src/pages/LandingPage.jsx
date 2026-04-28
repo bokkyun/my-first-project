@@ -2,54 +2,65 @@ import { Box, Container, Typography, Button, Grid, Paper, Avatar } from '@mui/ma
 import { Link } from 'react-router-dom';
 import {
   CalendarMonth, Group, NotificationsActive, ShareOutlined,
-  AdminPanelSettings, CheckCircleOutline, LocalCafe, ArrowForward,
+  AdminPanelSettings, LocalCafe,
+  ShowChart, Apartment, DirectionsTransit, ArrowForward,
 } from '@mui/icons-material';
 import PublicFooter from '../components/common/PublicFooter';
 import AdBanner from '../components/common/AdBanner';
 
 const FEATURES = [
   {
-    icon: <CalendarMonth sx={{ fontSize: 40, color: '#1976d2' }} />,
-    title: '스마트 캘린더',
-    desc: '직관적인 월별·주별 캘린더로 내 일정을 한눈에 확인하고 빠르게 등록할 수 있습니다.',
+    icon: <ShowChart sx={{ fontSize: 40, color: '#1565c0' }} />,
+    title: '공모주 공시 일정',
+    desc: 'Open DART(금융위 전자공시)를 바탕으로 공모와 관련된 공시·제출 일정 등을 월별로 확인할 수 있습니다. 켜고 끄기는 캘린더에서 선택합니다.',
+  },
+  {
+    icon: <Apartment sx={{ fontSize: 40, color: '#546e7a' }} />,
+    title: '아파트 분양·청약',
+    desc: '국토교통부 등 공공데이터 무순위·청약 분양 일정을 캘린더에 겹쳐 표시합니다(선택).',
   },
   {
     icon: <Group sx={{ fontSize: 40, color: '#9c27b0' }} />,
-    title: '그룹 일정 공유',
-    desc: '팀·가족·모임 단위로 그룹을 만들고 일정을 공유하여 함께 계획을 맞추세요.',
+    title: '팀·그룹 스케줄',
+    desc: '팀·가족·모임별 그룹을 만들거나 초대 코드로 참여해 일정을 색깔별로 나누어 공유합니다.',
+  },
+  {
+    icon: <CalendarMonth sx={{ fontSize: 40, color: '#1976d2' }} />,
+    title: '통합 캘린더',
+    desc: '월·주 단위 보기와 드래그로 빠르게 일정을 관리합니다. 내 일정·그룹 일정을 같은 화면에서 다룹니다.',
   },
   {
     icon: <AdminPanelSettings sx={{ fontSize: 40, color: '#388e3c' }} />,
-    title: '그룹 관리자 기능',
-    desc: '그룹 관리자는 멤버의 일정을 대신 등록하고 관리할 수 있어 팀 운영이 편리합니다.',
+    title: '그룹 관리자',
+    desc: '관리자는 멤버 일정을 대신 등록·정리하여 팀 운영 부담을 줄여 줍니다.',
   },
   {
     icon: <NotificationsActive sx={{ fontSize: 40, color: '#f57c00' }} />,
-    title: '일정 알림',
-    desc: '오늘 예정된 일정을 브라우저 알림으로 제때 안내받아 중요한 약속을 놓치지 마세요.',
+    title: '브라우저 알림',
+    desc: '오늘 일정 안내 알림 등으로 놓치기 쉬운 약속을 미리 챙길 수 있습니다.',
   },
   {
     icon: <ShareOutlined sx={{ fontSize: 40, color: '#0288d1' }} />,
-    title: '다중 그룹 지원',
-    desc: '여러 그룹에 동시에 소속되어 각 그룹의 일정을 색상별로 구분해 관리할 수 있습니다.',
+    title: '여러 그룹 동시 보기',
+    desc: '여러 모임에 소속되어 있어도 필터로 표시 그룹을 골라 볼 수 있습니다.',
   },
   {
-    icon: <CheckCircleOutline sx={{ fontSize: 40, color: '#c2185b' }} />,
-    title: '반복 일정',
-    desc: '매일·매주·매월·매년 반복되는 일정을 한 번만 등록하면 자동으로 표시됩니다.',
+    icon: <DirectionsTransit sx={{ fontSize: 40, color: '#512da8' }} />,
+    title: '출퇴근 지하철 안내',
+    desc: '설정하면 서울 지하철 노선별 다음 도착 예정 시간을 하단 바로 확인할 수 있습니다(선택).',
   },
   {
     icon: <LocalCafe sx={{ fontSize: 40, color: '#5d4037' }} />,
     title: '커피 주문 모임',
-    desc: '그룹 일정을 커피 이벤트로 열면 멤버가 메뉴(아이스/핫, 기타 음료)를 고르고 집계·명단이 웹에서 바로 정리됩니다.',
+    desc: '그룹 일정을 커피 이벤트로 열면 멤버가 메뉴를 고르고 음료별 집계·명단을 웹에서 정리합니다.',
   },
 ];
 
 const STEPS = [
-  { step: '01', title: '회원가입', desc: '아이디와 비밀번호로 간편하게 가입하세요.' },
-  { step: '02', title: '그룹 생성 또는 가입', desc: '새 그룹을 만들거나 초대 코드로 기존 그룹에 참여하세요.' },
-  { step: '03', title: '일정 등록', desc: '캘린더에서 날짜를 클릭해 일정을 등록하세요. 커피 모임이면 “커피 주문 모임”을 켜고 그룹에 공개하면 멤버가 메뉴를 선택할 수 있습니다.' },
-  { step: '04', title: '함께 공유', desc: '그룹원 모두가 실시간으로 일정을 확인하고 관리합니다.' },
+  { step: '01', title: '가입', desc: '이메일·비밀번호로 회원 가입합니다. (지원되는 경우 SNS 로그인도 가능합니다.)' },
+  { step: '02', title: '팀 스케줄 시작', desc: '새 그룹을 만들거나 초대 코드로 참여해 일정 공유 단위부터 잡습니다.' },
+  { step: '03', title: '청약·외부 일정 선택', desc: '캘린더 화면에서 공모주·아파트 청약 등 참고 표시를 켜거나 끕니다.' },
+  { step: '04', title: '통합 활용', desc: '투자·부동산 일정과 팀 일정을 한 타임라인에서 보고 알림까지 연결합니다.' },
 ];
 
 function LandingPage() {
@@ -68,7 +79,7 @@ function LandingPage() {
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
               <CalendarMonth sx={{ color: 'primary.main', fontSize: 30 }} />
-              <Typography variant="h6" fontWeight={700} color="primary.main">TeamSync</Typography>
+              <Typography variant="h6" fontWeight={700} color="primary.main">MoneyCal</Typography>
             </Box>
             <Box sx={{ display: 'flex', gap: 1 }}>
               <Button component={Link} to="/login" variant="outlined" size="small" sx={{ borderRadius: 2 }}>
@@ -97,13 +108,13 @@ function LandingPage() {
             fontWeight={800}
             sx={{ fontSize: { xs: '2rem', md: '3rem' }, mb: 2, lineHeight: 1.3 }}
           >
-            팀과 함께하는<br />스마트한 일정 관리
+            공모주·청약부터<br />팀 스케줄까지 한번에
           </Typography>
           <Typography
             variant="h6"
             sx={{ mb: 4, opacity: 0.9, fontWeight: 400, fontSize: { xs: '1rem', md: '1.2rem' } }}
           >
-            TeamSync로 그룹 스케줄을 공유하고<br />중요한 약속을 절대 놓치지 마세요.
+            MoneyCal로 공모 공시·무순위 청약 일정을 확인하고,<br />팀·모임 일정까지 한 캘린더에서 관리하세요.
           </Typography>
           <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
             <Button
@@ -156,7 +167,7 @@ function LandingPage() {
             주요 기능
           </Typography>
           <Typography variant="body1" color="text.secondary" textAlign="center" sx={{ mb: 6 }}>
-            TeamSync가 제공하는 다양한 기능을 경험해보세요.
+            투자·청약 일정과 그룹 협업에 맞춘 MoneyCal 기능을 살펴보세요.
           </Typography>
           <Grid container spacing={3}>
             {FEATURES.map((f) => (
@@ -197,10 +208,10 @@ function LandingPage() {
             이렇게 사용하세요
           </Typography>
           <Typography variant="body1" color="text.secondary" textAlign="center" sx={{ mb: 6 }}>
-            4단계만으로 팀 일정 공유를 시작할 수 있습니다.
+            다음 단계로 청약·팀 일정 활용을 바로 시작할 수 있습니다.
           </Typography>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-            {STEPS.map((s, i) => (
+            {STEPS.map((s) => (
               <Box key={s.step} sx={{ display: 'flex', alignItems: 'flex-start', gap: 3 }}>
                 <Avatar
                   sx={{
@@ -243,7 +254,7 @@ function LandingPage() {
             지금 바로 시작하세요
           </Typography>
           <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-            무료로 가입하고 팀과 함께 스마트하게 일정을 관리하세요.
+            무료로 가입하고 공모·청약 일정과 팀 스케줄을 함께 관리해 보세요.
           </Typography>
           <Button
             component={Link}

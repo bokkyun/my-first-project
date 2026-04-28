@@ -60,7 +60,7 @@ function Navbar({ profile, onMenuClick }) {
           sx={{ cursor: 'pointer', flexShrink: 0 }}
           onClick={() => navigate('/calendar')}
         >
-          TeamSync
+          MoneyCal
         </Typography>
 
         <Box sx={{ flex: 1 }} />
