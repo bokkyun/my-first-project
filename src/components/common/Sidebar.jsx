@@ -64,8 +64,32 @@ function Sidebar({
   const allChecked = groups.length > 0 && visibleGroupIds.length === groups.length;
   const someChecked = visibleGroupIds.length > 0 && visibleGroupIds.length < groups.length;
 
-  const externalToggles = (
+  /** 상단: 내 일정만 → 아파트 청약·분양 → 공모주 */
+  const topFilterCheckboxes = (
     <>
+      {onOnlyMySchedulesChange && (
+        <ListItem disablePadding sx={{ mb: 0.5 }}>
+          <FormControlLabel
+            sx={{ alignItems: 'flex-start', m: 0 }}
+            control={(
+              <Checkbox
+                checked={onlyMySchedules}
+                onChange={(e) => onOnlyMySchedulesChange(e.target.checked)}
+                size="small"
+                sx={{ py: 0.5 }}
+              />
+            )}
+            label={(
+              <Box>
+                <Typography variant="body2" fontWeight={600}>내 일정만</Typography>
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
+                  내가 등록한 일정만 표시
+                </Typography>
+              </Box>
+            )}
+          />
+        </ListItem>
+      )}
       {onShowAptSplyChange && (
         <ListItem disablePadding sx={{ mb: 0.5 }}>
           <FormControlLabel
@@ -107,6 +131,12 @@ function Sidebar({
 
   const content = (
     <Box sx={{ width: SIDEBAR_WIDTH, p: 2, overflowY: 'auto', height: '100%', bgcolor: 'white' }}>
+      <List dense disablePadding sx={{ mb: 1 }}>
+        {topFilterCheckboxes}
+      </List>
+
+      <Divider sx={{ mb: 1.5 }} />
+
       {/* 내 그룹 */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
         <Typography variant="subtitle2" fontWeight={700} color="text.secondary">
@@ -132,32 +162,9 @@ function Sidebar({
               clickable
             />
           </Box>
-          {onOnlyMySchedulesChange && (
-            <FormControlLabel
-              sx={{ mt: 1.5, alignItems: 'flex-start', mx: 0 }}
-              control={
-                <Checkbox
-                  checked={onlyMySchedules}
-                  onChange={(e) => onOnlyMySchedulesChange(e.target.checked)}
-                  size="small"
-                  sx={{ py: 0.5 }}
-                />
-              }
-              label={(
-                <Box>
-                  <Typography variant="body2" fontWeight={600}>내 일정만</Typography>
-                  <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
-                    내가 등록한 일정만 표시
-                  </Typography>
-                </Box>
-              )}
-            />
-          )}
-          <Box sx={{ textAlign: 'left', width: '100%', mt: 1.5 }}>{externalToggles}</Box>
         </Box>
       ) : (
-        <List dense disablePadding>
-          {/* 전체 체크박스 */}
+        <List dense disablePadding sx={{ mt: 0.5 }}>
           <ListItem disablePadding sx={{ mb: 0.5 }}>
             <FormControlLabel
               control={
@@ -172,31 +179,6 @@ function Sidebar({
               label={<Typography variant="body2" fontWeight={600}>전체</Typography>}
             />
           </ListItem>
-          {onOnlyMySchedulesChange && (
-            <ListItem disablePadding sx={{ mb: 0.5 }}>
-              <FormControlLabel
-                sx={{ alignItems: 'flex-start', m: 0 }}
-                control={
-                  <Checkbox
-                    checked={onlyMySchedules}
-                    onChange={(e) => onOnlyMySchedulesChange(e.target.checked)}
-                    size="small"
-                    sx={{ py: 0.5 }}
-                  />
-                }
-                label={(
-                  <Box>
-                    <Typography variant="body2" fontWeight={600}>내 일정만</Typography>
-                    <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
-                      내가 등록한 일정만 표시
-                    </Typography>
-                  </Box>
-                )}
-              />
-            </ListItem>
-          )}
-          {externalToggles}
-          <Divider sx={{ mb: 0.5 }} />
           {groups.map((group) => (
             <ListItem key={group.id} disablePadding sx={{ display: 'flex', alignItems: 'center' }}>
               <FormControlLabel

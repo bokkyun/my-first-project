@@ -5,6 +5,7 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { Box, useMediaQuery, useTheme } from '@mui/material';
 import { isCoffeeEvent } from '../../utils/eventCoffee';
+import { eventPassesSidebarCalendarFilters } from '../../utils/calendarEventFilters';
 
 /** 공모주(ipo) 칸: 한 줄에 3자씩만 보이도록 줄바꿈(가로 폭 한정 대응) */
 function formatIpoTitleThreeCharsPerLine(title) {
@@ -50,23 +51,11 @@ function CalendarView({
   /** 이벤트를 FullCalendar 포맷으로 변환 */
   const fcEvents = useCallback(() => {
     return events
-      .filter((ev) => {
-        if (ev._external === 'reb-apt' || ev._external === 'reb-odcloud' || ev._external === 'ipo') {
-          if (onlyMySchedules) return false;
-          return true;
-        }
-        /** 내 비공개 일정은 항상 표시, 공개 일정은 체크된 그룹만 */
-        const sharedGroupIds = (ev.event_visibility || []).map((v) => v.group_id);
-        let visible = true;
-        if (sharedGroupIds.length === 0) {
-          visible = true;
-        } else {
-          visible = sharedGroupIds.some((gid) => visibleGroupIds.includes(gid));
-        }
-        if (!visible) return false;
-        if (onlyMySchedules && currentUserId && ev.creator_id !== currentUserId) return false;
-        return true;
-      })
+      .filter((ev) => eventPassesSidebarCalendarFilters(ev, {
+        visibleGroupIds,
+        onlyMySchedules,
+        currentUserId,
+      }))
       .map((ev) => {
         /** 그룹 색상 찾기 */
         const sharedGroupIds = (ev.event_visibility || []).map((v) => v.group_id);
@@ -144,18 +133,21 @@ function CalendarView({
             const nickname = ex.creatorNickname;
             const isIpo = ex._external === 'ipo';
             const displayTitle = String(arg.event.title || '').replace(/^(📈|🏢)\s*/u, '');
-            /** 공모주: 글자 한 단계 축소 + 줄당 3자 줄바꿈 */
+            /** 공모주: 줄당 3자 줄바꿈 · 노트북에서는 한 단계 크게 */
             const ipoTitleSx = isIpo
               ? {
                 fontWeight: 700,
-                fontSize: isMobile ? '0.6875rem' : '0.625rem',
-                lineHeight: 1.3,
+                fontSize: isMobile ? '0.6875rem' : '0.7rem',
+                lineHeight: 1.35,
                 whiteSpace: 'pre-line',
                 wordBreak: 'keep-all',
                 overflow: 'hidden',
+                width: '100%',
+                maxWidth: '100%',
+                minWidth: 0,
               }
               : null;
-            /** 데스크톱: 좁은 칸에서도 제목이 잘리지 않도록 2줄까지 · 모바일(비IPO): 한 줄 */
+            /** 데스크톱: 등록 일정 글씨 크게·칸 안에 좌우 맞춤 줄바꿈 · 모바일: 한 줄 말줄임 */
             const titleSx = ipoTitleSx
               || (isMobile
                 ? {
@@ -167,30 +159,47 @@ function CalendarView({
                 }
                 : {
                   fontWeight: 600,
-                  fontSize: '0.72rem',
-                  lineHeight: 1.25,
+                  fontSize: '0.875rem',
+                  lineHeight: 1.35,
                   whiteSpace: 'normal',
                   display: '-webkit-box',
-                  WebkitLineClamp: 2,
+                  WebkitLineClamp: 4,
                   WebkitBoxOrient: 'vertical',
                   overflow: 'hidden',
+                  overflowWrap: 'anywhere',
                   wordBreak: 'break-word',
+                  width: '100%',
+                  maxWidth: '100%',
+                  minWidth: 0,
                 });
             const showNickname = nickname && !isIpo;
             const titleText = isIpo ? formatIpoTitleThreeCharsPerLine(displayTitle) : displayTitle;
             return (
-              <Box sx={{ pl: 0.25, pr: 0.25, overflow: 'hidden', width: '100%', minWidth: 0, lineHeight: 1.2 }}>
+              <Box sx={{
+                pl: 0.125,
+                pr: 0.125,
+                overflow: 'hidden',
+                width: '100%',
+                maxWidth: '100%',
+                minWidth: 0,
+                lineHeight: 1.2,
+                boxSizing: 'border-box',
+              }}
+              >
                 <Box sx={titleSx}>
                   {titleText}
                 </Box>
                 {showNickname && (
                   <Box sx={{
-                    fontSize: '0.65rem',
+                    fontSize: isMobile ? '0.65rem' : '0.75rem',
                     opacity: 0.9,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap',
-                  }}>
+                    maxWidth: '100%',
+                    minWidth: 0,
+                  }}
+                  >
                     {nickname}
                   </Box>
                 )}

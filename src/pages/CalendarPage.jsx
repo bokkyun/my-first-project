@@ -21,6 +21,7 @@ import ExternalIpoEventDialog from '../components/landing/ExternalIpoEventDialog
 import DayAgendaDialog from '../components/landing/DayAgendaDialog';
 import MyEventSearchDialog from '../components/landing/MyEventSearchDialog';
 import SubwayScheduleBar from '../components/common/SubwayScheduleBar';
+import { eventPassesSidebarCalendarFilters } from '../utils/calendarEventFilters';
 
 /** `dateStr` YYYY-MM-DD 가 로컬 달력 날짜와 겹치는지 */
 function eventOccursOnDate(ev, dateStr) {
@@ -112,11 +113,17 @@ function CalendarPage() {
   const dayEventsForSheet = useMemo(() => {
     if (!selectedDate) return [];
     const { start, end } = focusedViewRange;
+    const filterOpts = {
+      visibleGroupIds,
+      onlyMySchedules,
+      currentUserId: user?.id ?? null,
+    };
     return calendarEvents
+      .filter((ev) => eventPassesSidebarCalendarFilters(ev, filterOpts))
       .filter((ev) => eventOverlapsFocusedRange(ev, start, end))
       .filter((ev) => eventOccursOnDate(ev, selectedDate))
       .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
-  }, [calendarEvents, selectedDate, focusedViewRange]);
+  }, [calendarEvents, selectedDate, focusedViewRange, visibleGroupIds, onlyMySchedules, user?.id]);
 
   /** 당일 스케줄 브라우저 알림 */
   useNotifications(events);

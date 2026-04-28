@@ -52,17 +52,40 @@ html, body {
   cursor: pointer;
 }
 
-/* 넓은 화면: 칸·이벤트 패딩을 줄여 가로 공간 확보 */
+/* 넓은 화면(태블릿·노트북): 일정 블록이 날짜 칸 안에만 넘치지 않게, 글자 크기는 컴포넌트(sx)에 맡김 */
 @media (min-width: 900px) {
   .fc-theme-standard td,
   .fc-theme-standard th {
     padding: 2px;
   }
 
-  .fc-daygrid-event {
-    padding: 1px 2px;
-    margin: 1px 0;
-    font-size: 0.73rem;
+  .fc .fc-daygrid-day-events {
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .fc .fc-daygrid-event {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin-left: 0;
+    margin-right: 0;
+    padding: 2px 3px;
+    font-size: inherit;
+    line-height: inherit;
+  }
+
+  .fc .fc-daygrid-event .fc-event-main {
+    overflow: hidden;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .fc .fc-h-event .fc-event-main-frame {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
 }
 
