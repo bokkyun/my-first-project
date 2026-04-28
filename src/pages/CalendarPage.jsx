@@ -1,9 +1,8 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  Box, Snackbar, Alert, useTheme, TextField, InputAdornment, IconButton, Typography,
+  Box, Snackbar, Alert, useTheme, Button,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import ClearIcon from '@mui/icons-material/Clear';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useAuth } from '../hooks/useAuth';
 import { useUserProfile } from '../hooks/useUserProfile';
@@ -20,6 +19,7 @@ import EventDetailDialog from '../components/landing/EventDetailDialog';
 import ExternalAptEventDialog from '../components/landing/ExternalAptEventDialog';
 import ExternalIpoEventDialog from '../components/landing/ExternalIpoEventDialog';
 import DayAgendaDialog from '../components/landing/DayAgendaDialog';
+import MyEventSearchDialog from '../components/landing/MyEventSearchDialog';
 import SubwayScheduleBar from '../components/common/SubwayScheduleBar';
 
 /** `dateStr` YYYY-MM-DD 가 로컬 달력 날짜와 겹치는지 */
@@ -66,8 +66,8 @@ function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [dayAgendaOpen, setDayAgendaOpen] = useState(false);
-  /** 내가 등록한 일정만 검색(제목·장소·메모) — 입력 시 다른 사람 일정·외부청약 표시 안 함 */
-  const [myEventSearch, setMyEventSearch] = useState('');
+  /** 내 일정 검색 팝업 */
+  const [myEventSearchOpen, setMyEventSearchOpen] = useState(false);
   /** 스낵바 */
   const [snack, setSnack] = useState({ open: false, msg: '', severity: 'success' });
 
@@ -76,20 +76,11 @@ function CalendarPage() {
   const { events: ipoList, error: ipoError } = useDartIpoEvents(showIpo, viewRange);
 
   const calendarEvents = useMemo(() => {
-    const q = myEventSearch.trim().toLowerCase();
-    if (q && user?.id) {
-      const myOnly = events.filter((ev) => {
-        if (ev.creator_id !== user.id) return false;
-        const blob = `${ev.title ?? ''} ${ev.location ?? ''} ${ev.memo ?? ''}`.toLowerCase();
-        return blob.includes(q);
-      });
-      return myOnly;
-    }
     const list = [...events];
     if (showAptSply) list.push(...aptSplyList);
     if (showIpo) list.push(...ipoList);
     return list;
-  }, [events, aptSplyList, showAptSply, ipoList, showIpo, myEventSearch, user?.id]);
+  }, [events, aptSplyList, showAptSply, ipoList, showIpo]);
 
   const dayEventsForSheet = useMemo(() => {
     if (!selectedDate) return [];
@@ -301,43 +292,19 @@ function CalendarPage() {
               bgcolor: 'background.default',
               borderBottom: '1px solid',
               borderColor: 'divider',
+              display: 'flex',
+              alignItems: 'center',
             }}
           >
-            <TextField
+            <Button
+              variant="outlined"
               size="small"
-              fullWidth
-              placeholder="내가 등록한 일정 검색 (제목·장소·메모)"
-              value={myEventSearch}
-              onChange={(e) => setMyEventSearch(e.target.value)}
-              aria-label="내 일정 검색"
-              sx={{ maxWidth: { md: 480 }, bgcolor: 'background.paper', borderRadius: 1 }}
-              slotProps={{
-                input: {
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon fontSize="small" color="action" aria-hidden />
-                    </InputAdornment>
-                  ),
-                  endAdornment: myEventSearch ? (
-                    <InputAdornment position="end">
-                      <IconButton
-                        size="small"
-                        aria-label="검색어 지우기"
-                        onClick={() => setMyEventSearch('')}
-                        edge="end"
-                      >
-                        <ClearIcon fontSize="small" />
-                      </IconButton>
-                    </InputAdornment>
-                  ) : null,
-                },
-              }}
-            />
-            {myEventSearch.trim() ? (
-              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.75, px: 0.25 }}>
-                검색 중에는 내가 등록한 일정만 표시합니다. 다른 사람 일정과 청약·공모 정보는 숨겨집니다.
-              </Typography>
-            ) : null}
+              startIcon={<SearchIcon />}
+              onClick={() => setMyEventSearchOpen(true)}
+              aria-label="일정 검색"
+            >
+              일정검색
+            </Button>
           </Box>
           <CalendarView
             events={calendarEvents}
@@ -360,6 +327,14 @@ function CalendarPage() {
         groups={groups}
         onNewEvent={handleDayAgendaNewEvent}
         onEventPick={handleDayAgendaPickEvent}
+      />
+
+      <MyEventSearchDialog
+        open={myEventSearchOpen}
+        onClose={() => setMyEventSearchOpen(false)}
+        events={events}
+        userId={user?.id ?? null}
+        onPickEvent={openEventDetail}
       />
 
       {/* 새 일정 다이얼로그 */}
