@@ -1,4 +1,6 @@
-import { Box, Container, Typography, Button, Grid, Paper, Avatar } from '@mui/material';
+import {
+  Box, Container, Typography, Button, Grid, Paper, Avatar, Alert,
+} from '@mui/material';
 import { Link } from 'react-router-dom';
 import {
   CalendarMonth, Group, NotificationsActive, ShareOutlined,
@@ -12,12 +14,12 @@ const FEATURES = [
   {
     icon: <ShowChart sx={{ fontSize: 40, color: '#1565c0' }} />,
     title: '공모주 공시 일정',
-    desc: 'Open DART(금융위 전자공시)를 바탕으로 공모와 관련된 공시·제출 일정 등을 월별로 확인할 수 있습니다. 켜고 끄기는 캘린더에서 선택합니다.',
+    desc: '로그인 후 캘린더에서 표시를 켜면 Open DART(금융위 전자공시) 기준 공시·제출 일정을 월별로 겹쳐 봅니다. VITE_DART_CRTFC_KEY가 빌드에 포함되어야 하며, 정적 배포(GitHub Pages 등)에서는 CORS 대비 프록시가 필요할 수 있습니다.',
   },
   {
     icon: <Apartment sx={{ fontSize: 40, color: '#546e7a' }} />,
     title: '아파트 분양·청약',
-    desc: '국토교통부 등 공공데이터 무순위·청약 분양 일정을 캘린더에 겹쳐 표시합니다(선택).',
+    desc: '로그인 후 캘린더에서 표시를 켜면 국토교통부 등 공공데이터 무순위·청약 분양 일정을 겹쳐 봅니다. VITE_DATA_GO_KR_SERVICE_KEY 등 필요한 변수가 빌드·배포 환경에 설정되어야 합니다.',
   },
   {
     icon: <Group sx={{ fontSize: 40, color: '#9c27b0' }} />,
@@ -166,9 +168,26 @@ function LandingPage() {
           <Typography variant="h4" fontWeight={700} textAlign="center" sx={{ mb: 1 }}>
             주요 기능
           </Typography>
-          <Typography variant="body1" color="text.secondary" textAlign="center" sx={{ mb: 6 }}>
+          <Typography variant="body1" color="text.secondary" textAlign="center" sx={{ mb: 2 }}>
             투자·청약 일정과 그룹 협업에 맞춘 MoneyCal 기능을 살펴보세요.
           </Typography>
+          <Alert severity="info" sx={{ mb: 4, maxWidth: 720, mx: 'auto', textAlign: 'left' }}>
+            <Typography variant="body2" component="div" lineHeight={1.65}>
+              <strong>표시 위치:</strong> 아래 기능은 회원 로그인 뒤 <strong>캘린더</strong>에서만 실제 데이터로 붙습니다. PC는 왼쪽 사이드바, 모바일은 상단 메뉴(≡)를 열면
+              「아파트 청약·분양」「공모주(공시 제출)」표시 여부를 켤 수 있습니다.
+              <Box component="span" display="block" sx={{ mt: 1 }}>
+                <strong>안 보일 때:</strong> 서버가 아니라 브라우저에서 실행되므로, 공모·청약 목록에는 발급한 API 인증키를 Vite 환경 변수로 넣고(
+                <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                  예: VITE_DART_CRTFC_KEY, VITE_DATA_GO_KR_SERVICE_KEY
+                </Typography>
+                ) 재빌드해야 합니다. 로컬은 .env·배포는 GitHub Actions 시크릿 등에 같은 이름으로 넣습니다. 자세한 이름은 저장소{' '}
+                <Typography component="span" sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                  .env.example
+                </Typography>
+                를 확인하세요.
+              </Box>
+            </Typography>
+          </Alert>
           <Grid container spacing={3}>
             {FEATURES.map((f) => (
               <Grid key={f.title} size={{ xs: 12, sm: 6, md: 4 }}>
