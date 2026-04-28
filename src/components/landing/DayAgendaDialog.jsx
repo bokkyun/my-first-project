@@ -9,8 +9,9 @@ import {
   List,
   ListItemButton,
   ListItemText,
+  Divider,
 } from '@mui/material';
-import { Close, Add } from '@mui/icons-material';
+import { Close } from '@mui/icons-material';
 
 function formatDayTitle(dateStr) {
   if (!dateStr) return '';
@@ -74,19 +75,25 @@ function DayAgendaDialog({
         </IconButton>
       </DialogTitle>
       <DialogContent dividers sx={{ pt: 2, pb: 2 }}>
+        <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>
+          일정등록
+        </Typography>
         <Button
           fullWidth
           variant="contained"
-          size="large"
-          startIcon={<Add />}
+          size="medium"
           onClick={onNewEvent}
-          sx={{ mb: 2, py: 1.25 }}
+          sx={{ mb: 2, py: 1.1 }}
         >
-          새 일정 등록
+          새 일정 추가
         </Button>
+        <Divider sx={{ my: 2 }} />
+        <Typography variant="body2" fontWeight={600} color="text.primary" sx={{ mb: 1 }}>
+          등록된 일정
+        </Typography>
         {dayEvents.length === 0 ? (
-          <Typography color="text.secondary" textAlign="center" sx={{ py: 2 }}>
-            이 날짜에 표시된 일정이 없습니다.
+          <Typography color="text.secondary" sx={{ py: 1.5 }}>
+            표시된 일정이 없습니다.
           </Typography>
         ) : (
           <List disablePadding>

@@ -198,8 +198,23 @@ function CalendarView({
             );
           }}
           height="calc(100vh - 140px)"
-          dayMaxEvents={isMobile ? 2 : 5}
+          /**
+           * 모바일: 일수 제한·+N 링크 없음 → 날짜 칸(또는 블록) 탭 한 번에 DayAgendaDialog 로 통일
+           * 데스크톱: 칸 높이 제한 유지(+N 또는 팝오버 가능)
+           */
+          dayMaxEvents={isMobile ? false : 5}
           moreLinkText={(n) => `+${n}`}
+          moreLinkClick={(info) => {
+            /** 혹시 +N 이 보일 때(+링크 숨김 실패 등) 같은 날짜 시트로 연결 */
+            if (!isMobile) return undefined;
+            if (info?.jsEvent?.preventDefault) info.jsEvent.preventDefault();
+            const raw = info.date;
+            const d = raw instanceof Date ? raw : (raw != null ? new Date(raw) : null);
+            if (!d || Number.isNaN(d.getTime())) return 'none';
+            const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            onDateClick(dateStr);
+            return 'none';
+          }}
           eventDisplay="block"
         />
       </Box>
