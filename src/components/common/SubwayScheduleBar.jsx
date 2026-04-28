@@ -24,7 +24,6 @@ const EMPTY_ROUTE = {
   departureFrCode: '',
   transferStation: '',
   transferFrCode: '',
-  direction: '1',
 };
 
 function formatMinutesLeft(arriveMin, nowMin) {
@@ -150,18 +149,9 @@ function SettingsModal({ routes, onSave, onClose }) {
                 )}
               </Box>
             ))}
-
-            <FormControl size="small" sx={{ minWidth: 100, mt: 1 }}>
-              <InputLabel>방향</InputLabel>
-              <Select
-                label="방향"
-                value={route.direction}
-                onChange={(e) => updateRoute(route.id, 'direction', e.target.value)}
-              >
-                <MenuItem value="1">상행</MenuItem>
-                <MenuItem value="2">하행</MenuItem>
-              </Select>
-            </FormControl>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+              출발역 기준 상행·하행 다음 열차를 모두 표시합니다.
+            </Typography>
           </Paper>
         ))}
 
@@ -207,8 +197,11 @@ export default function SubwayScheduleBar() {
     const results = {};
     await Promise.all(
       active.map(async (route) => {
-        const time = await fetchNextTrainTime(route.departureFrCode, route.direction, weekdayType);
-        results[route.id] = time;
+        const [up, down] = await Promise.all([
+          fetchNextTrainTime(route.departureFrCode, '1', weekdayType),
+          fetchNextTrainTime(route.departureFrCode, '2', weekdayType),
+        ]);
+        results[route.id] = { up, down };
       }),
     );
     setNextTrains(results);
@@ -222,8 +215,12 @@ export default function SubwayScheduleBar() {
   }, [loadTrains]);
 
   const handleSave = (newRoutes) => {
-    setRoutes(newRoutes);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(newRoutes));
+    const cleaned = newRoutes.map((r) => {
+      const { direction: _d, ...rest } = r;
+      return rest;
+    });
+    setRoutes(cleaned);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
     setShowSettings(false);
   };
 
@@ -276,9 +273,25 @@ export default function SubwayScheduleBar() {
           </Typography>
         ) : (
           activeRoutes.map((route) => {
-            const time = nextTrains[route.id];
-            const minutesLeft = time ? formatMinutesLeft(timeStrToMinutes(time), nowMin) : null;
-            const urgent = time && timeStrToMinutes(time) - nowMin <= 5;
+            const raw = nextTrains[route.id];
+            const pair = raw && typeof raw === 'object' && ('up' in raw || 'down' in raw)
+              ? raw
+              : { up: typeof raw === 'string' ? raw : null, down: null };
+
+            const line = (dirLabel, time) => {
+              if (!time) return <Typography variant="caption" color="text.disabled">{dirLabel}: 막차 지남</Typography>;
+              const mins = formatMinutesLeft(timeStrToMinutes(time), nowMin);
+              const urgent = timeStrToMinutes(time) - nowMin <= 5;
+              return (
+                <Typography variant="caption" fontWeight={600} color={urgent ? 'error' : 'primary'} component="div">
+                  {dirLabel} {time}
+                  {mins ? ` (${mins})` : ''}
+                </Typography>
+              );
+            };
+
+            const bothMissing = !pair.up && !pair.down;
+
             return (
               <Chip
                 key={route.id}
@@ -286,10 +299,11 @@ export default function SubwayScheduleBar() {
                 sx={{
                   height: 'auto',
                   py: 0.5,
+                  maxWidth: { xs: '100%', sm: 280 },
                   '& .MuiChip-label': { whiteSpace: 'normal', textAlign: 'left' },
                 }}
                 label={(
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, py: 0.25 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.35, py: 0.25 }}>
                     <Typography variant="caption" fontWeight={700}>{route.label}</Typography>
                     <Typography variant="caption" color="text.secondary">
                       {route.departureStation}
@@ -300,13 +314,13 @@ export default function SubwayScheduleBar() {
                         <CircularProgress size={12} />
                         <Typography variant="caption">로딩…</Typography>
                       </Box>
-                    ) : time ? (
-                      <Typography variant="caption" fontWeight={600} color={urgent ? 'error' : 'primary'}>
-                        {time}
-                        {minutesLeft ? ` (${minutesLeft})` : ''}
-                      </Typography>
+                    ) : bothMissing ? (
+                      <Typography variant="caption" color="text.disabled">시간표 없음·막차 지남</Typography>
                     ) : (
-                      <Typography variant="caption" color="text.disabled">막차 지남</Typography>
+                      <>
+                        {line('상행', pair.up)}
+                        {line('하행', pair.down)}
+                      </>
                     )}
                   </Box>
                 )}
