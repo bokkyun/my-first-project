@@ -96,8 +96,24 @@ export function ymd8Today() {
   return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
 }
 
+function digitsToYmd8(v) {
+  if (v == null || v === '') return '';
+  const s = String(v).replace(/\D/g, '');
+  return s.length >= 8 ? s.slice(0, 8) : '';
+}
+
+/** 대략적인 청약·공고일 범위(오탐 완화) */
+function isPlausibleKoreanYmd8(ymd8) {
+  if (!ymd8 || ymd8.length !== 8) return false;
+  const y = Number(ymd8.slice(0, 4));
+  const m = Number(ymd8.slice(4, 6));
+  const d = Number(ymd8.slice(6, 8));
+  return y >= 2018 && y <= 2040 && m >= 1 && m <= 12 && d >= 1 && d <= 31;
+}
+
 /**
- * uddi 응답: 접수마감일(영문·한글) → 숫자만 8자리 또는 ''
+ * uddi 응답: 접수마감일 — mapOdcloudItemToCalendarEvent 의 endYmd 와 동일한 키 우선순위
+ * (필드명이 한 가지만 빠져도 filterOdcloudItemsUpcoming 에서 전부 걸러지는 것을 방지)
  */
 export function getOdcloudReceiptEndYmd8(item) {
   if (!item || typeof item !== 'object') return '';
@@ -105,15 +121,73 @@ export function getOdcloudReceiptEndYmd8(item) {
     ?? item.SPLY_RCEPT_ENDDE
     ?? item.SPLY_RCEPT_CLSDE
     ?? item.rceptEndde
+    ?? item.rcept_endde
     ?? item['접수마감일']
-    ?? item['접수종료일'];
-  if (v == null || v === '') return '';
-  const s = String(v).replace(/\D/g, '');
-  return s.length >= 8 ? s.slice(0, 8) : '';
+    ?? item['접수종료일']
+    ?? item['청약접수마감일'];
+  return digitsToYmd8(v);
+}
+
+/**
+ * 접수 시작일( map 의 startYmd 후보와 동일 — 예정 청약만 남길 때 사용 )
+ */
+export function getOdcloudReceiptStartYmd8(item) {
+  if (!item || typeof item !== 'object') return '';
+  const v = item.RCEPT_BGNDE
+    ?? item.SPLY_RCEPT_BGNDE
+    ?? item.SPLY_RCEPT_STTDE
+    ?? item.rceptBgnde
+    ?? item.rcept_bgnde
+    ?? item['접수시작일']
+    ?? item['청약접수시작일']
+    ?? item['입주자모집공고일']
+    ?? item['공고일']
+    ?? item['모집공고일']
+    ?? item['접수기간'];
+  return digitsToYmd8(v);
+}
+
+/**
+ * 알려진 키로 못 읽을 때, 행 값들에서 YYYYMMDD 후보를 모아 가장 늦은 날짜(마감 추정)
+ */
+function scavengeLatestYmd8FromRow(row) {
+  if (!row || typeof row !== 'object') return '';
+  let max = '';
+  const consider = (val) => {
+    if (val == null) return;
+    const s = String(val);
+    const re = /\d{4}[-./]?\d{2}[-./]?\d{2}/g;
+    let m;
+    for (;;) {
+      m = re.exec(s);
+      if (!m) break;
+      const d8 = digitsToYmd8(m[0]);
+      if (d8 && isPlausibleKoreanYmd8(d8) && (!max || d8 > max)) max = d8;
+    }
+    const digits = s.replace(/\D/g, '');
+    for (let i = 0; i <= Math.max(0, digits.length - 8); i++) {
+      const chunk = digits.slice(i, i + 8);
+      if (isPlausibleKoreanYmd8(chunk) && (!max || chunk > max)) max = chunk;
+    }
+  };
+  const walk = (obj) => {
+    if (!obj || typeof obj !== 'object') return;
+    if (Array.isArray(obj)) {
+      obj.forEach(walk);
+      return;
+    }
+    Object.values(obj).forEach((v) => {
+      if (v != null && typeof v === 'object') walk(v);
+      else consider(v);
+    });
+  };
+  walk(row);
+  return max;
 }
 
 /**
  * 오늘(YYYYMMDD) 이후·당일에 접수가 끝나는(진행·예정) 건만 — 클라이언트 필터
+ * 마감일 필드 누락 시 시작일·전체 행 스캔으로 보완( odcloud 필드 변경 대응 )
  * @param {object[]} items
  */
 export function filterOdcloudItemsUpcoming(items) {
@@ -121,8 +195,14 @@ export function filterOdcloudItemsUpcoming(items) {
   if (!Array.isArray(items)) return [];
   return items.filter((row) => {
     const end = getOdcloudReceiptEndYmd8(row);
-    if (!end) return false;
-    return end >= today;
+    if (end) return end >= today;
+
+    const start = getOdcloudReceiptStartYmd8(row);
+    if (start && start >= today) return true;
+
+    /** 필드명이 바뀌었거나 JSON 이 중첩일 때 — 행 안 날짜 후보 최댓값으로 마감 추정 */
+    const scavengedEnd = scavengeLatestYmd8FromRow(row);
+    return Boolean(scavengedEnd && scavengedEnd >= today);
   });
 }
 
@@ -165,6 +245,7 @@ export function mapOdcloudItemToCalendarEvent(item, index) {
     'SPLY_RCEPT_BGNDE',
     'SPLY_RCEPT_STTDE',
     'rceptBgnde',
+    'rcept_bgnde',
     '접수시작일',
     '청약접수시작일',
     '입주자모집공고일',
@@ -177,6 +258,7 @@ export function mapOdcloudItemToCalendarEvent(item, index) {
     'SPLY_RCEPT_ENDDE',
     'SPLY_RCEPT_CLSDE',
     'rceptEndde',
+    'rcept_endde',
     '접수마감일',
     '접수종료일',
     '청약접수마감일',
@@ -291,11 +373,11 @@ function buildDataGoListUrl() {
   return { path, query, keyPresent: Boolean(key), mode: 'datago' };
 }
 
-function buildOdcloudListUrl() {
+function buildOdcloudListUrl(pageNum = 1) {
   const key = (import.meta.env.VITE_DATA_GO_KR_SERVICE_KEY || '').trim();
   const perPage = import.meta.env.VITE_REB_APT_PAGE_SIZE || '200';
   const serviceKey = key ? `serviceKey=${encodeURIComponent(key)}` : '';
-  const page = 'page=1';
+  const page = `page=${Math.max(1, Number(pageNum) || 1)}`;
   const pp = `perPage=${perPage}`;
   const path = (import.meta.env.VITE_REB_APT_ODCLOUD_PATH || DEFAULT_ODCLOUD_PATH)
     .replace(/^\s+/, '');
@@ -304,14 +386,21 @@ function buildOdcloudListUrl() {
   return { path, query, keyPresent: Boolean(key), mode: 'odcloud' };
 }
 
+/** odcloud: 첫 페이지만 오래된 공고 나열되는 경우 다음 페이지까지 합치기 위해 사용 */
+export function getRebAptOdcloudPageSizeNum() {
+  const n = Number(import.meta.env.VITE_REB_APT_PAGE_SIZE);
+  return Number.isFinite(n) && n > 0 ? Math.min(n, 1000) : 200;
+}
+
 /**
  * VITE_REB_APT_API_MODE=odcloud | datago
+ * @param {number} [pageNum=1] — odcloud 에서만 page 쿼리에 반영됩니다.
  */
-export function buildRebAptSplyListUrl() {
+export function buildRebAptSplyListUrl(pageNum = 1) {
   if (getApiMode() === 'datago') {
     return buildDataGoListUrl();
   }
-  return buildOdcloudListUrl();
+  return buildOdcloudListUrl(pageNum);
 }
 
 /**

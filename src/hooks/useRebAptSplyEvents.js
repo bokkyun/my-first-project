@@ -5,6 +5,7 @@ import {
   parseRebAptSplyResponse,
   mapRebAptItemToCalendarEvent,
   filterOdcloudItemsUpcoming,
+  getRebAptOdcloudPageSizeNum,
 } from '../utils/rebAptSplyApi';
 
 /**
@@ -35,23 +36,42 @@ export function useRebAptSplyEvents(enabled, viewRange) {
     setLoading(true);
     setFetchError(null);
     try {
-      const url = toRebAptAbsoluteUrl(path, query ? `?${query}` : '', mode);
-      const res = await fetch(url, { method: 'GET' });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        const msg = json?.msg || json?.message;
-        setFetchError(msg ? `HTTP ${res.status}: ${msg}` : `HTTP ${res.status}`);
-        setRawEvents([]);
-        return;
+      const maxPages = mode === 'odcloud' ? 3 : 1;
+      const perPage = getRebAptOdcloudPageSizeNum();
+      const merged = [];
+      for (let pg = 1; pg <= maxPages; pg += 1) {
+        const { path: pPath, query: pQuery } = buildRebAptSplyListUrl(pg);
+        const url = toRebAptAbsoluteUrl(pPath, pQuery ? `?${pQuery}` : '', mode);
+        const res = await fetch(url, { method: 'GET' });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const msg = json?.msg || json?.message;
+          setFetchError(msg ? `HTTP ${res.status}: ${msg}` : `HTTP ${res.status}`);
+          setRawEvents([]);
+          return;
+        }
+        const { items, error } = parseRebAptSplyResponse(json);
+        if (error) {
+          setFetchError(error);
+          setRawEvents([]);
+          return;
+        }
+        const batch = items || [];
+        merged.push(...batch);
+        if (mode !== 'odcloud' || batch.length < perPage) break;
       }
-      const { items, error } = parseRebAptSplyResponse(json);
-      if (error) {
-        setFetchError(error);
-        setRawEvents([]);
-        return;
-      }
-      let list = items || [];
+
+      let list = merged;
       if (mode === 'odcloud') {
+        const seen = new Set();
+        list = merged.filter((row) => {
+          const k = [row.HOUSE_MGMT_NO, row.HSMP_MGMT_NO, row.PBLANC_NO, row.RCEPT_ENDDE, row.HSMP_NM]
+            .map((x) => String(x ?? ''))
+            .join('\u0001');
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        });
         list = filterOdcloudItemsUpcoming(list);
       }
       const mapped = list
