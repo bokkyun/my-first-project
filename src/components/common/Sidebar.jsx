@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   Box, Typography, Checkbox, FormControlLabel, Divider,
-  List, ListItem, Chip, Tooltip, IconButton, Drawer, useMediaQuery, useTheme,
+  List, ListItem, Chip, Tooltip, IconButton, Button, Drawer, useMediaQuery, useTheme,
 } from '@mui/material';
 import { Add, Circle, InfoOutlined } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
@@ -131,23 +131,37 @@ function Sidebar({
 
   const content = (
     <Box sx={{ width: SIDEBAR_WIDTH, p: 2, overflowY: 'auto', height: '100%', bgcolor: 'white' }}>
+      <Typography variant="subtitle2" fontWeight={700} color="text.secondary" sx={{ mb: 1 }}>
+        메뉴
+      </Typography>
       <List dense disablePadding sx={{ mb: 1 }}>
         {topFilterCheckboxes}
       </List>
 
       <Divider sx={{ mb: 1.5 }} />
 
-      {/* 내 그룹 */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-        <Typography variant="subtitle2" fontWeight={700} color="text.secondary">
-          내 그룹
-        </Typography>
-        <Tooltip title="그룹 생성">
-          <IconButton size="small" onClick={() => { navigate('/groups/create'); if (onMobileClose) onMobileClose(); }}>
-            <Add fontSize="small" />
-          </IconButton>
-        </Tooltip>
-      </Box>
+      <Tooltip title="그룹 만들기 페이지로 이동">
+        <Button
+          variant="text"
+          color="inherit"
+          fullWidth
+          endIcon={<Add aria-hidden />}
+          onClick={() => { navigate('/groups/create'); if (onMobileClose) onMobileClose(); }}
+          sx={{
+            justifyContent: 'space-between',
+            px: 1,
+            py: 0.75,
+            mb: 1.5,
+            fontWeight: 600,
+            textTransform: 'none',
+            color: 'text.primary',
+            borderRadius: 1,
+            '&:hover': { bgcolor: 'action.hover' },
+          }}
+        >
+          새로운 그룹 생성하기
+        </Button>
+      </Tooltip>
 
       {groups.length === 0 ? (
         <Box sx={{ textAlign: 'center', py: 2 }}>
@@ -164,7 +178,11 @@ function Sidebar({
           </Box>
         </Box>
       ) : (
-        <List dense disablePadding sx={{ mt: 0.5 }}>
+        <>
+          <Typography variant="subtitle2" fontWeight={700} color="text.secondary" sx={{ mb: 0.75 }}>
+            내 그룹
+          </Typography>
+          <List dense disablePadding sx={{ mt: 0.5 }}>
           <ListItem disablePadding sx={{ mb: 0.5 }}>
             <FormControlLabel
               control={
@@ -211,7 +229,8 @@ function Sidebar({
               </Tooltip>
             </ListItem>
           ))}
-        </List>
+          </List>
+        </>
       )}
 
       <Divider sx={{ my: 2 }} />
