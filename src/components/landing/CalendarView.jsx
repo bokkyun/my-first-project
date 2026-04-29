@@ -7,12 +7,13 @@ import { Box, useMediaQuery, useTheme } from '@mui/material';
 import { isCoffeeEvent } from '../../utils/eventCoffee';
 import { eventPassesSidebarCalendarFilters } from '../../utils/calendarEventFilters';
 
-/** 공모주(ipo) 칸: 5자 초과 시 앞 5자 + .. (달력 칸 2줄 넘지 않도록) */
+/** 공모주(ipo) 칸: 3글자 초과 시 앞 3글자 + ... (유니코드 글자 단위, 한 줄 고정) */
 function truncateIpoCalendarTitle(title) {
   const s = String(title ?? '').trim();
   if (!s) return s;
-  if (s.length <= 5) return s;
-  return `${s.slice(0, 5)}..`;
+  const chars = [...s];
+  if (chars.length <= 3) return s;
+  return `${chars.slice(0, 3).join('')}...`;
 }
 
 /**
@@ -130,7 +131,7 @@ function CalendarView({
             const nickname = ex.creatorNickname;
             const isIpo = ex._external === 'ipo';
             const displayTitle = String(arg.event.title || '').replace(/^(📈|🏢)\s*/u, '');
-            /** 공모주: 제목은 JS에서 5자+.. 처리 · 한 줄 고정으로 칸 높이 유지 */
+            /** 공모주: 제목은 JS에서 3글자+... 처리 · CSS ellipsis 제거(좁은 칸에서 한두 글자만 보이던 현상 방지) */
             const ipoTitleSx = isIpo
               ? {
                 fontWeight: 700,
@@ -138,7 +139,6 @@ function CalendarView({
                 lineHeight: 1.35,
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
-                textOverflow: 'ellipsis',
                 width: '100%',
                 maxWidth: '100%',
                 minWidth: 0,
