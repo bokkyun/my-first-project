@@ -9,13 +9,16 @@ export function useCoffeeOrders(eventId, currentUserId) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
 
   const fetchOrders = useCallback(async () => {
     if (!eventId) {
       setOrders([]);
+      setFetchError(null);
       return;
     }
     setLoading(true);
+    setFetchError(null);
     const { data: rows, error } = await supabase
       .from('coffee_orders')
       .select('id, user_id, menu_type, temperature, custom_text, updated_at')
@@ -24,6 +27,7 @@ export function useCoffeeOrders(eventId, currentUserId) {
 
     if (error) {
       setOrders([]);
+      setFetchError(error.message || '주문 목록을 불러오지 못했습니다.');
       setLoading(false);
       return;
     }
@@ -51,8 +55,33 @@ export function useCoffeeOrders(eventId, currentUserId) {
   }, [eventId]);
 
   useEffect(() => {
+    if (!eventId) {
+      setOrders([]);
+      setFetchError(null);
+      return undefined;
+    }
     fetchOrders();
-  }, [fetchOrders]);
+
+    const channel = supabase
+      .channel(`coffee_orders:event:${eventId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'coffee_orders',
+          filter: `event_id=eq.${eventId}`,
+        },
+        () => {
+          fetchOrders();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [eventId, fetchOrders]);
 
   /**
    * @param {{ menu_type: string, temperature: string|null, custom_text: string|null }} payload
@@ -79,5 +108,7 @@ export function useCoffeeOrders(eventId, currentUserId) {
     return { data: true };
   };
 
-  return { orders, loading, saving, refetch: fetchOrders, saveMyOrder };
+  return {
+    orders, loading, saving, fetchError, refetch: fetchOrders, saveMyOrder,
+  };
 }

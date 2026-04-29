@@ -134,7 +134,7 @@ function CoffeeOrderForm({ initialOrder, saving, onSave, onMessage }) {
  * 그룹 공개 '커피' 일정: 메뉴 선택·집계·명단
  */
 function CoffeeEventSection({ event, currentUserId, onMessage }) {
-  const { orders, loading, saving, saveMyOrder } = useCoffeeOrders(
+  const { orders, loading, saving, fetchError, saveMyOrder } = useCoffeeOrders(
     event?.id ?? null,
     currentUserId ?? null,
   );
@@ -168,8 +168,16 @@ function CoffeeEventSection({ event, currentUserId, onMessage }) {
       </Box>
 
       <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-        메뉴를 고르고 저장하면 그룹 집계에 반영됩니다. 한 잔씩 선택해 주세요.
+        메뉴를 고르고 저장하면 그룹 집계에 반영됩니다. 한 잔씩 선택해 주세요. 다른 분이 저장하면 이 화면도 자동으로 갱신됩니다.
       </Typography>
+
+      {fetchError && (
+        <Alert severity="warning" sx={{ borderRadius: 2, mb: 1 }}>
+          주문 목록을 불러오지 못했습니다. 로그인 상태와 네트워크를 확인한 뒤, 같은 증상이면 Supabase에서 <code>coffee_orders</code> 테이블·RLS 및 마이그레이션 적용 여부를 확인해 주세요.
+          {' '}
+          <Typography component="span" variant="caption">({fetchError})</Typography>
+        </Alert>
+      )}
 
       {loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 2 }}>

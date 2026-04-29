@@ -11,7 +11,7 @@ BEGIN
   ) THEN
     ALTER TABLE public.events
       ADD CONSTRAINT events_event_kind_check
-      CHECK (event_kind IN ('default', 'coffee'));
+      CHECK (event_kind IN ('default', 'schedule', 'coffee'));
   END IF;
 END$$;
 
