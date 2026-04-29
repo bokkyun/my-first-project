@@ -7,15 +7,12 @@ import { Box, useMediaQuery, useTheme } from '@mui/material';
 import { isCoffeeEvent } from '../../utils/eventCoffee';
 import { eventPassesSidebarCalendarFilters } from '../../utils/calendarEventFilters';
 
-/** 공모주(ipo) 칸: 한 줄에 3자씩만 보이도록 줄바꿈(가로 폭 한정 대응) */
-function formatIpoTitleThreeCharsPerLine(title) {
-  const s = String(title);
+/** 공모주(ipo) 칸: 5자 초과 시 앞 5자 + .. (달력 칸 2줄 넘지 않도록) */
+function truncateIpoCalendarTitle(title) {
+  const s = String(title ?? '').trim();
   if (!s) return s;
-  const lines = [];
-  for (let i = 0; i < s.length; i += 3) {
-    lines.push(s.slice(i, i + 3));
-  }
-  return lines.join('\n');
+  if (s.length <= 5) return s;
+  return `${s.slice(0, 5)}..`;
 }
 
 /**
@@ -133,15 +130,15 @@ function CalendarView({
             const nickname = ex.creatorNickname;
             const isIpo = ex._external === 'ipo';
             const displayTitle = String(arg.event.title || '').replace(/^(📈|🏢)\s*/u, '');
-            /** 공모주: 줄당 3자 줄바꿈 · 노트북에서는 한 단계 크게 */
+            /** 공모주: 제목은 JS에서 5자+.. 처리 · 한 줄 고정으로 칸 높이 유지 */
             const ipoTitleSx = isIpo
               ? {
                 fontWeight: 700,
                 fontSize: isMobile ? '0.6875rem' : '0.7rem',
                 lineHeight: 1.35,
-                whiteSpace: 'pre-line',
-                wordBreak: 'keep-all',
+                whiteSpace: 'nowrap',
                 overflow: 'hidden',
+                textOverflow: 'ellipsis',
                 width: '100%',
                 maxWidth: '100%',
                 minWidth: 0,
@@ -173,7 +170,7 @@ function CalendarView({
                   minWidth: 0,
                 });
             const showNickname = nickname && !isIpo;
-            const titleText = isIpo ? formatIpoTitleThreeCharsPerLine(displayTitle) : displayTitle;
+            const titleText = isIpo ? truncateIpoCalendarTitle(displayTitle) : displayTitle;
             return (
               <Box sx={{
                 pl: 0.125,
