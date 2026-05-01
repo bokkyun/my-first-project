@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
   Box, Container, Paper, Typography, TextField, Button,
-  IconButton, InputAdornment, Alert, CircularProgress,
+  IconButton, InputAdornment, Alert, CircularProgress, Divider,
 } from '@mui/material';
 import { Visibility, VisibilityOff, CalendarMonth, ArrowBack } from '@mui/icons-material';
 import { useAuth } from '../hooks/useAuth';
@@ -12,13 +12,24 @@ const isValidEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
 
 function SignupPage() {
   const navigate = useNavigate();
-  const { signUp } = useAuth();
+  const { signUp, signInWithGoogle } = useAuth();
 
   const [form, setForm] = useState({ email: '', nickname: '', password: '', passwordConfirm: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+
+  const handleGoogleSignup = async () => {
+    setError('');
+    setGoogleLoading(true);
+    const { error: googleError } = await signInWithGoogle();
+    setGoogleLoading(false);
+    if (googleError) {
+      setError(googleError.message || '구글 로그인에 실패했습니다. Supabase·Google 리다이렉트 URL을 확인해 주세요.');
+    }
+  };
 
   const handleChange = (field) => (e) => {
     setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -93,6 +104,37 @@ function SignupPage() {
           ) : (
             <>
               {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+              <Button
+                fullWidth
+                variant="outlined"
+                size="large"
+                onClick={handleGoogleSignup}
+                disabled={loading || googleLoading}
+                sx={{
+                  mb: 2,
+                  borderRadius: 2,
+                  py: 1.2,
+                  borderColor: '#dadce0',
+                  color: 'text.primary',
+                  '&:hover': { borderColor: '#bbb', backgroundColor: '#f8f8f8' },
+                }}
+                startIcon={
+                  googleLoading ? <CircularProgress size={20} /> : (
+                    <Box
+                      component="img"
+                      src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                      alt=""
+                      sx={{ width: 20, height: 20 }}
+                    />
+                  )
+                }
+              >
+                Google로 시작하기
+              </Button>
+
+              <Divider sx={{ mb: 2 }}>이메일로 가입하기</Divider>
+
               <Box component="form" onSubmit={handleSubmit}>
                 <TextField
                   fullWidth

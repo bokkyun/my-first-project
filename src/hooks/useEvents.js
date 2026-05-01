@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import {
   buildEventPayloadWithoutEventKindColumn,
   buildEventUpdateWithoutEventKindColumn,
-  isMissingEventKindColumnError,
+  shouldFallbackEventKindToMemoPayload,
 } from '../utils/eventCoffee';
 
 /**
@@ -88,7 +88,7 @@ export function useEvents(userId, visibleGroupIds = []) {
       .insert(row)
       .select()
       .single();
-    if (error && isMissingEventKindColumnError(error)) {
+    if (error && shouldFallbackEventKindToMemoPayload(error)) {
       const fallback = buildEventPayloadWithoutEventKindColumn(eventData, creatorId);
       const r2 = await supabase.from('events').insert(fallback).select().single();
       ev = r2.data;
@@ -116,7 +116,7 @@ export function useEvents(userId, visibleGroupIds = []) {
       return isAdminAction ? q : q.eq('creator_id', userId);
     };
     let { error } = await run(eventData);
-    if (error && isMissingEventKindColumnError(error)) {
+    if (error && shouldFallbackEventKindToMemoPayload(error)) {
       const fallback = buildEventUpdateWithoutEventKindColumn(eventData);
       const r2 = await run(fallback);
       error = r2.error;

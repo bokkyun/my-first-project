@@ -40,6 +40,26 @@ export function isMissingEventKindColumnError(err) {
 }
 
 /**
+ * CHECK 제약 또는 enum이 `coffee` 등을 허용하지 않을 때(PostgreSQL 23514)
+ */
+export function isEventKindRejectedByDatabaseError(err) {
+  if (!err) return false;
+  const m = `${err.message || ''} ${err.details || ''} ${err.hint || ''}`.toLowerCase();
+  if (String(err.code) === '23514') {
+    return m.includes('event_kind') || m.includes('events_event_kind');
+  }
+  if (m.includes('event_kind') && (m.includes('check constraint') || m.includes('violates check'))) return true;
+  return false;
+}
+
+/**
+ * 컬럼 없음 제약 불일치 모두 메모 폴백으로 처리할지
+ */
+export function shouldFallbackEventKindToMemoPayload(err) {
+  return isMissingEventKindColumnError(err) || isEventKindRejectedByDatabaseError(err);
+}
+
+/**
  * @param {object} eventData
  * @param {string} creatorId
  * @returns {object} event_kind 제외, 커피면 memo에 태그
