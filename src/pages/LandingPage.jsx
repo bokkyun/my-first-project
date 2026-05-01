@@ -113,10 +113,21 @@ function LandingPage() {
             공모주·청약부터<br />팀 스케줄까지 한번에
           </Typography>
           <Typography
-            variant="h6"
-            sx={{ mb: 4, opacity: 0.9, fontWeight: 400, fontSize: { xs: '1rem', md: '1.2rem' } }}
+            variant="body1"
+            component="p"
+            sx={{
+              mb: 4,
+              opacity: 0.9,
+              fontWeight: 400,
+              fontSize: { xs: '0.95rem', md: '1.1rem' },
+              lineHeight: 1.75,
+              maxWidth: 720,
+              mx: 'auto',
+            }}
           >
-            MoneyCal로 공모 공시·무순위 청약 일정을 확인하고,<br />팀·모임 일정까지 한 캘린더에서 관리하세요.
+            공모주와 아파트청약 스케줄이 내 달력에 자동등록+알람 기능. 내가 등록한 공유 스케줄은 팀원, 가족, 친구
+            등 선택적으로 공유하여 공유받은 팀원 달력에도 내가 등록한 스케줄 표시해주는 만능
+            금융스케줄+내스케줄+팀스케줄 관리툴입니다.
           </Typography>
           <Box sx={{ display: 'flex', justifyContent: 'center', gap: 2, flexWrap: 'wrap' }}>
             <Button

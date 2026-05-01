@@ -29,9 +29,10 @@ function PublicFooter() {
                 MoneyCal
               </Typography>
             </Box>
-            <Typography variant="body2" sx={{ maxWidth: 280, lineHeight: 1.8 }}>
-              공모·청약 일정 참고부터 팀 스케줄까지.<br />
-              한 화면에서 투자·협업을 맞춰 보세요.
+            <Typography variant="body2" sx={{ maxWidth: 440, lineHeight: 1.8 }}>
+              공모주와 아파트청약 스케줄이 내 달력에 자동등록+알람 기능. 내가 등록한 공유 스케줄은 팀원, 가족, 친구
+              등 선택적으로 공유하여 공유받은 팀원 달력에도 내가 등록한 스케줄 표시해주는 만능
+              금융스케줄+내스케줄+팀스케줄 관리툴입니다.
             </Typography>
           </Box>
 
