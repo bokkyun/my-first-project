@@ -11,6 +11,7 @@ import { useEvents } from '../hooks/useEvents';
 import { useNotifications } from '../hooks/useNotifications';
 import { useRebAptSplyEvents } from '../hooks/useRebAptSplyEvents';
 import { useDartIpoEvents } from '../hooks/useDartIpoEvents';
+import { useFredEconomicEvents } from '../hooks/useFredEconomicEvents';
 import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar';
 import CalendarView from '../components/landing/CalendarView';
@@ -18,6 +19,7 @@ import EventDialog from '../components/landing/EventDialog';
 import EventDetailDialog from '../components/landing/EventDetailDialog';
 import ExternalAptEventDialog from '../components/landing/ExternalAptEventDialog';
 import ExternalIpoEventDialog from '../components/landing/ExternalIpoEventDialog';
+import ExternalFredEventDialog from '../components/landing/ExternalFredEventDialog';
 import DayAgendaDialog from '../components/landing/DayAgendaDialog';
 import MyEventSearchDialog from '../components/landing/MyEventSearchDialog';
 import SubwayScheduleBar from '../components/common/SubwayScheduleBar';
@@ -58,6 +60,7 @@ function CalendarPage() {
   const [onlyMySchedules, setOnlyMySchedules] = useState(false);
   const [showAptSply, setShowAptSply] = useState(true);
   const [showIpo, setShowIpo] = useState(true);
+  const [showFred, setShowFred] = useState(true);
   const [viewRange, setViewRange] = useState(() => {
     const now = new Date();
     return {
@@ -79,6 +82,8 @@ function CalendarPage() {
   const [selectedAptEvent, setSelectedAptEvent] = useState(null);
   const [ipoDetailOpen, setIpoDetailOpen] = useState(false);
   const [selectedIpoEvent, setSelectedIpoEvent] = useState(null);
+  const [fredDetailOpen, setFredDetailOpen] = useState(false);
+  const [selectedFredEvent, setSelectedFredEvent] = useState(null);
   /** 모바일 사이드바 */
   const [sidebarOpen, setSidebarOpen] = useState(false);
   /** 다이얼로그·시트 — selectedDate 는 dayEventsForSheet 보다 먼저 선언해야 함 */
@@ -96,13 +101,20 @@ function CalendarPage() {
   const { events, createEvent, updateEvent, deleteEvent } = useEvents(user?.id, visibleGroupIds);
   const { events: aptSplyList, error: aptSplyError } = useRebAptSplyEvents(showAptSply, viewRange);
   const { events: ipoList, error: ipoError } = useDartIpoEvents(showIpo, viewRange);
+  const {
+    events: fredCalendarEvents,
+    loading: fredLoading,
+    error: fredError,
+    syncFromFred,
+  } = useFredEconomicEvents(showFred, viewRange, user?.id ?? null);
 
   const calendarEvents = useMemo(() => {
     const list = [...events];
     if (showAptSply) list.push(...aptSplyList);
     if (showIpo) list.push(...ipoList);
+    if (showFred) list.push(...fredCalendarEvents);
     return list;
-  }, [events, aptSplyList, showAptSply, ipoList, showIpo]);
+  }, [events, aptSplyList, showAptSply, ipoList, showIpo, showFred, fredCalendarEvents]);
 
   /** 표시 중인 뷰 구간에 속하는 일정만(월 뷰에서는 해당 월만, 전·익월 칸 제외) */
   const calendarEventsForGrid = useMemo(() => {
@@ -182,6 +194,11 @@ function CalendarPage() {
       setIpoDetailOpen(true);
       return;
     }
+    if (ev._external === 'fred') {
+      setSelectedFredEvent(ev);
+      setFredDetailOpen(true);
+      return;
+    }
     setSelectedEvent(ev);
     setDetailDialogOpen(true);
   };
@@ -238,6 +255,29 @@ function CalendarPage() {
       setSnack({ open: true, msg: `공모(DART): ${ipoError}`, severity: 'error' });
     }
   }, [showIpo, ipoError]);
+
+  useEffect(() => {
+    if (showFred && fredError) {
+      setSnack({ open: true, msg: `FRED 일정: ${fredError}`, severity: 'error' });
+    }
+  }, [showFred, fredError]);
+
+  const handleFredSync = useCallback(async () => {
+    if (!user?.id) {
+      setSnack({ open: true, msg: '로그인 후 동기화할 수 있습니다.', severity: 'error' });
+      return;
+    }
+    const { error } = await syncFromFred();
+    if (error) {
+      setSnack({
+        open: true,
+        msg: `FRED 동기화 실패: ${error.message || String(error)}`,
+        severity: 'error',
+      });
+    } else {
+      setSnack({ open: true, msg: '거시지표 일정을 동기화했습니다.', severity: 'success' });
+    }
+  }, [user?.id, syncFromFred]);
 
   /** 이벤트 저장 */
   const handleSaveEvent = async (eventData, groupIds, targetUserId = null) => {
@@ -315,6 +355,8 @@ function CalendarPage() {
           onShowAptSplyChange={setShowAptSply}
           showIpo={showIpo}
           onShowIpoChange={setShowIpo}
+          showFred={showFred}
+          onShowFredChange={setShowFred}
           mobileOpen={sidebarOpen}
           onMobileClose={() => setSidebarOpen(false)}
           onFetchGroupMembers={fetchGroupMembers}
@@ -335,18 +377,32 @@ function CalendarPage() {
               borderColor: 'divider',
               display: 'flex',
               alignItems: 'center',
+              gap: 1,
+              flexWrap: 'wrap',
             }}
           >
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<SearchIcon />}
+            onClick={() => setMyEventSearchOpen(true)}
+            aria-label="일정 검색"
+          >
+            일정검색
+          </Button>
+          {user?.id && (
             <Button
               variant="outlined"
               size="small"
-              startIcon={<SearchIcon />}
-              onClick={() => setMyEventSearchOpen(true)}
-              aria-label="일정 검색"
+              color="secondary"
+              onClick={() => void handleFredSync()}
+              disabled={fredLoading}
+              aria-label="FRED 거시지표 동기화"
             >
-              일정검색
+              {fredLoading ? '동기화 중…' : '거시지표 동기화'}
             </Button>
-          </Box>
+          )}
+        </Box>
           <CalendarView
             events={calendarEventsForGrid}
             groups={groups}
@@ -401,6 +457,12 @@ function CalendarPage() {
         open={ipoDetailOpen}
         onClose={() => { setIpoDetailOpen(false); setSelectedIpoEvent(null); }}
         event={selectedIpoEvent}
+      />
+
+      <ExternalFredEventDialog
+        open={fredDetailOpen}
+        onClose={() => { setFredDetailOpen(false); setSelectedFredEvent(null); }}
+        event={selectedFredEvent}
       />
 
       <EventDetailDialog

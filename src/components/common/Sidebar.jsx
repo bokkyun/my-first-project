@@ -32,6 +32,8 @@ const SIDEBAR_WIDTH = 220;
  * @param {function} onShowAptSplyChange - (boolean) => void [Optional]
  * @param {boolean} showIpo - 공모주 일정 [Optional]
  * @param {function} onShowIpoChange - (boolean) => void [Optional]
+ * @param {boolean} showFred - 미국 거시지표(FRED) [Optional]
+ * @param {function} onShowFredChange - (boolean) => void [Optional]
  *
  * Example usage:
  * <Sidebar groups={groups} visibleGroupIds={ids} onToggleGroup={fn} onToggleAll={fn} mobileOpen={open} onMobileClose={fn} onFetchGroupMembers={fn} onLeaveGroup={fn} onDeleteGroup={fn} onChangeAdmin={fn} onChangePassword={fn} />
@@ -47,6 +49,8 @@ function Sidebar({
   onShowAptSplyChange,
   showIpo = true,
   onShowIpoChange,
+  showFred = true,
+  onShowFredChange,
   mobileOpen = false,
   onMobileClose,
   onFetchGroupMembers,
@@ -122,6 +126,29 @@ function Sidebar({
             )}
             label={(
               <Typography variant="body2" fontWeight={600}>공모주(공시 제출)</Typography>
+            )}
+          />
+        </ListItem>
+      )}
+      {onShowFredChange && (
+        <ListItem disablePadding sx={{ mb: 0.5 }}>
+          <FormControlLabel
+            sx={{ alignItems: 'flex-start', m: 0 }}
+            control={(
+              <Checkbox
+                checked={showFred}
+                onChange={(e) => onShowFredChange(e.target.checked)}
+                size="small"
+                sx={{ py: 0.5 }}
+              />
+            )}
+            label={(
+              <Box>
+                <Typography variant="body2" fontWeight={600}>미국 거시지표 (FRED)</Typography>
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
+                  NFP·CPI·FOMC·GDP·실업률
+                </Typography>
+              </Box>
             )}
           />
         </ListItem>

@@ -130,7 +130,7 @@ function CalendarView({
             const ex = arg.event.extendedProps;
             const nickname = ex.creatorNickname;
             const isIpo = ex._external === 'ipo';
-            const displayTitle = String(arg.event.title || '').replace(/^(📈|🏢)\s*/u, '');
+            const displayTitle = String(arg.event.title || '').replace(/^(📈|🏢|📊|📅)\s*/u, '');
             /** 공모주: 제목은 JS에서 3글자+... 처리 · CSS ellipsis 제거(좁은 칸에서 한두 글자만 보이던 현상 방지) */
             const ipoTitleSx = isIpo
               ? {

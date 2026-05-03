@@ -11,7 +11,7 @@ export function eventPassesSidebarCalendarFilters(ev, {
   onlyMySchedules,
   currentUserId,
 }) {
-  if (ev._external === 'reb-apt' || ev._external === 'reb-odcloud' || ev._external === 'ipo') {
+  if (ev._external === 'reb-apt' || ev._external === 'reb-odcloud' || ev._external === 'ipo' || ev._external === 'fred') {
     if (onlyMySchedules) return false;
     return true;
   }
