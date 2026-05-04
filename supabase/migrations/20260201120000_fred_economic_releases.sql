@@ -7,7 +7,7 @@
 --   3) supabase functions deploy sync-fred-releases
 -- FRED 키: https://fred.stlouisfed.org/docs/api/api_key.html
 -- 추적 지표:
---   PAYEMS(NFP), CPIAUCSL(CPI), GDPC1(GDP), UNRATE(실업률)
+--   PAYEMS(NFP), CPIAUCSL(CPI), M2SL(M2), GDPC1(GDP), UNRATE(실업률)
 
 create table if not exists public.fred_economic_releases (
   id uuid primary key default gen_random_uuid(),

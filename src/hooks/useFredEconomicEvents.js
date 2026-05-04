@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 
-const TRACKED_FRED_SERIES = new Set(['PAYEMS', 'CPIAUCSL', 'GDPC1', 'UNRATE']);
+const TRACKED_FRED_SERIES = new Set(['PAYEMS', 'CPIAUCSL', 'M2SL', 'GDPC1', 'UNRATE']);
 const FRED_SERIES_TITLES = {
   PAYEMS: '미국 비농업고용 (NFP)',
   CPIAUCSL: '미국 CPI (소비자물가)',
+  M2SL: '미국 M2 통화량',
   GDPC1: '미국 실질 GDP (연율 환산)',
   UNRATE: '미국 실업률',
 };

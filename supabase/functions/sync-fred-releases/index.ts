@@ -22,6 +22,10 @@ const RELEASE_GROUPS: {
     series: [{ series_id: 'CPIAUCSL', title: '미국 CPI (소비자물가)' }],
   },
   {
+    release_id: 21,
+    series: [{ series_id: 'M2SL', title: '미국 M2 통화량' }],
+  },
+  {
     release_id: 50,
     series: [
       { series_id: 'UNRATE', title: '미국 실업률' },
