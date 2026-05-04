@@ -29,7 +29,7 @@ import { eventPassesSidebarCalendarFilters } from '../utils/calendarEventFilters
 const SIDEBAR_DEFAULT_FILTERS_KEY = 'moneycal.sidebarDefaultFilters.v1';
 const DEFAULT_SIDEBAR_FILTERS = {
   onlyMySchedules: false,
-  showAptSply: true,
+  showAptSply: false,
   showIpo: true,
   showFred: true,
   showBok: true,

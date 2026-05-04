@@ -12,7 +12,7 @@ import AdBanner from './AdBanner';
 const SIDEBAR_WIDTH = 220;
 const DEFAULT_FILTER_SETTINGS = {
   onlyMySchedules: false,
-  showAptSply: true,
+  showAptSply: false,
   showIpo: true,
   showFred: true,
   showBok: true,
@@ -58,7 +58,7 @@ function Sidebar({
   onToggleAll,
   onlyMySchedules = false,
   onOnlyMySchedulesChange,
-  showAptSply = true,
+  showAptSply = false,
   onShowAptSplyChange,
   showIpo = true,
   onShowIpoChange,
