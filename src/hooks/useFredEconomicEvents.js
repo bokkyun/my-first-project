@@ -2,12 +2,13 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 
 const TRACKED_FRED_SERIES = new Set(['PAYEMS', 'CPIAUCSL', 'M2SL', 'GDPC1', 'UNRATE']);
+const US_MACRO_FLAG = '🇺🇸';
 const FRED_SERIES_TITLES = {
-  PAYEMS: '미국 비농업고용 (NFP)',
-  CPIAUCSL: '미국 CPI (소비자물가)',
-  M2SL: '미국 M2 통화량',
-  GDPC1: '미국 실질 GDP (연율 환산)',
-  UNRATE: '미국 실업률',
+  PAYEMS: '비농업고용 (NFP)',
+  CPIAUCSL: 'CPI (소비자물가)',
+  M2SL: 'M2 통화량',
+  GDPC1: '실질 GDP (연율 환산)',
+  UNRATE: '실업률',
 };
 const ISM_PMI_URL = 'https://go.weareism.org/ism-manufacturing-pmi';
 
@@ -24,16 +25,16 @@ function toYmd(d) {
 function mapFredRowToCalendarEvent(row) {
   const normalizedRow = {
     ...row,
-    title: FRED_SERIES_TITLES[row.series_id] || row.title,
+    title: FRED_SERIES_TITLES[row.series_id] || String(row.title || '').replace(/^미국\s+/u, '').trim(),
   };
   const ymd = row.release_date;
   const start = `${ymd}T00:00:00`;
   const endDt = new Date(`${ymd}T12:00:00`);
   endDt.setHours(23, 59, 59, 999);
   const hasVal = row.actual_value != null && String(row.actual_value).trim() !== '';
-  const title = hasVal
+  const title = `${hasVal
     ? `📊 ${normalizedRow.title}: ${row.actual_value}`
-    : `📅 ${normalizedRow.title} (발표예정)`;
+    : `📅 ${normalizedRow.title} (발표예정)`} ${US_MACRO_FLAG}`;
   return {
     id: `fred-${row.id}`,
     title,
@@ -42,7 +43,7 @@ function mapFredRowToCalendarEvent(row) {
     is_all_day: true,
     color: '#6a1b9a',
     _external: 'fred',
-    _fredRow: normalizedRow,
+    _fredRow: { ...normalizedRow, regionFlag: US_MACRO_FLAG },
     creator_id: '__fred__',
     event_visibility: [],
   };
@@ -73,7 +74,7 @@ function buildIsmPmiEvents(viewRange) {
     const ymd = toYmd(releaseDate);
     rows.push({
       id: `ism-pmi-${ymd}`,
-      title: '미국 ISM 제조업 PMI',
+      title: 'ISM 제조업 PMI',
       release_date: ymd,
       status: 'scheduled',
       series_id: 'ISM_PMI',

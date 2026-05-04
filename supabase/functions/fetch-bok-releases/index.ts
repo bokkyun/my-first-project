@@ -13,37 +13,37 @@ const BOK_CALENDAR_URL = 'https://www.bok.or.kr/portal/stats/statsPublictSchdul/
 const TARGETS = [
   {
     code: 'BOK_GDP',
-    label: '한국 GDP 성장률',
+    label: 'GDP 성장률',
     matches: ['실질 국내총생산', '국민소득', '국민계정'],
   },
   {
     code: 'BOK_M2',
-    label: '한국 M2 통화량',
+    label: 'M2 통화량',
     matches: ['통화 및 유동성'],
   },
   {
     code: 'BOK_HOUSEHOLD_LOANS',
-    label: '한국 가계대출 증가율',
+    label: '가계대출 증가율',
     matches: ['가계대출', '가계신용', '가계부채'],
   },
   {
     code: 'BOK_CPI',
-    label: '한국 소비자물가',
+    label: '소비자물가',
     matches: ['소비자물가지수'],
   },
   {
     code: 'BOK_PPI',
-    label: '한국 생산자물가',
+    label: '생산자물가',
     matches: ['생산자물가지수'],
   },
   {
     code: 'BOK_FX_RESERVES',
-    label: '한국 외환보유액',
+    label: '외환보유액',
     matches: ['외환보유액'],
   },
   {
     code: 'BOK_EXPORT_IMPORT',
-    label: '한국 수출입 통계',
+    label: '수출입 통계',
     matches: ['수출입물가지수', '무역지수', '국제수지', '지식서비스 무역통계', '결제통화별 수출입'],
   },
 ];
@@ -174,7 +174,7 @@ function buildFxReserveEvents(startYmd: string, endYmd: string): Record<string, 
     rows.push({
       id: `bok-BOK_FX_RESERVES-${releaseDate}`,
       category_code: 'BOK_FX_RESERVES',
-      category_label: '한국 외환보유액',
+      category_label: '외환보유액',
       title: `${year}년 ${monthNum}월 외환보유액(예정)`,
       release_date: releaseDate,
       release_time: null,

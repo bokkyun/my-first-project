@@ -19,22 +19,22 @@ const RELEASE_GROUPS: {
 }[] = [
   {
     release_id: 10,
-    series: [{ series_id: 'CPIAUCSL', title: '미국 CPI (소비자물가)' }],
+    series: [{ series_id: 'CPIAUCSL', title: 'CPI (소비자물가)' }],
   },
   {
     release_id: 21,
-    series: [{ series_id: 'M2SL', title: '미국 M2 통화량' }],
+    series: [{ series_id: 'M2SL', title: 'M2 통화량' }],
   },
   {
     release_id: 50,
     series: [
-      { series_id: 'UNRATE', title: '미국 실업률' },
-      { series_id: 'PAYEMS', title: '미국 비농업고용 (NFP)' },
+      { series_id: 'UNRATE', title: '실업률' },
+      { series_id: 'PAYEMS', title: '비농업고용 (NFP)' },
     ],
   },
   {
     release_id: 53,
-    series: [{ series_id: 'GDPC1', title: '미국 실질 GDP (연율 환산)' }],
+    series: [{ series_id: 'GDPC1', title: '실질 GDP (연율 환산)' }],
   },
 ];
 

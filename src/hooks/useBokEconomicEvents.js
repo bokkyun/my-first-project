@@ -1,6 +1,15 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 
+const KR_MACRO_FLAG = '🇰🇷';
+
+/** 캘린더·헤더용: '한국 GDP…' → 'GDP…' */
+function stripKrLabelPrefix(label) {
+  const s = String(label || '').trim();
+  if (!s) return '';
+  return s.replace(/^한국\s*/u, '').trim() || s;
+}
+
 function toYmd(d) {
   if (!d) return '';
   const x = d instanceof Date ? d : new Date(d);
@@ -16,7 +25,10 @@ function mapBokRowToCalendarEvent(row) {
   const start = `${ymd}T00:00:00`;
   const endDt = new Date(`${ymd}T12:00:00`);
   endDt.setHours(23, 59, 59, 999);
-  const title = `한국은행 ${row.category_label || row.title}`;
+  const line = stripKrLabelPrefix(String(row.title || '').trim())
+    || stripKrLabelPrefix(row.category_label || '')
+    || '한국은행 통계';
+  const title = `📅 ${line} ${KR_MACRO_FLAG}`;
 
   return {
     id: `bok-${row.category_code || 'release'}-${ymd}-${String(row.title || '').slice(0, 40)}`,
@@ -28,11 +40,12 @@ function mapBokRowToCalendarEvent(row) {
     _external: 'bok',
     _fredRow: {
       ...row,
+      title: line,
       series_id: row.category_code || 'BOK',
-      title: row.title,
       source_name: row.source_name || '한국은행',
       source_label: row.source_label || '한국은행 공표일정 보기',
       source_url: row.source_url || 'https://ecos.bok.or.kr/',
+      regionFlag: KR_MACRO_FLAG,
     },
     creator_id: '__bok__',
     event_visibility: [],
