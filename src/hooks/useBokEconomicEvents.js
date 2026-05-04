@@ -68,8 +68,11 @@ function mapBokRowToCalendarEvent(row) {
       title: line,
       series_id: row.category_code || 'BOK',
       source_name: row.source_name || '한국은행',
-      source_label: row.source_label || '한국은행 공표일정 보기',
-      source_url: row.source_url || 'https://ecos.bok.or.kr/',
+      calendar_url: row.calendar_url ?? row.source_url,
+      indicator_url:
+        row.indicator_url
+        || (row.ecos_stat_code ? `https://ecos.bok.or.kr/#/SearchStat/${row.ecos_stat_code}` : undefined),
+      indicator_label: row.indicator_label || 'ECOS 통계표·시계열',
       regionFlag: KR_MACRO_FLAG,
     },
     creator_id: '__bok__',

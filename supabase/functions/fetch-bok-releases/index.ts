@@ -10,40 +10,59 @@ const corsHeaders: Record<string, string> = {
 
 const BOK_CALENDAR_URL = 'https://www.bok.or.kr/portal/stats/statsPublictSchdul/listCldr.do';
 
+/** ECOS 웹 SPA 해시 라우팅(통계표 코드로 검색 결과로 이동하는 데 자주 사용) */
+function indicatorPortalUrl(statCode: string): string {
+  return `https://ecos.bok.or.kr/#/SearchStat/${statCode}`;
+}
+
 const TARGETS = [
   {
     code: 'BOK_GDP',
     label: 'GDP 성장률',
+    ecos_stat_code: '200Y102',
+    ecos_cycle: 'Q',
     matches: ['실질 국내총생산', '국민소득', '국민계정'],
   },
   {
     code: 'BOK_M2',
     label: 'M2 통화량',
+    ecos_stat_code: '161Y008',
+    ecos_cycle: 'M',
     matches: ['통화 및 유동성'],
   },
   {
     code: 'BOK_HOUSEHOLD_LOANS',
     label: '가계대출 증가율',
+    ecos_stat_code: '151Y002',
+    ecos_cycle: 'M',
     matches: ['가계대출', '가계신용', '가계부채'],
   },
   {
     code: 'BOK_CPI',
     label: '소비자물가',
+    ecos_stat_code: '901Y009',
+    ecos_cycle: 'M',
     matches: ['소비자물가지수'],
   },
   {
     code: 'BOK_PPI',
     label: '생산자물가',
+    ecos_stat_code: '404Y014',
+    ecos_cycle: 'M',
     matches: ['생산자물가지수'],
   },
   {
     code: 'BOK_FX_RESERVES',
     label: '외환보유액',
+    ecos_stat_code: '732Y001',
+    ecos_cycle: 'M',
     matches: ['외환보유액'],
   },
   {
     code: 'BOK_EXPORT_IMPORT',
     label: '수출입 통계',
+    ecos_stat_code: '301Y013',
+    ecos_cycle: 'M',
     matches: ['수출입물가지수', '무역지수', '국제수지', '지식서비스 무역통계', '결제통화별 수출입'],
   },
 ];
@@ -110,9 +129,16 @@ function stripHtml(value: string): string {
     .trim();
 }
 
-function categorize(title: string): { code: string; label: string } | null {
+function categorize(title: string): { code: string; label: string; ecos_stat_code: string; ecos_cycle: string } | null {
   const target = TARGETS.find((t) => t.matches.some((keyword) => title.includes(keyword)));
-  return target ? { code: target.code, label: target.label } : null;
+  return target
+    ? {
+      code: target.code,
+      label: target.label,
+      ecos_stat_code: target.ecos_stat_code,
+      ecos_cycle: target.ecos_cycle,
+    }
+    : null;
 }
 
 function extractCells(rowHtml: string): string[] {
@@ -146,18 +172,24 @@ async function fetchCalendarMonth(month: string): Promise<Record<string, unknown
     const category = categorize(title);
     if (!category) continue;
 
-    const sourceUrl = `${BOK_CALENDAR_URL}?menuNo=200775&date=${releaseDate.slice(0, 7)}`;
+    const calendarUrl = `${BOK_CALENDAR_URL}?menuNo=200775&date=${releaseDate.slice(0, 7)}`;
+    const indicatorUrl = indicatorPortalUrl(category.ecos_stat_code);
     const today = ymd(new Date());
     rows.push({
       id: `bok-${category.code}-${releaseDate}-${title}`,
       category_code: category.code,
       category_label: category.label,
+      ecos_stat_code: category.ecos_stat_code,
+      ecos_cycle: category.ecos_cycle,
       title,
       release_date: releaseDate,
       release_time: releaseTime,
       status: releaseDate < today ? 'released' : 'scheduled',
-      source_url: sourceUrl,
+      calendar_url: calendarUrl,
+      indicator_url: indicatorUrl,
+      source_url: calendarUrl,
       source_label: '한국은행 공표일정 보기',
+      indicator_label: 'ECOS 통계표·시계열',
       source_name: '한국은행',
     });
   }
@@ -175,12 +207,18 @@ function buildFxReserveEvents(startYmd: string, endYmd: string): Record<string, 
       id: `bok-BOK_FX_RESERVES-${releaseDate}`,
       category_code: 'BOK_FX_RESERVES',
       category_label: '외환보유액',
+      ecos_stat_code: '732Y001',
+      ecos_cycle: 'M',
       title: `${year}년 ${monthNum}월 외환보유액(예정)`,
       release_date: releaseDate,
       release_time: null,
       status: releaseDate < today ? 'released' : 'scheduled',
-      source_url: 'https://www.bok.or.kr/portal/bbs/B0000502/list.do?menuNo=201265&searchCnd=1&searchKwd=%EC%99%B8%ED%99%98%EB%B3%B4%EC%9C%A0%EC%95%A1',
+      calendar_url: 'https://www.bok.or.kr/portal/stats/statsPublictSchdul/listCldr.do?menuNo=200775',
+      indicator_url: indicatorPortalUrl('732Y001'),
+      source_url:
+        'https://www.bok.or.kr/portal/bbs/B0000502/list.do?menuNo=201265&searchCnd=1&searchKwd=%EC%99%B8%ED%99%98%EB%B3%B4%EC%9C%A0%EC%95%A1',
       source_label: '한국은행 외환보유액 보도자료',
+      indicator_label: 'ECOS 통계표·시계열',
       source_name: '한국은행',
     });
   }
