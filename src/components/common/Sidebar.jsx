@@ -144,9 +144,9 @@ function Sidebar({
             )}
             label={(
               <Box>
-                <Typography variant="body2" fontWeight={600}>미국 거시지표 (FRED)</Typography>
+                <Typography variant="body2" fontWeight={600}>미국 거시지표</Typography>
                 <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
-                  NFP·CPI·M2·GDP·실업률
+                  NFP·CPI·M2·GDP·실업률·ISM PMI
                 </Typography>
               </Box>
             )}

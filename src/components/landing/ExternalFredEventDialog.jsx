@@ -20,12 +20,14 @@ function ExternalFredEventDialog({ open, onClose, event }) {
     return new Date(event.starts_at).toLocaleString('ko-KR');
   };
 
-  const seriesUrl = row.series_id
+  const isFredSource = !row.source_url;
+  const seriesUrl = isFredSource && row.series_id
     ? `https://fred.stlouisfed.org/series/${encodeURIComponent(row.series_id)}`
     : null;
-  const releaseUrl = row.release_id
+  const releaseUrl = isFredSource && row.release_id
     ? `https://fred.stlouisfed.org/release?rid=${encodeURIComponent(row.release_id)}`
     : null;
+  const sourceUrl = row.source_url || seriesUrl;
   const hasActualValue = row.actual_value != null && String(row.actual_value).trim() !== '';
 
   return (
@@ -42,8 +44,8 @@ function ExternalFredEventDialog({ open, onClose, event }) {
         <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 0.5 }}>지표·발표</Typography>
         <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', gap: 1 }}>
           <Box>
-            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>FRED series_id</Typography>
-            <Typography variant="body2">{row.series_id || '—'}</Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>{isFredSource ? 'FRED series_id' : '자료 출처'}</Typography>
+            <Typography variant="body2">{isFredSource ? (row.series_id || '—') : (row.source_name || row.series_id || '—')}</Typography>
           </Box>
           <Box>
             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>예정·발표일 (릴리스 기준)</Typography>
@@ -73,21 +75,23 @@ function ExternalFredEventDialog({ open, onClose, event }) {
           )}
         </Box>
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2, lineHeight: 1.5 }}>
-          발표 전에는 릴리스 일정만 표시하고, 발표 후에는 FRED 시계열에서 최신 관측치를 채웁니다. 공식 수치·개정은 아래 FRED 자료 URL에서 확인하세요.
+          {isFredSource
+            ? '발표 전에는 릴리스 일정만 표시하고, 발표 후에는 FRED 시계열에서 최신 관측치를 채웁니다. 공식 수치·개정은 아래 FRED 자료 URL에서 확인하세요.'
+            : 'FRED에서 제공하지 않는 지표라 공식 자료 페이지로 연결합니다. 실제 수치·개정은 아래 공식 자료에서 확인하세요.'}
         </Typography>
-        {(seriesUrl || releaseUrl) && (
+        {(sourceUrl || releaseUrl) && (
           <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            {seriesUrl && (
+            {sourceUrl && (
               <Button
                 component="a"
-                href={seriesUrl}
+                href={sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 endIcon={<OpenInNew />}
                 variant="outlined"
                 size="small"
               >
-                FRED 시리즈 자료
+                {row.source_label || 'FRED 시리즈 자료'}
               </Button>
             )}
             {releaseUrl && (

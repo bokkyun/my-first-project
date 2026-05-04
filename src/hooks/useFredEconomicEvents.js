@@ -9,6 +9,7 @@ const FRED_SERIES_TITLES = {
   GDPC1: '미국 실질 GDP (연율 환산)',
   UNRATE: '미국 실업률',
 };
+const ISM_PMI_URL = 'https://go.weareism.org/ism-manufacturing-pmi';
 
 function toYmd(d) {
   if (!d) return '';
@@ -45,6 +46,44 @@ function mapFredRowToCalendarEvent(row) {
     creator_id: '__fred__',
     event_visibility: [],
   };
+}
+
+function firstBusinessDay(year, monthIndex) {
+  const d = new Date(year, monthIndex, 1, 12, 0, 0, 0);
+  const day = d.getDay();
+  if (day === 6) d.setDate(3);
+  if (day === 0) d.setDate(2);
+  return d;
+}
+
+function buildIsmPmiEvents(viewRange) {
+  if (!viewRange?.start || !viewRange?.end) return [];
+  const start = new Date(viewRange.start);
+  start.setMonth(start.getMonth() - 1, 1);
+  const end = new Date(viewRange.end);
+  end.setMonth(end.getMonth() + 1, 1);
+
+  const rows = [];
+  for (
+    let cursor = new Date(start.getFullYear(), start.getMonth(), 1);
+    cursor <= end;
+    cursor.setMonth(cursor.getMonth() + 1)
+  ) {
+    const releaseDate = firstBusinessDay(cursor.getFullYear(), cursor.getMonth());
+    const ymd = toYmd(releaseDate);
+    rows.push({
+      id: `ism-pmi-${ymd}`,
+      title: '미국 ISM 제조업 PMI',
+      release_date: ymd,
+      status: 'scheduled',
+      series_id: 'ISM_PMI',
+      source_url: ISM_PMI_URL,
+      source_label: 'ISM 공식 PMI 자료',
+      source_name: 'ISM',
+    });
+  }
+
+  return rows.map(mapFredRowToCalendarEvent);
 }
 
 /**
@@ -110,10 +149,11 @@ export function useFredEconomicEvents(enabled, viewRange, userId) {
 
   const events = useMemo(() => {
     if (!enabled) return [];
-    return (rawRows || [])
+    const fredEvents = (rawRows || [])
       .filter((row) => TRACKED_FRED_SERIES.has(row.series_id))
       .map(mapFredRowToCalendarEvent);
-  }, [rawRows, enabled]);
+    return [...fredEvents, ...buildIsmPmiEvents(viewRange)];
+  }, [rawRows, enabled, viewRange]);
 
   const syncFromFred = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
