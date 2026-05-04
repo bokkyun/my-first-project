@@ -58,6 +58,7 @@ jobs:
           VITE_DART_PAGE_COUNT: ${{ secrets.VITE_DART_PAGE_COUNT }}
           VITE_SEOUL_SUBWAY_API_KEY: ${{ secrets.VITE_SEOUL_SUBWAY_API_KEY }}
           VITE_SEOUL_SUBWAY_ORIGIN: ${{ secrets.VITE_SEOUL_SUBWAY_ORIGIN }}
+          VITE_BOK_ECOS_API_KEY: ${{ secrets.VITE_BOK_ECOS_API_KEY }}
         run: |
           npm install
           npm run build

@@ -12,6 +12,7 @@ import { useNotifications } from '../hooks/useNotifications';
 import { useRebAptSplyEvents } from '../hooks/useRebAptSplyEvents';
 import { useDartIpoEvents } from '../hooks/useDartIpoEvents';
 import { useFredEconomicEvents } from '../hooks/useFredEconomicEvents';
+import { useBokEconomicEvents } from '../hooks/useBokEconomicEvents';
 import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar';
 import CalendarView from '../components/landing/CalendarView';
@@ -24,6 +25,38 @@ import DayAgendaDialog from '../components/landing/DayAgendaDialog';
 import MyEventSearchDialog from '../components/landing/MyEventSearchDialog';
 import SubwayScheduleBar from '../components/common/SubwayScheduleBar';
 import { eventPassesSidebarCalendarFilters } from '../utils/calendarEventFilters';
+
+const SIDEBAR_DEFAULT_FILTERS_KEY = 'moneycal.sidebarDefaultFilters.v1';
+const DEFAULT_SIDEBAR_FILTERS = {
+  onlyMySchedules: false,
+  showAptSply: true,
+  showIpo: true,
+  showFred: true,
+  showBok: true,
+  showAllGroups: true,
+};
+
+function normalizeSidebarFilters(value) {
+  return {
+    ...DEFAULT_SIDEBAR_FILTERS,
+    ...(value && typeof value === 'object' ? value : {}),
+  };
+}
+
+function readSidebarDefaultFilters() {
+  if (typeof window === 'undefined') return DEFAULT_SIDEBAR_FILTERS;
+  try {
+    const raw = window.localStorage.getItem(SIDEBAR_DEFAULT_FILTERS_KEY);
+    return normalizeSidebarFilters(raw ? JSON.parse(raw) : null);
+  } catch {
+    return DEFAULT_SIDEBAR_FILTERS;
+  }
+}
+
+function writeSidebarDefaultFilters(value) {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(SIDEBAR_DEFAULT_FILTERS_KEY, JSON.stringify(normalizeSidebarFilters(value)));
+}
 
 /** `dateStr` YYYY-MM-DD 가 로컬 달력 날짜와 겹치는지 */
 function eventOccursOnDate(ev, dateStr) {
@@ -56,11 +89,13 @@ function CalendarPage() {
   const { profile } = useUserProfile(user);
 
   const { groups, loading: groupsLoading, leaveGroup, deleteGroup, fetchGroupMembers, changeGroupAdmin, changeGroupPassword } = useGroups(user?.id);
+  const [sidebarDefaultFilters, setSidebarDefaultFilters] = useState(readSidebarDefaultFilters);
   const [visibleGroupIds, setVisibleGroupIds] = useState([]);
-  const [onlyMySchedules, setOnlyMySchedules] = useState(false);
-  const [showAptSply, setShowAptSply] = useState(true);
-  const [showIpo, setShowIpo] = useState(true);
-  const [showFred, setShowFred] = useState(true);
+  const [onlyMySchedules, setOnlyMySchedules] = useState(() => readSidebarDefaultFilters().onlyMySchedules);
+  const [showAptSply, setShowAptSply] = useState(() => readSidebarDefaultFilters().showAptSply);
+  const [showIpo, setShowIpo] = useState(() => readSidebarDefaultFilters().showIpo);
+  const [showFred, setShowFred] = useState(() => readSidebarDefaultFilters().showFred);
+  const [showBok, setShowBok] = useState(() => readSidebarDefaultFilters().showBok);
   const [viewRange, setViewRange] = useState(() => {
     const now = new Date();
     return {
@@ -107,14 +142,20 @@ function CalendarPage() {
     error: fredError,
     syncFromFred,
   } = useFredEconomicEvents(showFred, viewRange, user?.id ?? null);
+  const {
+    events: bokCalendarEvents,
+    loading: bokLoading,
+    error: bokError,
+  } = useBokEconomicEvents(showBok, viewRange);
 
   const calendarEvents = useMemo(() => {
     const list = [...events];
     if (showAptSply) list.push(...aptSplyList);
     if (showIpo) list.push(...ipoList);
     if (showFred) list.push(...fredCalendarEvents);
+    if (showBok) list.push(...bokCalendarEvents);
     return list;
-  }, [events, aptSplyList, showAptSply, ipoList, showIpo, showFred, fredCalendarEvents]);
+  }, [events, aptSplyList, showAptSply, ipoList, showIpo, showFred, fredCalendarEvents, showBok, bokCalendarEvents]);
 
   /** 표시 중인 뷰 구간에 속하는 일정만(월 뷰에서는 해당 월만, 전·익월 칸 제외) */
   const calendarEventsForGrid = useMemo(() => {
@@ -154,8 +195,21 @@ function CalendarPage() {
       setVisibleGroupIds([]);
       return;
     }
-    setVisibleGroupIds(groups.length > 0 ? groups.map((g) => g.id) : []);
-  }, [user?.id, myGroupIdsKey]);
+    setVisibleGroupIds(sidebarDefaultFilters.showAllGroups && groups.length > 0 ? groups.map((g) => g.id) : []);
+  }, [user?.id, myGroupIdsKey, sidebarDefaultFilters.showAllGroups]);
+
+  const handleSaveSidebarDefaultFilters = useCallback((nextFilters) => {
+    const normalized = normalizeSidebarFilters(nextFilters);
+    writeSidebarDefaultFilters(normalized);
+    setSidebarDefaultFilters(normalized);
+    setOnlyMySchedules(normalized.onlyMySchedules);
+    setShowAptSply(normalized.showAptSply);
+    setShowIpo(normalized.showIpo);
+    setShowFred(normalized.showFred);
+    setShowBok(normalized.showBok);
+    setVisibleGroupIds(normalized.showAllGroups ? groups.map((g) => g.id) : []);
+    setSnack({ open: true, msg: '메뉴 기본 체크 설정을 저장했습니다.', severity: 'success' });
+  }, [groups]);
 
   /** 그룹 필터 토글 */
   const handleToggleGroup = (groupId) => {
@@ -194,7 +248,7 @@ function CalendarPage() {
       setIpoDetailOpen(true);
       return;
     }
-    if (ev._external === 'fred') {
+    if (ev._external === 'fred' || ev._external === 'bok') {
       setSelectedFredEvent(ev);
       setFredDetailOpen(true);
       return;
@@ -261,6 +315,12 @@ function CalendarPage() {
       setSnack({ open: true, msg: `FRED 일정: ${fredError}`, severity: 'error' });
     }
   }, [showFred, fredError]);
+
+  useEffect(() => {
+    if (showBok && bokError) {
+      setSnack({ open: true, msg: `한국은행 일정: ${bokError}`, severity: 'error' });
+    }
+  }, [showBok, bokError]);
 
   const handleFredSync = useCallback(async () => {
     if (!user?.id) {
@@ -357,6 +417,10 @@ function CalendarPage() {
           onShowIpoChange={setShowIpo}
           showFred={showFred}
           onShowFredChange={setShowFred}
+          showBok={showBok}
+          onShowBokChange={setShowBok}
+          defaultFilters={sidebarDefaultFilters}
+          onDefaultFiltersSave={handleSaveSidebarDefaultFilters}
           mobileOpen={sidebarOpen}
           onMobileClose={() => setSidebarOpen(false)}
           onFetchGroupMembers={fetchGroupMembers}
@@ -396,7 +460,7 @@ function CalendarPage() {
               size="small"
               color="secondary"
               onClick={() => void handleFredSync()}
-              disabled={fredLoading}
+              disabled={fredLoading || bokLoading}
               aria-label="FRED 거시지표 동기화"
             >
               {fredLoading ? '동기화 중…' : '거시지표 동기화'}

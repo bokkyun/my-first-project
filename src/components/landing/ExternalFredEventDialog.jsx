@@ -29,6 +29,7 @@ function ExternalFredEventDialog({ open, onClose, event }) {
     : null;
   const sourceUrl = row.source_url || seriesUrl;
   const hasActualValue = row.actual_value != null && String(row.actual_value).trim() !== '';
+  const isReleased = hasActualValue || row.status === 'released';
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
@@ -53,7 +54,11 @@ function ExternalFredEventDialog({ open, onClose, event }) {
           </Box>
           <Box>
             <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700 }}>상태</Typography>
-            <Typography variant="body2">{hasActualValue ? '발표 후 FRED 값 반영됨' : '발표 전/대기'}</Typography>
+            <Typography variant="body2">
+              {isFredSource
+                ? (hasActualValue ? '발표 후 FRED 값 반영됨' : '발표 전/대기')
+                : (isReleased ? '발표 후 공식 자료 확인 가능' : '발표 전/대기')}
+            </Typography>
           </Box>
           {row.observation_date && (
             <Box>
@@ -77,7 +82,7 @@ function ExternalFredEventDialog({ open, onClose, event }) {
         <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 2, lineHeight: 1.5 }}>
           {isFredSource
             ? '발표 전에는 릴리스 일정만 표시하고, 발표 후에는 FRED 시계열에서 최신 관측치를 채웁니다. 공식 수치·개정은 아래 FRED 자료 URL에서 확인하세요.'
-            : 'FRED에서 제공하지 않는 지표라 공식 자료 페이지로 연결합니다. 실제 수치·개정은 아래 공식 자료에서 확인하세요.'}
+            : '발표 일정은 공식 공표일정을 기준으로 표시합니다. 실제 수치·개정은 아래 공식 자료에서 확인하세요.'}
         </Typography>
         {(sourceUrl || releaseUrl) && (
           <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
