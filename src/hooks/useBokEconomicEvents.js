@@ -10,6 +10,30 @@ function stripKrLabelPrefix(label) {
   return s.replace(/^한국\s*/u, '').trim() || s;
 }
 
+/**
+ * 연·월·분기 등 시점 접두부를 `'본문 · 2026년 5월'` 형태로 뒤로 이동
+ */
+function moveBokTemporalToEnd(raw) {
+  const t = String(raw || '').trim();
+  if (!t) return t;
+  const periodAlt = [
+    '\\d/\\d분기',
+    '\\d{1,2}월',
+    '상반기',
+    '하반기',
+    '\\d분기',
+  ].join('|');
+  const re = new RegExp(`^(\\d{4}년)(?:\\s+(${periodAlt}))?\\s+([\\s\\S]+)$`, 'u');
+  const m = t.match(re);
+  if (!m?.[3]) return t;
+  const [, yr, period, body] = m;
+  const b = body.trim();
+  if (!b) return t;
+  if (!period && /^\d/.test(b)) return t;
+  const tailPart = period ? `${yr.trim()} ${period.trim()}`.trim() : yr.trim();
+  return `${b} · ${tailPart}`;
+}
+
 function toYmd(d) {
   if (!d) return '';
   const x = d instanceof Date ? d : new Date(d);
@@ -25,9 +49,10 @@ function mapBokRowToCalendarEvent(row) {
   const start = `${ymd}T00:00:00`;
   const endDt = new Date(`${ymd}T12:00:00`);
   endDt.setHours(23, 59, 59, 999);
-  const line = stripKrLabelPrefix(String(row.title || '').trim())
-    || stripKrLabelPrefix(row.category_label || '')
-    || '한국은행 통계';
+  const line = moveBokTemporalToEnd(
+    stripKrLabelPrefix(String(row.title || '').trim())
+      || stripKrLabelPrefix(row.category_label || ''),
+  ) || '한국은행 통계';
   const title = `📅 ${line} ${KR_MACRO_FLAG}`;
 
   return {
