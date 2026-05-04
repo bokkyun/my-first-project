@@ -183,7 +183,7 @@ function Sidebar({
               <Box>
                 <Typography variant="body2" fontWeight={600}>미국 거시지표</Typography>
                 <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
-                  NFP·CPI·M2·GDP·실업률·ISM PMI
+                  NFP·CPI·M2 등...
                 </Typography>
               </Box>
             )}
@@ -206,7 +206,7 @@ function Sidebar({
               <Box>
                 <Typography variant="body2" fontWeight={600}>한국은행 경제통계</Typography>
                 <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
-                  GDP·M2·물가·외환·수출입
+                  GDP·M2·가계대출 등...
                 </Typography>
               </Box>
             )}

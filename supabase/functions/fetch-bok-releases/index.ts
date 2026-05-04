@@ -22,6 +22,11 @@ const TARGETS = [
     matches: ['통화 및 유동성'],
   },
   {
+    code: 'BOK_HOUSEHOLD_LOANS',
+    label: '한국 가계대출 증가율',
+    matches: ['가계대출', '가계신용', '가계부채'],
+  },
+  {
     code: 'BOK_CPI',
     label: '한국 소비자물가',
     matches: ['소비자물가지수'],
