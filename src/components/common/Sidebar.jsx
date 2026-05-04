@@ -146,7 +146,7 @@ function Sidebar({
               <Box>
                 <Typography variant="body2" fontWeight={600}>미국 거시지표 (FRED)</Typography>
                 <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
-                  NFP·CPI·FOMC·GDP·실업률
+                  NFP·CPI·GDP·실업률
                 </Typography>
               </Box>
             )}

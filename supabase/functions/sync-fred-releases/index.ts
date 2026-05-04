@@ -22,10 +22,6 @@ const RELEASE_GROUPS: {
     series: [{ series_id: 'CPIAUCSL', title: '미국 CPI (소비자물가)' }],
   },
   {
-    release_id: 101,
-    series: [{ series_id: 'DFEDTARU', title: 'FOMC 기준금리 상단' }],
-  },
-  {
     release_id: 50,
     series: [
       { series_id: 'UNRATE', title: '미국 실업률' },

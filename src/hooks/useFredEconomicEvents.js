@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 
-const TRACKED_FRED_SERIES = new Set(['PAYEMS', 'CPIAUCSL', 'DFEDTARU', 'GDPC1', 'UNRATE']);
+const TRACKED_FRED_SERIES = new Set(['PAYEMS', 'CPIAUCSL', 'GDPC1', 'UNRATE']);
 
 function toYmd(d) {
   if (!d) return '';
