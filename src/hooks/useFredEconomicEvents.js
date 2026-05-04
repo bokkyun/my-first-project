@@ -2,6 +2,12 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 
 const TRACKED_FRED_SERIES = new Set(['PAYEMS', 'CPIAUCSL', 'GDPC1', 'UNRATE']);
+const FRED_SERIES_TITLES = {
+  PAYEMS: '미국 비농업고용 (NFP)',
+  CPIAUCSL: '미국 CPI (소비자물가)',
+  GDPC1: '미국 실질 GDP (연율 환산)',
+  UNRATE: '미국 실업률',
+};
 
 function toYmd(d) {
   if (!d) return '';
@@ -14,14 +20,18 @@ function toYmd(d) {
 }
 
 function mapFredRowToCalendarEvent(row) {
+  const normalizedRow = {
+    ...row,
+    title: FRED_SERIES_TITLES[row.series_id] || row.title,
+  };
   const ymd = row.release_date;
   const start = `${ymd}T00:00:00`;
   const endDt = new Date(`${ymd}T12:00:00`);
   endDt.setHours(23, 59, 59, 999);
   const hasVal = row.actual_value != null && String(row.actual_value).trim() !== '';
   const title = hasVal
-    ? `📊 ${row.title}: ${row.actual_value}`
-    : `📅 ${row.title} (발표예정)`;
+    ? `📊 ${normalizedRow.title}: ${row.actual_value}`
+    : `📅 ${normalizedRow.title} (발표예정)`;
   return {
     id: `fred-${row.id}`,
     title,
@@ -30,7 +40,7 @@ function mapFredRowToCalendarEvent(row) {
     is_all_day: true,
     color: '#6a1b9a',
     _external: 'fred',
-    _fredRow: row,
+    _fredRow: normalizedRow,
     creator_id: '__fred__',
     event_visibility: [],
   };

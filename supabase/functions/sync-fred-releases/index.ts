@@ -134,6 +134,16 @@ Deno.serve(async (req) => {
       .not('series_id', 'in', `(${TRACKED_SERIES_IDS.join(',')})`);
     if (deleteOldErr) throw deleteOldErr;
 
+    for (const g of RELEASE_GROUPS) {
+      for (const s of g.series) {
+        const { error: titleErr } = await admin
+          .from('fred_economic_releases')
+          .update({ title: s.title, updated_at: new Date().toISOString() })
+          .eq('series_id', s.series_id);
+        if (titleErr) throw titleErr;
+      }
+    }
+
     const today = todayYmd();
     const { data: needObs, error: selErr } = await admin
       .from('fred_economic_releases')
