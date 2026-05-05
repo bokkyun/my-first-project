@@ -10,6 +10,18 @@ function todayLocalYmd() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
+/** 네이버 통합검색 — `query`로 열면 검색창·결과에 동일 검색어가 반영됩니다. */
+function naverSearchUrl(query) {
+  const q = String(query || '').trim();
+  if (!q) return null;
+  const u = new URL('https://search.naver.com/search.naver');
+  u.searchParams.set('where', 'nexearch');
+  u.searchParams.set('sm', 'top_hty');
+  u.searchParams.set('ie', 'utf8');
+  u.searchParams.set('query', q);
+  return u.toString();
+}
+
 /**
  * FRED·ISM·한국은행 외부 거시 일정 읽기 전용 상세
  */
@@ -110,6 +122,10 @@ function ExternalFredEventDialog({ open, onClose, event }) {
     ? row.source_url
     : null;
 
+  const bokNaverSearchUrl = isBok && row.title
+    ? naverSearchUrl(`한국은행 ${String(row.title).replace(/\s+/g, ' ').trim()}`)
+    : null;
+
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
       <DialogTitle sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, pb: 1 }}>
@@ -193,10 +209,24 @@ function ExternalFredEventDialog({ open, onClose, event }) {
           {isFredSource
             ? '발표 전에는 릴리스 일정만 표시하고, 발표 후에는 FRED 시계열에서 최신 관측치를 채웁니다. 공식 수치·개정은 아래 FRED 자료 URL에서 확인하세요.'
             : isBok
-              ? '「ECOS 통계표」에서 시계열·표를 확인할 수 있습니다. 공표 일정 페이지는 참고용이며 실제 표·수치는 ECOS 또는 보도자료 링크를 이용하세요.'
+              ? 'ECOS 링크는 통계표 화면으로만 이동하는 경우가 많습니다. 최신 보도자료·표는 「네이버 검색」으로 바로 찾거나, 아래 ECOS·공표 일정·보도 링크를 함께 이용하세요.'
               : '발표 일정은 공식 공표일정을 기준으로 표시합니다. 실제 수치·개정은 아래 공식 자료에서 확인하세요.'}
         </Typography>
         <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+          {isBok && bokNaverSearchUrl && (
+            <Button
+              component="a"
+              href={bokNaverSearchUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              endIcon={<OpenInNew />}
+              variant="contained"
+              color="primary"
+              size="small"
+            >
+              네이버 검색 (자료 찾기)
+            </Button>
+          )}
           {isBok && indicatorUrl && (
             <Button
               component="a"
@@ -204,7 +234,7 @@ function ExternalFredEventDialog({ open, onClose, event }) {
               target="_blank"
               rel="noopener noreferrer"
               endIcon={<OpenInNew />}
-              variant="contained"
+              variant="outlined"
               color="primary"
               size="small"
             >
