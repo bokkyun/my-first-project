@@ -22,9 +22,9 @@ function naverSearchUrl(query) {
   return u.toString();
 }
 
-/** moneyplan.ai.kr — 국제수지 해설 글 */
+/** moneyplan.ai.kr — 국제수지 해설 글 (퍼센트 인코딩 경로는 404 → UTF-8 슬러그 사용) */
 const MONEYPLAN_INTL_BALANCE_ARTICLE_URL =
-  'https://moneyplan.ai.kr/%ea%b5%ad%ec%a0%9c%ec%88%98%ec%a7%80-%ec%9d%98%eb%af%94%ec%99%80-%ec%8b%9c%ec%82%ac%ec%a0%90-%eb%b0%8f-26%eb%85%842%ec%9b%94-%ec%a7%80%ed%91%9c%eb%b6%84%ec%84%9d/';
+  'https://moneyplan.ai.kr/국제수지-의미와-시사점-및-26년2월-지표분석/';
 
 function isBokInternationalBalanceRelease(row) {
   if (!row || typeof row !== 'object') return false;
