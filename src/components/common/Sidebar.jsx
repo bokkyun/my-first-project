@@ -110,32 +110,9 @@ function Sidebar({
     setSettingsDraft(DEFAULT_FILTER_SETTINGS);
   };
 
-  /** 상단: 내 일정만 → 아파트 청약·분양 → 공모주 */
+  /** 상단: 외부 일정 토글 등 (내 일정만은 아래 「내 그룹」과 「전체」 사이) */
   const topFilterCheckboxes = (
     <>
-      {onOnlyMySchedulesChange && (
-        <ListItem disablePadding sx={{ mb: 0.5 }}>
-          <FormControlLabel
-            sx={{ alignItems: 'flex-start', m: 0 }}
-            control={(
-              <Checkbox
-                checked={onlyMySchedules}
-                onChange={(e) => onOnlyMySchedulesChange(e.target.checked)}
-                size="small"
-                sx={{ py: 0.5 }}
-              />
-            )}
-            label={(
-              <Box>
-                <Typography variant="body2" fontWeight={600}>내 일정만</Typography>
-                <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
-                  내가 등록한 일정만 표시
-                </Typography>
-              </Box>
-            )}
-          />
-        </ListItem>
-      )}
       {onShowAptSplyChange && (
         <ListItem disablePadding sx={{ mb: 0.5 }}>
           <FormControlLabel
@@ -284,26 +261,36 @@ function Sidebar({
         </Button>
       </Tooltip>
 
-      {groups.length === 0 ? (
-        <Box sx={{ textAlign: 'center', py: 2 }}>
-          <Typography variant="caption" color="text.disabled">
-            아직 속한 그룹이 없어요
-          </Typography>
-          <Box mt={1}>
-            <Chip
-              label="그룹 가입하기"
-              size="small"
-              onClick={() => { navigate('/groups/join'); if (onMobileClose) onMobileClose(); }}
-              clickable
-            />
-          </Box>
-        </Box>
-      ) : (
-        <>
-          <Typography variant="subtitle2" fontWeight={700} color="text.secondary" sx={{ mb: 0.75 }}>
-            내 그룹
-          </Typography>
-          <List dense disablePadding sx={{ mt: 0.5 }}>
+      <>
+        <Typography variant="subtitle2" fontWeight={700} color="text.secondary" sx={{ mb: 0.75 }}>
+          내 그룹
+        </Typography>
+        <List dense disablePadding sx={{ mt: 0.5 }}>
+          {onOnlyMySchedulesChange && (
+            <ListItem disablePadding sx={{ mb: 0.5 }}>
+              <FormControlLabel
+                sx={{ alignItems: 'flex-start', m: 0 }}
+                control={(
+                  <Checkbox
+                    checked={onlyMySchedules}
+                    onChange={(e) => onOnlyMySchedulesChange(e.target.checked)}
+                    size="small"
+                    sx={{ py: 0.5 }}
+                  />
+                )}
+                label={(
+                  <Box>
+                    <Typography variant="body2" fontWeight={600}>내 일정만</Typography>
+                    <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
+                      내가 등록한 일정만 표시
+                    </Typography>
+                  </Box>
+                )}
+              />
+            </ListItem>
+          )}
+          {groups.length > 0 && (
+            <>
           <ListItem disablePadding sx={{ mb: 0.5 }}>
             <FormControlLabel
               control={
@@ -350,9 +337,25 @@ function Sidebar({
               </Tooltip>
             </ListItem>
           ))}
-          </List>
-        </>
-      )}
+            </>
+          )}
+        </List>
+        {groups.length === 0 && (
+        <Box sx={{ textAlign: 'center', py: 2 }}>
+          <Typography variant="caption" color="text.disabled">
+            아직 속한 그룹이 없어요
+          </Typography>
+          <Box mt={1}>
+            <Chip
+              label="그룹 가입하기"
+              size="small"
+              onClick={() => { navigate('/groups/join'); if (onMobileClose) onMobileClose(); }}
+              clickable
+            />
+          </Box>
+        </Box>
+        )}
+      </>
 
       <Divider sx={{ my: 2 }} />
 
@@ -404,12 +407,6 @@ function Sidebar({
           <List dense disablePadding>
             <ListItem disablePadding>
               <FormControlLabel
-                control={<Checkbox checked={settingsDraft.onlyMySchedules} onChange={(e) => updateSettingsDraft('onlyMySchedules', e.target.checked)} size="small" />}
-                label={<Typography variant="body2">내 일정만</Typography>}
-              />
-            </ListItem>
-            <ListItem disablePadding>
-              <FormControlLabel
                 control={<Checkbox checked={settingsDraft.showAptSply} onChange={(e) => updateSettingsDraft('showAptSply', e.target.checked)} size="small" />}
                 label={<Typography variant="body2">아파트 청약·분양</Typography>}
               />
@@ -439,6 +436,12 @@ function Sidebar({
               />
             </ListItem>
             <Divider sx={{ my: 1 }} />
+            <ListItem disablePadding>
+              <FormControlLabel
+                control={<Checkbox checked={settingsDraft.onlyMySchedules} onChange={(e) => updateSettingsDraft('onlyMySchedules', e.target.checked)} size="small" />}
+                label={<Typography variant="body2">내 일정만</Typography>}
+              />
+            </ListItem>
             <ListItem disablePadding>
               <FormControlLabel
                 control={<Checkbox checked={settingsDraft.showAllGroups} onChange={(e) => updateSettingsDraft('showAllGroups', e.target.checked)} size="small" />}

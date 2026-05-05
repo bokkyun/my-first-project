@@ -4,6 +4,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import { Box, useMediaQuery, useTheme } from '@mui/material';
+import { isCoffeeEvent } from '../../utils/eventCoffee';
 import { eventPassesSidebarCalendarFilters } from '../../utils/calendarEventFilters';
 
 /** 공모주(ipo) 칸: 3글자 초과 시 앞 3글자 + ... (유니코드 글자 단위, 한 줄 고정) */
@@ -61,7 +62,7 @@ function CalendarView({
 
         return {
           id: ev.id,
-          title: ev.title,
+          title: isCoffeeEvent(ev) ? `☕ ${ev.title}` : ev.title,
           start: ev.starts_at,
           end: ev.ends_at,
           allDay: ev.is_all_day,
@@ -131,7 +132,7 @@ function CalendarView({
             const isIpo = ex._external === 'ipo';
             const isDartReport = ex._external === 'dart-report';
             const compactCalendarTitle = isIpo || isDartReport;
-            const displayTitle = String(arg.event.title || '').replace(/^(📈|🏢|📊|📅|📋|☕)\s*/u, '');
+            const displayTitle = String(arg.event.title || '').replace(/^(📈|🏢|📊|📅|📋)\s*/u, '');
             /** 공모주·정기공시: 제목은 JS에서 3글자+… 처리 */
             const compactTitleSx = compactCalendarTitle
               ? {
