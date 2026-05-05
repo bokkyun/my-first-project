@@ -46,6 +46,7 @@ function toYmd(d) {
 
 function mapBokRowToCalendarEvent(row) {
   const ymd = row.release_date;
+  const rawCalendarTitle = String(row.title || '').trim();
   const start = `${ymd}T00:00:00`;
   const endDt = new Date(`${ymd}T12:00:00`);
   endDt.setHours(23, 59, 59, 999);
@@ -66,6 +67,7 @@ function mapBokRowToCalendarEvent(row) {
     _fredRow: {
       ...row,
       title: line,
+      raw_calendar_title: rawCalendarTitle,
       series_id: row.category_code || 'BOK',
       source_name: row.source_name || '한국은행',
       calendar_url: row.calendar_url ?? row.source_url,

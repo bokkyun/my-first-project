@@ -22,6 +22,17 @@ function naverSearchUrl(query) {
   return u.toString();
 }
 
+/** moneyplan.ai.kr — 국제수지 해설 글 */
+const MONEYPLAN_INTL_BALANCE_ARTICLE_URL =
+  'https://moneyplan.ai.kr/%ea%b5%ad%ec%a0%9c%ec%88%98%ec%a7%80-%ec%9d%98%eb%af%94%ec%99%80-%ec%8b%9c%ec%82%ac%ec%a0%90-%eb%b0%8f-26%eb%85%842%ec%9b%94-%ec%a7%80%ed%91%9c%eb%b6%84%ec%84%9d/';
+
+function isBokInternationalBalanceRelease(row) {
+  if (!row || typeof row !== 'object') return false;
+  const raw = String(row.raw_calendar_title || '');
+  const display = String(row.title || '');
+  return raw.includes('국제수지') || display.includes('국제수지');
+}
+
 /**
  * FRED·ISM·한국은행 외부 거시 일정 읽기 전용 상세
  */
@@ -125,6 +136,7 @@ function ExternalFredEventDialog({ open, onClose, event }) {
   const bokNaverSearchUrl = isBok && row.title
     ? naverSearchUrl(`한국은행 ${String(row.title).replace(/\s+/g, ' ').trim()}`)
     : null;
+  const showMoneyplanIntlBalance = isBok && isBokInternationalBalanceRelease(row);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
@@ -212,7 +224,7 @@ function ExternalFredEventDialog({ open, onClose, event }) {
               ? 'ECOS 링크는 통계표 화면으로만 이동하는 경우가 많습니다. 최신 보도자료·표는 「네이버 검색」으로 바로 찾거나, 아래 ECOS·공표 일정·보도 링크를 함께 이용하세요.'
               : '발표 일정은 공식 공표일정을 기준으로 표시합니다. 실제 수치·개정은 아래 공식 자료에서 확인하세요.'}
         </Typography>
-        <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+        <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
           {isBok && bokNaverSearchUrl && (
             <Button
               component="a"
@@ -225,6 +237,20 @@ function ExternalFredEventDialog({ open, onClose, event }) {
               size="small"
             >
               네이버 검색 (자료 찾기)
+            </Button>
+          )}
+          {showMoneyplanIntlBalance && (
+            <Button
+              component="a"
+              href={MONEYPLAN_INTL_BALANCE_ARTICLE_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              endIcon={<OpenInNew />}
+              variant="outlined"
+              color="secondary"
+              size="small"
+            >
+              국제수지 의미와 시사점
             </Button>
           )}
           {isBok && indicatorUrl && (
