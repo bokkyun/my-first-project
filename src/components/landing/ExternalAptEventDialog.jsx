@@ -66,7 +66,7 @@ function ExternalAptEventDialog({ open, onClose, event }) {
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
       <DialogTitle sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, pb: 1 }}>
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography fontWeight={700} sx={{ pr: 1 }}>{event.title?.replace(/^🏢\s*/, '') || '아파트 청약'}</Typography>
+          <Typography fontWeight={700} sx={{ pr: 1 }}>{event.title || '아파트 청약'}</Typography>
         </Box>
         <IconButton onClick={onClose} size="small"><Close /></IconButton>
       </DialogTitle>

@@ -54,7 +54,7 @@ function ExternalIpoEventDialog({ open, onClose, event }) {
       <DialogTitle sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, pb: 1 }}>
         <Box sx={{ flex: 1, minWidth: 0 }}>
           <Typography fontWeight={700} sx={{ pr: 1 }}>
-            {event.title?.replace(/^(📈|📋)\s*/, '') || raw.corp_name || '공시'}
+            {event.title || raw.corp_name || '공시'}
           </Typography>
           {reportKind && (
             <Typography variant="caption" color="primary" fontWeight={700} display="block" sx={{ mt: 0.25 }}>

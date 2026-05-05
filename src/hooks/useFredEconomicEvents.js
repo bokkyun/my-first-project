@@ -32,9 +32,9 @@ function mapFredRowToCalendarEvent(row) {
   const endDt = new Date(`${ymd}T12:00:00`);
   endDt.setHours(23, 59, 59, 999);
   const hasVal = row.actual_value != null && String(row.actual_value).trim() !== '';
-  const title = `${hasVal
-    ? `📊 ${normalizedRow.title}: ${row.actual_value}`
-    : `📅 ${normalizedRow.title} (발표예정)`} ${US_MACRO_FLAG}`;
+  const title = hasVal
+    ? `${normalizedRow.title}: ${row.actual_value}`
+    : `${normalizedRow.title} (발표예정)`;
   return {
     id: `fred-${row.id}`,
     title,

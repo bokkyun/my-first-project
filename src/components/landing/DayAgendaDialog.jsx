@@ -36,7 +36,7 @@ function formatEventSubtitle(ev) {
 }
 
 function displayTitle(ev) {
-  return String(ev.title || '').replace(/^(📈|🏢|📊|📅|📋)\s*/u, '');
+  return String(ev.title || '').replace(/^(📈|🏢|📊|📅|📋|☕)\s*/u, '');
 }
 
 /**

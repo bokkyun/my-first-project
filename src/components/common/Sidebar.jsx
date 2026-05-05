@@ -42,7 +42,7 @@ const DEFAULT_FILTER_SETTINGS = {
  * @param {function} onShowAptSplyChange - (boolean) => void [Optional]
  * @param {boolean} showIpo - 공모주 일정 [Optional]
  * @param {function} onShowIpoChange - (boolean) => void [Optional]
- * @param {boolean} showDartPeriodic - DART 사업·분기·잠정실적 공시 [Optional]
+ * @param {boolean} showDartPeriodic - 국내기업 분기·사업보고서·잠정실적 발표일(DART) [Optional]
  * @param {function} onShowDartPeriodicChange - (boolean) => void [Optional]
  * @param {boolean} showFred - 미국 거시지표(FRED) [Optional]
  * @param {function} onShowFredChange - (boolean) => void [Optional]
@@ -185,12 +185,9 @@ function Sidebar({
               />
             )}
             label={(
-              <Box>
-                <Typography variant="body2" fontWeight={600}>사업·분기·잠정실적(DART)</Typography>
-                <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
-                  공모와 별도 · 동일 API 키
-                </Typography>
-              </Box>
+              <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1.35 }}>
+                국내기업 분기, 사업보고서, 잠정실적 발표일
+              </Typography>
             )}
           />
         </ListItem>
@@ -426,7 +423,7 @@ function Sidebar({
             <ListItem disablePadding>
               <FormControlLabel
                 control={<Checkbox checked={settingsDraft.showDartPeriodic} onChange={(e) => updateSettingsDraft('showDartPeriodic', e.target.checked)} size="small" />}
-                label={<Typography variant="body2">사업·분기·잠정실적(DART)</Typography>}
+                label={<Typography variant="body2">국내기업 분기, 사업보고서, 잠정실적 발표일</Typography>}
               />
             </ListItem>
             <ListItem disablePadding>

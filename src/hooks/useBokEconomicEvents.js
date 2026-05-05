@@ -53,7 +53,7 @@ function mapBokRowToCalendarEvent(row) {
     stripKrLabelPrefix(String(row.title || '').trim())
       || stripKrLabelPrefix(row.category_label || ''),
   ) || '한국은행 통계';
-  const title = `📅 ${line} ${KR_MACRO_FLAG}`;
+  const title = line;
 
   return {
     id: `bok-${row.category_code || 'release'}-${ymd}-${String(row.title || '').slice(0, 40)}`,

@@ -43,8 +43,8 @@ function periodicMaxPages() {
 }
 
 /**
- * Open DART — 사업보고서(A001)·분기보고서(A003)·잠정실적(I001 중 제목 필터)
- * 공모주(C001)와 별도. 동일 인증키(VITE_DART_CRTFC_KEY) 사용.
+ * Open DART — 국내기업 사업보고서(A001)·분기보고서(A003)·잠정실적(I001 중 제목 필터)
+ * 공모주(list C001)와 별도 플래그.
  *
  * @param {boolean} enabled
  * @param {{ start: Date, end: Date }|null} viewRange
