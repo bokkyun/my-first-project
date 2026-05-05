@@ -14,6 +14,7 @@ const DEFAULT_FILTER_SETTINGS = {
   onlyMySchedules: false,
   showAptSply: false,
   showIpo: true,
+  showDartPeriodic: false,
   showFred: true,
   showBok: true,
   showAllGroups: true,
@@ -41,6 +42,8 @@ const DEFAULT_FILTER_SETTINGS = {
  * @param {function} onShowAptSplyChange - (boolean) => void [Optional]
  * @param {boolean} showIpo - 공모주 일정 [Optional]
  * @param {function} onShowIpoChange - (boolean) => void [Optional]
+ * @param {boolean} showDartPeriodic - DART 사업·분기·잠정실적 공시 [Optional]
+ * @param {function} onShowDartPeriodicChange - (boolean) => void [Optional]
  * @param {boolean} showFred - 미국 거시지표(FRED) [Optional]
  * @param {function} onShowFredChange - (boolean) => void [Optional]
  * @param {boolean} showBok - 한국은행 경제통계 일정 [Optional]
@@ -62,6 +65,8 @@ function Sidebar({
   onShowAptSplyChange,
   showIpo = true,
   onShowIpoChange,
+  showDartPeriodic = false,
+  onShowDartPeriodicChange,
   showFred = true,
   onShowFredChange,
   showBok = true,
@@ -163,6 +168,29 @@ function Sidebar({
             )}
             label={(
               <Typography variant="body2" fontWeight={600}>공모주(공시 제출)</Typography>
+            )}
+          />
+        </ListItem>
+      )}
+      {onShowDartPeriodicChange && (
+        <ListItem disablePadding sx={{ mb: 0.5 }}>
+          <FormControlLabel
+            sx={{ alignItems: 'flex-start', m: 0 }}
+            control={(
+              <Checkbox
+                checked={showDartPeriodic}
+                onChange={(e) => onShowDartPeriodicChange(e.target.checked)}
+                size="small"
+                sx={{ py: 0.5 }}
+              />
+            )}
+            label={(
+              <Box>
+                <Typography variant="body2" fontWeight={600}>사업·분기·잠정실적(DART)</Typography>
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
+                  공모와 별도 · 동일 API 키
+                </Typography>
+              </Box>
             )}
           />
         </ListItem>
@@ -393,6 +421,12 @@ function Sidebar({
               <FormControlLabel
                 control={<Checkbox checked={settingsDraft.showIpo} onChange={(e) => updateSettingsDraft('showIpo', e.target.checked)} size="small" />}
                 label={<Typography variant="body2">공모주(공시 제출)</Typography>}
+              />
+            </ListItem>
+            <ListItem disablePadding>
+              <FormControlLabel
+                control={<Checkbox checked={settingsDraft.showDartPeriodic} onChange={(e) => updateSettingsDraft('showDartPeriodic', e.target.checked)} size="small" />}
+                label={<Typography variant="body2">사업·분기·잠정실적(DART)</Typography>}
               />
             </ListItem>
             <ListItem disablePadding>

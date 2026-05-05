@@ -16,11 +16,12 @@ const LABELS = {
 };
 
 /**
- * Open DART 공시(공모주 관련) 읽기 전용 상세
+ * Open DART 공시 읽기 전용 상세 (공모주·사업/분기/잠정실적 등 list.json 동일 필드)
  */
 function ExternalIpoEventDialog({ open, onClose, event }) {
   if (!event || !event._dartRaw) return null;
   const raw = event._dartRaw;
+  const reportKind = event._dartReportKind;
 
   const rows = Object.entries(LABELS)
     .map(([k, label]) => {
@@ -52,7 +53,14 @@ function ExternalIpoEventDialog({ open, onClose, event }) {
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
       <DialogTitle sx={{ display: 'flex', alignItems: 'flex-start', gap: 1, pb: 1 }}>
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography fontWeight={700} sx={{ pr: 1 }}>{event.title?.replace(/^📈\s*/, '') || raw.corp_name || '공시'}</Typography>
+          <Typography fontWeight={700} sx={{ pr: 1 }}>
+            {event.title?.replace(/^(📈|📋)\s*/, '') || raw.corp_name || '공시'}
+          </Typography>
+          {reportKind && (
+            <Typography variant="caption" color="primary" fontWeight={700} display="block" sx={{ mt: 0.25 }}>
+              {reportKind}
+            </Typography>
+          )}
         </Box>
         <IconButton onClick={onClose} size="small"><Close /></IconButton>
       </DialogTitle>
@@ -63,7 +71,9 @@ function ExternalIpoEventDialog({ open, onClose, event }) {
         </Box>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>{formatRange()}</Typography>
         <Divider sx={{ my: 1 }} />
-        <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 0.5 }}>공시 정보</Typography>
+          <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 0.5 }}>
+            {reportKind ? '정기·수시 공시' : '공시 정보'}
+          </Typography>
         <Paper variant="outlined" sx={{ mt: 0.5, p: 1.5, bgcolor: (t) => (t.palette.mode === 'dark' ? 'action.hover' : 'grey.50') }}>
           {rows.map(({ k, label, v }) => (
             <Box key={k} sx={{ mb: 1, '&:last-child': { mb: 0 } }}>

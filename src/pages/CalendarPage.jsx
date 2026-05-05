@@ -11,6 +11,7 @@ import { useEvents } from '../hooks/useEvents';
 import { useNotifications } from '../hooks/useNotifications';
 import { useRebAptSplyEvents } from '../hooks/useRebAptSplyEvents';
 import { useDartIpoEvents } from '../hooks/useDartIpoEvents';
+import { useDartPeriodicReports } from '../hooks/useDartPeriodicReports';
 import { useFredEconomicEvents } from '../hooks/useFredEconomicEvents';
 import { useBokEconomicEvents } from '../hooks/useBokEconomicEvents';
 import Navbar from '../components/common/Navbar';
@@ -31,6 +32,7 @@ const DEFAULT_SIDEBAR_FILTERS = {
   onlyMySchedules: false,
   showAptSply: false,
   showIpo: true,
+  showDartPeriodic: false,
   showFred: true,
   showBok: true,
   showAllGroups: true,
@@ -94,6 +96,7 @@ function CalendarPage() {
   const [onlyMySchedules, setOnlyMySchedules] = useState(() => readSidebarDefaultFilters().onlyMySchedules);
   const [showAptSply, setShowAptSply] = useState(() => readSidebarDefaultFilters().showAptSply);
   const [showIpo, setShowIpo] = useState(() => readSidebarDefaultFilters().showIpo);
+  const [showDartPeriodic, setShowDartPeriodic] = useState(() => readSidebarDefaultFilters().showDartPeriodic);
   const [showFred, setShowFred] = useState(() => readSidebarDefaultFilters().showFred);
   const [showBok, setShowBok] = useState(() => readSidebarDefaultFilters().showBok);
   const [viewRange, setViewRange] = useState(() => {
@@ -136,6 +139,7 @@ function CalendarPage() {
   const { events, createEvent, updateEvent, deleteEvent } = useEvents(user?.id, visibleGroupIds);
   const { events: aptSplyList, error: aptSplyError } = useRebAptSplyEvents(showAptSply, viewRange);
   const { events: ipoList, error: ipoError } = useDartIpoEvents(showIpo, viewRange);
+  const { events: dartPeriodicList, error: dartPeriodicError } = useDartPeriodicReports(showDartPeriodic, viewRange);
   const {
     events: fredCalendarEvents,
     loading: fredLoading,
@@ -152,10 +156,11 @@ function CalendarPage() {
     const list = [...events];
     if (showAptSply) list.push(...aptSplyList);
     if (showIpo) list.push(...ipoList);
+    if (showDartPeriodic) list.push(...dartPeriodicList);
     if (showFred) list.push(...fredCalendarEvents);
     if (showBok) list.push(...bokCalendarEvents);
     return list;
-  }, [events, aptSplyList, showAptSply, ipoList, showIpo, showFred, fredCalendarEvents, showBok, bokCalendarEvents]);
+  }, [events, aptSplyList, showAptSply, ipoList, showIpo, dartPeriodicList, showDartPeriodic, showFred, fredCalendarEvents, showBok, bokCalendarEvents]);
 
   /** 표시 중인 뷰 구간에 속하는 일정만(월 뷰에서는 해당 월만, 전·익월 칸 제외) */
   const calendarEventsForGrid = useMemo(() => {
@@ -205,6 +210,7 @@ function CalendarPage() {
     setOnlyMySchedules(normalized.onlyMySchedules);
     setShowAptSply(normalized.showAptSply);
     setShowIpo(normalized.showIpo);
+    setShowDartPeriodic(normalized.showDartPeriodic);
     setShowFred(normalized.showFred);
     setShowBok(normalized.showBok);
     setVisibleGroupIds(normalized.showAllGroups ? groups.map((g) => g.id) : []);
@@ -243,7 +249,7 @@ function CalendarPage() {
       setAptDetailOpen(true);
       return;
     }
-    if (ev._external === 'ipo') {
+    if (ev._external === 'ipo' || ev._external === 'dart-report') {
       setSelectedIpoEvent(ev);
       setIpoDetailOpen(true);
       return;
@@ -309,6 +315,12 @@ function CalendarPage() {
       setSnack({ open: true, msg: `공모(DART): ${ipoError}`, severity: 'error' });
     }
   }, [showIpo, ipoError]);
+
+  useEffect(() => {
+    if (showDartPeriodic && dartPeriodicError) {
+      setSnack({ open: true, msg: `공시(DART): ${dartPeriodicError}`, severity: 'warning' });
+    }
+  }, [showDartPeriodic, dartPeriodicError]);
 
   useEffect(() => {
     if (showFred && fredError) {
@@ -415,6 +427,8 @@ function CalendarPage() {
           onShowAptSplyChange={setShowAptSply}
           showIpo={showIpo}
           onShowIpoChange={setShowIpo}
+          showDartPeriodic={showDartPeriodic}
+          onShowDartPeriodicChange={setShowDartPeriodic}
           showFred={showFred}
           onShowFredChange={setShowFred}
           showBok={showBok}

@@ -87,6 +87,45 @@ export function mapDartListItemToCalendarEvent(row, index) {
   };
 }
 
+/** 거래소 수시공시(I001) 중 보고서명에 잠정실적이 포함된 건만 */
+export function isDartProvisionalEarningsRow(row) {
+  const nm = row && row.report_nm != null ? String(row.report_nm).trim() : '';
+  if (!nm) return false;
+  return nm.includes('잠정실적');
+}
+
+/**
+ * 사업·분기·잠정실적 등 list.json 행 → 캘린더 이벤트
+ * @param {object} row
+ * @param {number} index
+ * @param {{ kindLabel: string }} opts
+ */
+export function mapDartReportRowToCalendarEvent(row, index, { kindLabel }) {
+  if (!row || typeof row !== 'object') return null;
+  const rcept = row.rcept_dt != null ? String(row.rcept_dt).trim() : '';
+  if (!rcept) return null;
+  const starts = parseRceptYmdToIso(rcept);
+  if (!starts) return null;
+  const ends = rceptYmdToIsoEnd(rcept) || starts;
+  const corp = String(row.corp_name || row.flr_nm || '기업').trim() || '기업';
+  const rno = row.rcept_no != null ? String(row.rcept_no) : `r${index}`;
+  const id = `dart-rpt-${rno.replace(/[^a-zA-Z0-9-_]/g, '_')}`.slice(0, 90);
+
+  return {
+    id,
+    title: corp,
+    starts_at: starts,
+    ends_at: ends,
+    is_all_day: true,
+    color: '#0d47a1',
+    _external: 'dart-report',
+    _dartReportKind: kindLabel,
+    _dartRaw: row,
+    creator_id: null,
+    creatorNickname: null,
+  };
+}
+
 export function buildDartListQuery(viewStart, viewEnd) {
   const key = (import.meta.env.VITE_DART_CRTFC_KEY || '').trim();
   const { bgn_de, end_de } = getMonthRangeYmd8(viewStart, viewEnd);
@@ -153,13 +192,16 @@ export function parseDartListResponse(json) {
  * @param {number} [maxPages=20]
  * @param {(page:number)=>Promise<Response>} [fetchImpl]
  */
-export async function fetchDartListAllPages(path, ymd, maxPages = 20, fetchImpl = fetch) {
+/**
+ * @param {{ pblntf_ty?: string, pblntf_detail_ty?: string }|null} queryOverrides — 비우면 IPO용 환경변수(C/C001) 사용
+ */
+export async function fetchDartListAllPages(path, ymd, maxPages = 20, fetchImpl = fetch, queryOverrides = null) {
   const key = (import.meta.env.VITE_DART_CRTFC_KEY || '').trim();
   if (!key) {
     return { items: [], error: 'DART API 인증키가 없습니다. VITE_DART_CRTFC_KEY 를 설정하세요.' };
   }
-  const pblntfTy = (import.meta.env.VITE_DART_PBLNTF_TY || 'C').trim() || 'C';
-  const detailTy = (import.meta.env.VITE_DART_PBLNTF_DETAIL_TY || 'C001').trim() || 'C001';
+  const pblntfTy = (queryOverrides?.pblntf_ty || import.meta.env.VITE_DART_PBLNTF_TY || 'C').trim() || 'C';
+  const detailTy = (queryOverrides?.pblntf_detail_ty || import.meta.env.VITE_DART_PBLNTF_DETAIL_TY || 'C001').trim() || 'C001';
   const pageCount = String(import.meta.env.VITE_DART_PAGE_COUNT || '100');
 
   const buildQs = (pageNo) => new URLSearchParams({

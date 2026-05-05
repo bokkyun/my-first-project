@@ -130,9 +130,11 @@ function CalendarView({
             const ex = arg.event.extendedProps;
             const nickname = ex.creatorNickname;
             const isIpo = ex._external === 'ipo';
-            const displayTitle = String(arg.event.title || '').replace(/^(📈|🏢|📊|📅)\s*/u, '');
-            /** 공모주: 제목은 JS에서 3글자+... 처리 · CSS ellipsis 제거(좁은 칸에서 한두 글자만 보이던 현상 방지) */
-            const ipoTitleSx = isIpo
+            const isDartReport = ex._external === 'dart-report';
+            const compactCalendarTitle = isIpo || isDartReport;
+            const displayTitle = String(arg.event.title || '').replace(/^(📈|🏢|📊|📅|📋)\s*/u, '');
+            /** 공모주·정기공시: 제목은 JS에서 3글자+… 처리 */
+            const compactTitleSx = compactCalendarTitle
               ? {
                 fontWeight: 700,
                 fontSize: isMobile ? '0.6875rem' : '0.7rem',
@@ -145,7 +147,7 @@ function CalendarView({
               }
               : null;
             /** 데스크톱: 등록 일정 글씨 크게·칸 안에 좌우 맞춤 줄바꿈 · 모바일: 한 줄 말줄임 */
-            const titleSx = ipoTitleSx
+            const titleSx = compactTitleSx
               || (isMobile
                 ? {
                   fontWeight: 600,
@@ -169,8 +171,9 @@ function CalendarView({
                   maxWidth: '100%',
                   minWidth: 0,
                 });
-            const showNickname = nickname && !isIpo;
-            const titleText = isIpo ? truncateIpoCalendarTitle(displayTitle) : displayTitle;
+            const showNickname = nickname && !isIpo && !isDartReport;
+            const truncated = compactCalendarTitle ? truncateIpoCalendarTitle(displayTitle) : displayTitle;
+            const titleText = isDartReport ? `📋 ${truncated}` : truncated;
             return (
               <Box sx={{
                 pl: 0.125,
