@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  Dialog, DialogTitle, DialogContent, IconButton, Typography, Box, Divider, Button,
+  Dialog, DialogTitle, DialogContent, IconButton, Typography, Box, Divider, Button, Stack,
 } from '@mui/material';
 import { Close, OpenInNew } from '@mui/icons-material';
 import { supabase } from '../../lib/supabase';
@@ -31,6 +31,18 @@ function isBokInternationalBalanceRelease(row) {
   const raw = String(row.raw_calendar_title || '');
   const display = String(row.title || '');
   return raw.includes('국제수지') || display.includes('국제수지');
+}
+
+/** moneyplan.ai.kr — 통화 및 유동성(M2) 해설 */
+const MONEYPLAN_M2_LIQUIDITY_ARTICLE_URL = 'https://moneyplan.ai.kr/23-2/';
+
+function isBokCurrencyLiquidityRelease(row) {
+  if (!row || typeof row !== 'object') return false;
+  if (row.category_code === 'BOK_M2') return true;
+  const raw = String(row.raw_calendar_title || '');
+  const display = String(row.title || '');
+  const hay = `${raw} ${display}`;
+  return hay.includes('통화 및 유동성') || hay.includes('통화및 유동성');
 }
 
 /**
@@ -137,6 +149,7 @@ function ExternalFredEventDialog({ open, onClose, event }) {
     ? naverSearchUrl(`한국은행 ${String(row.title).replace(/\s+/g, ' ').trim()}`)
     : null;
   const showMoneyplanIntlBalance = isBok && isBokInternationalBalanceRelease(row);
+  const showMoneyplanM2Liquidity = isBok && isBokCurrencyLiquidityRelease(row);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
@@ -224,34 +237,57 @@ function ExternalFredEventDialog({ open, onClose, event }) {
               ? 'ECOS 링크는 통계표 화면으로만 이동하는 경우가 많습니다. 최신 보도자료·표는 「네이버 검색」으로 바로 찾거나, 아래 ECOS·공표 일정·보도 링크를 함께 이용하세요.'
               : '발표 일정은 공식 공표일정을 기준으로 표시합니다. 실제 수치·개정은 아래 공식 자료에서 확인하세요.'}
         </Typography>
-        <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
-          {isBok && bokNaverSearchUrl && (
-            <Button
-              component="a"
-              href={bokNaverSearchUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              endIcon={<OpenInNew />}
-              variant="contained"
-              color="primary"
-              size="small"
-            >
-              네이버 검색 (자료 찾기)
-            </Button>
-          )}
-          {showMoneyplanIntlBalance && (
-            <Button
-              component="a"
-              href={MONEYPLAN_INTL_BALANCE_ARTICLE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              endIcon={<OpenInNew />}
-              variant="outlined"
-              color="secondary"
-              size="small"
-            >
-              국제수지 의미와 시사점
-            </Button>
+        <Box sx={{ mt: 2, display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'flex-start' }}>
+          {isBok && (bokNaverSearchUrl || showMoneyplanIntlBalance || showMoneyplanM2Liquidity) && (
+            <Stack spacing={1} sx={{ minWidth: 0 }}>
+              {(bokNaverSearchUrl || showMoneyplanIntlBalance) && (
+                <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+                  {bokNaverSearchUrl && (
+                    <Button
+                      component="a"
+                      href={bokNaverSearchUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      endIcon={<OpenInNew />}
+                      variant="contained"
+                      color="primary"
+                      size="small"
+                    >
+                      네이버 검색 (자료 찾기)
+                    </Button>
+                  )}
+                  {showMoneyplanIntlBalance && (
+                    <Button
+                      component="a"
+                      href={MONEYPLAN_INTL_BALANCE_ARTICLE_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      endIcon={<OpenInNew />}
+                      variant="outlined"
+                      color="secondary"
+                      size="small"
+                    >
+                      국제수지 의미와 시사점
+                    </Button>
+                  )}
+                </Box>
+              )}
+              {showMoneyplanM2Liquidity && (
+                <Button
+                  component="a"
+                  href={MONEYPLAN_M2_LIQUIDITY_ARTICLE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  endIcon={<OpenInNew />}
+                  variant="outlined"
+                  color="secondary"
+                  size="small"
+                  sx={{ alignSelf: 'flex-start' }}
+                >
+                  통화및 유동성 자료&amp;시사점
+                </Button>
+              )}
+            </Stack>
           )}
           {isBok && indicatorUrl && (
             <Button
