@@ -110,11 +110,11 @@ function Sidebar({
     setSettingsDraft(DEFAULT_FILTER_SETTINGS);
   };
 
-  /** 상단: 외부 일정 토글 등 (내 일정만은 아래 「내 그룹」과 「전체」 사이) */
+  /** 상단: 외부 일정 토글 — 내 일정만은 「새 그룹 생성」과 「내 그룹」·「전체」 사이 */
   const topFilterCheckboxes = (
     <>
       {onShowAptSplyChange && (
-        <ListItem disablePadding sx={{ mb: 0.5 }}>
+        <ListItem disablePadding sx={{ mb: 0.25 }}>
           <FormControlLabel
             sx={{ alignItems: 'center', m: 0 }}
             control={(
@@ -122,7 +122,7 @@ function Sidebar({
                 checked={showAptSply}
                 onChange={(e) => onShowAptSplyChange(e.target.checked)}
                 size="small"
-                sx={{ py: 0.5 }}
+                sx={{ py: 0.25 }}
               />
             )}
             label={(
@@ -132,7 +132,7 @@ function Sidebar({
         </ListItem>
       )}
       {onShowIpoChange && (
-        <ListItem disablePadding sx={{ mb: 0.5 }}>
+        <ListItem disablePadding sx={{ mb: 0.25 }}>
           <FormControlLabel
             sx={{ alignItems: 'center', m: 0 }}
             control={(
@@ -140,7 +140,7 @@ function Sidebar({
                 checked={showIpo}
                 onChange={(e) => onShowIpoChange(e.target.checked)}
                 size="small"
-                sx={{ py: 0.5 }}
+                sx={{ py: 0.25 }}
               />
             )}
             label={(
@@ -150,7 +150,7 @@ function Sidebar({
         </ListItem>
       )}
       {onShowDartPeriodicChange && (
-        <ListItem disablePadding sx={{ mb: 0.5 }}>
+        <ListItem disablePadding sx={{ mb: 0.25 }}>
           <FormControlLabel
             sx={{ alignItems: 'flex-start', m: 0 }}
             control={(
@@ -158,19 +158,24 @@ function Sidebar({
                 checked={showDartPeriodic}
                 onChange={(e) => onShowDartPeriodicChange(e.target.checked)}
                 size="small"
-                sx={{ py: 0.5 }}
+                sx={{ py: 0.25, alignSelf: 'flex-start', mt: 0.125 }}
               />
             )}
             label={(
-              <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1.35 }}>
-                국내기업 분기, 사업보고서, 잠정실적 발표일
-              </Typography>
+              <Box>
+                <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1.28 }}>
+                  국내기업 분기, 사업보고서, 잠정실적 발표일
+                </Typography>
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.12, mt: 0.1 }}>
+                  Open DART API(동일 인증키) · A001·A003·잠정(I001)
+                </Typography>
+              </Box>
             )}
           />
         </ListItem>
       )}
       {onShowFredChange && (
-        <ListItem disablePadding sx={{ mb: 0.5 }}>
+        <ListItem disablePadding sx={{ mb: 0.25 }}>
           <FormControlLabel
             sx={{ alignItems: 'flex-start', m: 0 }}
             control={(
@@ -178,13 +183,13 @@ function Sidebar({
                 checked={showFred}
                 onChange={(e) => onShowFredChange(e.target.checked)}
                 size="small"
-                sx={{ py: 0.5 }}
+                sx={{ py: 0.25, alignSelf: 'flex-start', mt: 0.125 }}
               />
             )}
             label={(
               <Box>
-                <Typography variant="body2" fontWeight={600}>미국 거시지표</Typography>
-                <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
+                <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1.28 }}>미국 거시지표</Typography>
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.12, mt: 0.1 }}>
                   NFP·CPI·M2 등...
                 </Typography>
               </Box>
@@ -193,7 +198,7 @@ function Sidebar({
         </ListItem>
       )}
       {onShowBokChange && (
-        <ListItem disablePadding sx={{ mb: 0.5 }}>
+        <ListItem disablePadding sx={{ mb: 0.25 }}>
           <FormControlLabel
             sx={{ alignItems: 'flex-start', m: 0 }}
             control={(
@@ -201,13 +206,13 @@ function Sidebar({
                 checked={showBok}
                 onChange={(e) => onShowBokChange(e.target.checked)}
                 size="small"
-                sx={{ py: 0.5 }}
+                sx={{ py: 0.25, alignSelf: 'flex-start', mt: 0.125 }}
               />
             )}
             label={(
               <Box>
-                <Typography variant="body2" fontWeight={600}>한국은행 경제통계</Typography>
-                <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
+                <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1.28 }}>한국은행 경제통계</Typography>
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.12, mt: 0.1 }}>
                   GDP·M2·가계대출 등...
                 </Typography>
               </Box>
@@ -219,8 +224,8 @@ function Sidebar({
   );
 
   const content = (
-    <Box sx={{ width: SIDEBAR_WIDTH, p: 2, overflowY: 'auto', height: '100%', bgcolor: 'white' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
+    <Box sx={{ width: SIDEBAR_WIDTH, px: 2, py: 1.5, overflowY: 'auto', height: '100%', bgcolor: 'white' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.75 }}>
         <Typography variant="subtitle2" fontWeight={700} color="text.secondary">
           메뉴
         </Typography>
@@ -232,11 +237,11 @@ function Sidebar({
           </Tooltip>
         )}
       </Box>
-      <List dense disablePadding sx={{ mb: 1 }}>
+      <List dense disablePadding sx={{ mb: 0.75 }}>
         {topFilterCheckboxes}
       </List>
 
-      <Divider sx={{ mb: 1.5 }} />
+      <Divider sx={{ mb: 1 }} />
 
       <Tooltip title="그룹 만들기 페이지로 이동">
         <Button
@@ -248,8 +253,8 @@ function Sidebar({
           sx={{
             justifyContent: 'space-between',
             px: 1,
-            py: 0.75,
-            mb: 1.5,
+            py: 0.5,
+            mb: 0.75,
             fontWeight: 600,
             textTransform: 'none',
             color: 'text.primary',
@@ -261,37 +266,40 @@ function Sidebar({
         </Button>
       </Tooltip>
 
+      {onOnlyMySchedulesChange && (
+        <List dense disablePadding sx={{ mb: 0.75 }}>
+          <ListItem disablePadding sx={{ mb: 0.25 }}>
+            <FormControlLabel
+              sx={{ alignItems: 'flex-start', m: 0 }}
+              control={(
+                <Checkbox
+                  checked={onlyMySchedules}
+                  onChange={(e) => onOnlyMySchedulesChange(e.target.checked)}
+                  size="small"
+                  sx={{ py: 0.25, alignSelf: 'flex-start', mt: 0.125 }}
+                />
+              )}
+              label={(
+                <Box>
+                  <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1.28 }}>내 일정만</Typography>
+                  <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.12, mt: 0.1 }}>
+                    내가 등록한 일정만 표시
+                  </Typography>
+                </Box>
+              )}
+            />
+          </ListItem>
+        </List>
+      )}
+
       <>
-        <Typography variant="subtitle2" fontWeight={700} color="text.secondary" sx={{ mb: 0.75 }}>
+        <Typography variant="subtitle2" fontWeight={700} color="text.secondary" sx={{ mb: 0.5 }}>
           내 그룹
         </Typography>
-        <List dense disablePadding sx={{ mt: 0.5 }}>
-          {onOnlyMySchedulesChange && (
-            <ListItem disablePadding sx={{ mb: 0.5 }}>
-              <FormControlLabel
-                sx={{ alignItems: 'flex-start', m: 0 }}
-                control={(
-                  <Checkbox
-                    checked={onlyMySchedules}
-                    onChange={(e) => onOnlyMySchedulesChange(e.target.checked)}
-                    size="small"
-                    sx={{ py: 0.5 }}
-                  />
-                )}
-                label={(
-                  <Box>
-                    <Typography variant="body2" fontWeight={600}>내 일정만</Typography>
-                    <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.2 }}>
-                      내가 등록한 일정만 표시
-                    </Typography>
-                  </Box>
-                )}
-              />
-            </ListItem>
-          )}
+        <List dense disablePadding sx={{ mt: 0.25 }}>
           {groups.length > 0 && (
             <>
-          <ListItem disablePadding sx={{ mb: 0.5 }}>
+          <ListItem disablePadding sx={{ mb: 0.25 }}>
             <FormControlLabel
               control={
                 <Checkbox
@@ -299,7 +307,7 @@ function Sidebar({
                   indeterminate={someChecked}
                   onChange={onToggleAll}
                   size="small"
-                  sx={{ py: 0.5 }}
+                  sx={{ py: 0.25 }}
                 />
               }
               label={<Typography variant="body2" fontWeight={600}>전체</Typography>}
@@ -314,7 +322,7 @@ function Sidebar({
                     checked={visibleGroupIds.includes(group.id)}
                     onChange={() => onToggleGroup(group.id)}
                     size="small"
-                    sx={{ py: 0.5, color: group.color, '&.Mui-checked': { color: group.color } }}
+                    sx={{ py: 0.25, color: group.color, '&.Mui-checked': { color: group.color } }}
                   />
                 }
                 label={
@@ -341,7 +349,7 @@ function Sidebar({
           )}
         </List>
         {groups.length === 0 && (
-        <Box sx={{ textAlign: 'center', py: 2 }}>
+        <Box sx={{ textAlign: 'center', py: 1.5 }}>
           <Typography variant="caption" color="text.disabled">
             아직 속한 그룹이 없어요
           </Typography>
@@ -357,7 +365,7 @@ function Sidebar({
         )}
       </>
 
-      <Divider sx={{ my: 2 }} />
+      <Divider sx={{ my: 1.5 }} />
 
       {/* 그룹 가입 링크 */}
       <Chip
@@ -420,7 +428,12 @@ function Sidebar({
             <ListItem disablePadding>
               <FormControlLabel
                 control={<Checkbox checked={settingsDraft.showDartPeriodic} onChange={(e) => updateSettingsDraft('showDartPeriodic', e.target.checked)} size="small" />}
-                label={<Typography variant="body2">국내기업 분기, 사업보고서, 잠정실적 발표일</Typography>}
+                label={(
+                  <Box>
+                    <Typography variant="body2">국내기업 분기, 사업보고서, 잠정실적 발표일</Typography>
+                    <Typography variant="caption" color="text.secondary" display="block">Open DART · 공모주와 동일 인증키</Typography>
+                  </Box>
+                )}
               />
             </ListItem>
             <ListItem disablePadding>

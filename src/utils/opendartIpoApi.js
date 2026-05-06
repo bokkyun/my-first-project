@@ -47,18 +47,17 @@ function rceptYmdToIsoEnd(ymd8) {
  * @returns {object|null} 캘린더 이벤트 형태
  */
 /**
- * 보고서명에 «증권신고서»와 «지분증권»이 모두 포함된 항목만 (대표 형식: 증권신고서(지분증권)).
- * 파생·채무·실적·소액공모 실적 등은 제목 키워드로 제외.
+ * 보고서명 정규화 후 증권신고(지분증권) 여부 — Flutter `dart_ipo_api.dart` 와 동일.
  */
 export function isDartIpoSecuritiesRegistrationRow(row) {
-  const nm = row && row.report_nm != null ? String(row.report_nm).trim() : '';
-  if (!nm) return false;
-  if (nm.includes('파생결합')) return false;
-  if (nm.includes('채무증권')) return false;
-  if (nm.includes('증권발행실적')) return false;
-  if (nm.includes('소액공모실적')) return false;
-  if (!nm.includes('증권신고서') || !nm.includes('지분증권')) return false;
-  return true;
+  if (!row || typeof row !== 'object') return false;
+  let n = row.report_nm != null ? String(row.report_nm) : '';
+  if (!n.trim()) return false;
+  n = n.replace(/[\s\u00A0\u3000]/g, '');
+  n = n.replace(/（/g, '(').replace(/）/g, ')');
+  n = n.replace(/［/g, '[').replace(/］/g, ']');
+  if (n === '증권신고서(지분증권)' || n === '[기재정정]증권신고서(지분증권)') return true;
+  return n.includes('증권신고서') && n.includes('지분증권');
 }
 
 export function mapDartListItemToCalendarEvent(row, index) {
@@ -189,13 +188,13 @@ export function parseDartListResponse(json) {
  * 여러 페이지 수집 (최대 maxPages)
  * @param {string} path
  * @param {{ bgn_de: string, end_de: string }} ymd
- * @param {number} [maxPages=20]
+ * @param {number} [maxPages=25]
  * @param {(page:number)=>Promise<Response>} [fetchImpl]
  */
 /**
  * @param {{ pblntf_ty?: string, pblntf_detail_ty?: string }|null} queryOverrides — 비우면 IPO용 환경변수(C/C001) 사용
  */
-export async function fetchDartListAllPages(path, ymd, maxPages = 20, fetchImpl = fetch, queryOverrides = null) {
+export async function fetchDartListAllPages(path, ymd, maxPages = 25, fetchImpl = fetch, queryOverrides = null) {
   const key = (import.meta.env.VITE_DART_CRTFC_KEY || '').trim();
   if (!key) {
     return { items: [], error: 'DART API 인증키가 없습니다. VITE_DART_CRTFC_KEY 를 설정하세요.' };
@@ -231,7 +230,7 @@ export async function fetchDartListAllPages(path, ymd, maxPages = 20, fetchImpl 
   }
 
   const totalPage = Number(parsed1.totalPage) || 1;
-  const lastPage = Math.min(totalPage, Math.max(1, Number(maxPages) || 20));
+  const lastPage = Math.min(totalPage, Math.max(1, Number(maxPages) || 25));
   const all = [...parsed1.list];
 
   if (lastPage <= 1) {

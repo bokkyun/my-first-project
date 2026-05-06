@@ -53,8 +53,26 @@ export function parseRebAptSplyResponse(json) {
     }
     return { items: json.data, error: null };
   }
+  if (
+    Object.prototype.hasOwnProperty.call(json, 'data')
+    && json.data != null
+    && typeof json.data === 'object'
+    && !Array.isArray(json.data)
+  ) {
+    if (json.code != null && Number(json.code) < 0) {
+      return { items: [], error: String(json.msg || json.message || 'API 오류') };
+    }
+    const innerData = json.data.data ?? json.data.list ?? json.data.items;
+    if (Array.isArray(innerData)) {
+      return { items: innerData, error: null };
+    }
+  }
   if (Number(json.code) < 0 && (!json.data || (Array.isArray(json.data) && json.data.length === 0))) {
     return { items: [], error: String(json.msg || json.message || 'API 오류') };
+  }
+
+  if (Array.isArray(json.result)) {
+    return { items: json.result, error: null };
   }
 
   const res = json.response;
@@ -96,6 +114,12 @@ export function ymd8Today() {
   return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
 }
 
+/** 지정 일의 YYYYMMDD (로컬) — Flutter `reb_apt_sply_api.dart` 의 ymd8FromDate 와 동일 */
+export function ymd8FromDate(d) {
+  const x = d instanceof Date ? d : new Date(d);
+  return `${x.getFullYear()}${String(x.getMonth() + 1).padStart(2, '0')}${String(x.getDate()).padStart(2, '0')}`;
+}
+
 function digitsToYmd8(v) {
   if (v == null || v === '') return '';
   const s = String(v).replace(/\D/g, '');
@@ -120,6 +144,9 @@ export function getOdcloudReceiptEndYmd8(item) {
   const v = item.RCEPT_ENDDE
     ?? item.SPLY_RCEPT_ENDDE
     ?? item.SPLY_RCEPT_CLSDE
+    ?? item.RCRIT_ENDDE
+    ?? item.RCRIT_ENDDAY
+    ?? item.SUBSCR_ENDDE
     ?? item.rceptEndde
     ?? item.rcept_endde
     ?? item['접수마감일']
@@ -136,6 +163,8 @@ export function getOdcloudReceiptStartYmd8(item) {
   const v = item.RCEPT_BGNDE
     ?? item.SPLY_RCEPT_BGNDE
     ?? item.SPLY_RCEPT_STTDE
+    ?? item.RCRIT_BGN_DE
+    ?? item.RCRIT_BGNDE
     ?? item.rceptBgnde
     ?? item.rcept_bgnde
     ?? item['접수시작일']
@@ -143,7 +172,8 @@ export function getOdcloudReceiptStartYmd8(item) {
     ?? item['입주자모집공고일']
     ?? item['공고일']
     ?? item['모집공고일']
-    ?? item['접수기간'];
+    ?? item['접수기간']
+    ?? item.SUBSCR_BGNDE;
   return digitsToYmd8(v);
 }
 
@@ -207,6 +237,28 @@ export function filterOdcloudItemsUpcoming(items) {
 }
 
 /**
+ * odcloud: 최근 lookbackDays일부터의 일정까지 남김(종료일·시작일 기준).
+ * Flutter `filterOdcloudItemsCalendarRelevant` 와 동일(기본 120일).
+ * @param {object[]} items
+ * @param {number} [lookbackDays=120]
+ */
+export function filterOdcloudItemsCalendarRelevant(items, lookbackDays = 120) {
+  if (!Array.isArray(items)) return [];
+  const n = Number(lookbackDays);
+  const days = Number.isFinite(n) && n >= 0 ? Math.min(Math.floor(n), 730) : 120;
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - days);
+  const cutoff = ymd8FromDate(cutoffDate);
+  return items.filter((row) => {
+    const end = getOdcloudReceiptEndYmd8(row);
+    if (end) return end >= cutoff;
+    const start = getOdcloudReceiptStartYmd8(row);
+    if (start) return start >= cutoff;
+    return false;
+  });
+}
+
+/**
  * api.odcloud.kr 행(한글·RCEPT_* 필드명) → 캘린더 이벤트
  */
 export function mapOdcloudItemToCalendarEvent(item, index) {
@@ -244,6 +296,9 @@ export function mapOdcloudItemToCalendarEvent(item, index) {
     'RCEPT_BGNDE',
     'SPLY_RCEPT_BGNDE',
     'SPLY_RCEPT_STTDE',
+    'RCRIT_BGN_DE',
+    'RCRIT_BGNDE',
+    'SUBSCR_BGNDE',
     'rceptBgnde',
     'rcept_bgnde',
     '접수시작일',
@@ -257,6 +312,9 @@ export function mapOdcloudItemToCalendarEvent(item, index) {
     'RCEPT_ENDDE',
     'SPLY_RCEPT_ENDDE',
     'SPLY_RCEPT_CLSDE',
+    'RCRIT_ENDDE',
+    'RCRIT_ENDDAY',
+    'SUBSCR_ENDDE',
     'rceptEndde',
     'rcept_endde',
     '접수마감일',

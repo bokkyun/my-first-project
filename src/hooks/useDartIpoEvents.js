@@ -38,8 +38,8 @@ export function useDartIpoEvents(enabled, viewRange) {
       const ymd = getMonthRangeYmd8(viewRange.start, viewRange.end);
       const dartMaxPages = Number(import.meta.env.VITE_DART_FETCH_MAX_PAGES);
       const maxPages = Number.isFinite(dartMaxPages) && dartMaxPages >= 1
-        ? Math.min(Math.floor(dartMaxPages), 30)
-        : 8;
+        ? Math.min(Math.floor(dartMaxPages), 35)
+        : 25;
       const { items, error } = await fetchDartListAllPages(dartListPath(), ymd, maxPages);
       if (error) {
         setFetchError(error);

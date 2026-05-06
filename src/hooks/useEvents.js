@@ -82,6 +82,9 @@ export function useEvents(userId, visibleGroupIds = []) {
    */
   const createEvent = async (eventData, groupIds = [], targetUserId = null) => {
     const creatorId = targetUserId || userId;
+    if (!creatorId) {
+      return { error: { message: '로그인이 필요합니다.' } };
+    }
     const row = { ...eventData, creator_id: creatorId };
     let { data: ev, error } = await supabase
       .from('events')

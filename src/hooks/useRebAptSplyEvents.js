@@ -4,7 +4,7 @@ import {
   toRebAptAbsoluteUrl,
   parseRebAptSplyResponse,
   mapRebAptItemToCalendarEvent,
-  filterOdcloudItemsUpcoming,
+  filterOdcloudItemsCalendarRelevant,
   getRebAptOdcloudPageSizeNum,
   getRebAptOdcloudMaxPagesNum,
 } from '../utils/rebAptSplyApi';
@@ -98,7 +98,14 @@ export function useRebAptSplyEvents(enabled, viewRange) {
           seen.add(k);
           return true;
         });
-        list = filterOdcloudItemsUpcoming(list);
+        const lookbackRaw = import.meta.env.VITE_REB_ODCLOUD_LOOKBACK_DAYS;
+        const lookbackNum = lookbackRaw != null && String(lookbackRaw).trim() !== ''
+          ? Number(lookbackRaw)
+          : 120;
+        list = filterOdcloudItemsCalendarRelevant(
+          list,
+          Number.isFinite(lookbackNum) ? lookbackNum : 120,
+        );
       }
       const mapped = list
         .map((it, i) => mapRebAptItemToCalendarEvent(it, i, mode))

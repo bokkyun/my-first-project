@@ -33,13 +33,13 @@ const STREAMS = [
 function periodicMaxPages() {
   const periodic = Number(import.meta.env.VITE_DART_PERIODIC_MAX_PAGES);
   if (Number.isFinite(periodic) && periodic >= 1) {
-    return Math.min(Math.floor(periodic), 30);
+    return Math.min(Math.floor(periodic), 35);
   }
   const dartMax = Number(import.meta.env.VITE_DART_FETCH_MAX_PAGES);
   if (Number.isFinite(dartMax) && dartMax >= 1) {
-    return Math.min(Math.floor(dartMax), 30);
+    return Math.min(Math.floor(dartMax), 35);
   }
-  return 8;
+  return 25;
 }
 
 /**
