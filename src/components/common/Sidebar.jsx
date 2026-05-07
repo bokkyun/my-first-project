@@ -42,7 +42,7 @@ const DEFAULT_FILTER_SETTINGS = {
  * @param {function} onShowAptSplyChange - (boolean) => void [Optional]
  * @param {boolean} showIpo - 공모주 일정 [Optional]
  * @param {function} onShowIpoChange - (boolean) => void [Optional]
- * @param {boolean} showDartPeriodic - 국내기업 분기·사업보고서·잠정실적 발표일(DART) [Optional]
+ * @param {boolean} showDartPeriodic - 국내기업 실적발표일(DART) [Optional]
  * @param {function} onShowDartPeriodicChange - (boolean) => void [Optional]
  * @param {boolean} showFred - 미국 거시지표(FRED) [Optional]
  * @param {function} onShowFredChange - (boolean) => void [Optional]
@@ -152,24 +152,17 @@ function Sidebar({
       {onShowDartPeriodicChange && (
         <ListItem disablePadding sx={{ mb: 0.25 }}>
           <FormControlLabel
-            sx={{ alignItems: 'flex-start', m: 0 }}
+            sx={{ alignItems: 'center', m: 0 }}
             control={(
               <Checkbox
                 checked={showDartPeriodic}
                 onChange={(e) => onShowDartPeriodicChange(e.target.checked)}
                 size="small"
-                sx={{ py: 0.25, alignSelf: 'flex-start', mt: 0.125 }}
+                sx={{ py: 0.25 }}
               />
             )}
             label={(
-              <Box>
-                <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1.28 }}>
-                  국내기업 분기, 사업보고서, 잠정실적 발표일
-                </Typography>
-                <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.12, mt: 0.1 }}>
-                  Open DART API(동일 인증키) · A001·A003·잠정(I001)
-                </Typography>
-              </Box>
+              <Typography variant="body2" fontWeight={600}>국내기업 실적발표일</Typography>
             )}
           />
         </ListItem>
@@ -428,12 +421,7 @@ function Sidebar({
             <ListItem disablePadding>
               <FormControlLabel
                 control={<Checkbox checked={settingsDraft.showDartPeriodic} onChange={(e) => updateSettingsDraft('showDartPeriodic', e.target.checked)} size="small" />}
-                label={(
-                  <Box>
-                    <Typography variant="body2">국내기업 분기, 사업보고서, 잠정실적 발표일</Typography>
-                    <Typography variant="caption" color="text.secondary" display="block">Open DART · 공모주와 동일 인증키</Typography>
-                  </Box>
-                )}
+                label={<Typography variant="body2">국내기업 실적발표일</Typography>}
               />
             </ListItem>
             <ListItem disablePadding>
