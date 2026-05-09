@@ -7,10 +7,14 @@
  * @see https://www.data.go.kr
  */
 
-/** 기본: 청약홈 분양정보(REST). 구 uddi·data.go 만 쓰려면 VITE_REB_APT_ODCLOUD_PATH·API_MODE로 조정 */
-const DEFAULT_MODE = 'odcloud';
+/** 기본: 청약홈 분양정보(REST) — APT 잔여·사전청약 등 */
 const DEFAULT_ODCLOUD_PATH =
   '/api/ApplyhomeInfoDetailSvc/v1/getAPTLttotPblancDetail';
+/** APT 무순위·잔여세대(청약홈 별도 구분). Lttot API만 쓰면 무순위 공고가 빠짐 */
+const DEFAULT_ODCLOUD_REMNDR_PATH =
+  '/api/ApplyhomeInfoDetailSvc/v1/getRemndrLttotPblancDetail';
+
+const DEFAULT_MODE = 'odcloud';
 
 function getApiMode() {
   return (import.meta.env.VITE_REB_APT_API_MODE || DEFAULT_MODE).toLowerCase();
@@ -419,6 +423,27 @@ export function mapRebAptItemToCalendarEvent(item, index, mode) {
   return mapSplyItemToCalendarEvent(item, index);
 }
 
+/**
+ * odcloud에서 순차 호출할 API 경로(중복 제거).
+ * - 기본: getAPTLttotPblancDetail + getRemndrLttotPblancDetail(무순위·잔여세대)
+ * - VITE_REB_APT_ODCLOUD_PATH 가 있으면 그걸 첫 번째로 사용
+ * - VITE_REB_APT_ODCLOUD_SKIP_REMNDR=true 이면 무순비 전용 엔드포인트 호출 생략
+ * @returns {string[]}
+ */
+export function getRebAptOdcloudFetchPaths() {
+  const skip = String(import.meta.env.VITE_REB_APT_ODCLOUD_SKIP_REMNDR || '').toLowerCase() === 'true';
+  const custom = (import.meta.env.VITE_REB_APT_ODCLOUD_PATH || '').trim();
+  const primaryRaw = custom || DEFAULT_ODCLOUD_PATH;
+  const primary = primaryRaw.startsWith('/') ? primaryRaw : `/${primaryRaw}`;
+  const norm = (p) => p.replace(/\/+$/, '').toLowerCase();
+  const out = [primary];
+  if (!skip) {
+    const nRem = norm(DEFAULT_ODCLOUD_REMNDR_PATH);
+    if (norm(primary) !== nRem) out.push(DEFAULT_ODCLOUD_REMNDR_PATH);
+  }
+  return out;
+}
+
 function buildDataGoListUrl() {
   const key = (import.meta.env.VITE_DATA_GO_KR_SERVICE_KEY || '').trim();
   const serviceKey = key ? `serviceKey=${encodeURIComponent(key)}` : '';
@@ -431,13 +456,15 @@ function buildDataGoListUrl() {
   return { path, query, keyPresent: Boolean(key), mode: 'datago' };
 }
 
-function buildOdcloudListUrl(pageNum = 1) {
+/** @param {string} [odPath] — 지정 시 해당 odcloud 엔드포인트(getAPTLttot… / getRemndr…) */
+function buildOdcloudListUrl(pageNum = 1, odPath) {
   const key = (import.meta.env.VITE_DATA_GO_KR_SERVICE_KEY || '').trim();
   const perPage = import.meta.env.VITE_REB_APT_PAGE_SIZE || '200';
   const serviceKey = key ? `serviceKey=${encodeURIComponent(key)}` : '';
   const page = `page=${Math.max(1, Number(pageNum) || 1)}`;
   const pp = `perPage=${perPage}`;
-  const path = (import.meta.env.VITE_REB_APT_ODCLOUD_PATH || DEFAULT_ODCLOUD_PATH)
+  const fromArg = typeof odPath === 'string' && odPath.trim();
+  const path = (fromArg || import.meta.env.VITE_REB_APT_ODCLOUD_PATH || DEFAULT_ODCLOUD_PATH)
     .replace(/^\s+/, '');
   /** 브라우저 테스트와 동일: page, perPage, serviceKey (returnType는 엔드포인트에 따라 생략) */
   const query = [page, pp, serviceKey].filter(Boolean).join('&');
@@ -464,12 +491,13 @@ export function getRebAptOdcloudMaxPagesNum() {
 /**
  * VITE_REB_APT_API_MODE=odcloud | datago
  * @param {number} [pageNum=1] — odcloud 에서만 page 쿼리에 반영됩니다.
+ * @param {string} [odCloudPath] — odcloud 일 때만 사용. 무순위 등 별도 엔드포인트 호출용.
  */
-export function buildRebAptSplyListUrl(pageNum = 1) {
+export function buildRebAptSplyListUrl(pageNum = 1, odCloudPath) {
   if (getApiMode() === 'datago') {
     return buildDataGoListUrl();
   }
-  return buildOdcloudListUrl(pageNum);
+  return buildOdcloudListUrl(pageNum, odCloudPath);
 }
 
 /**
