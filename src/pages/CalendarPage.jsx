@@ -31,10 +31,10 @@ import { eventPassesSidebarCalendarFilters } from '../utils/calendarEventFilters
 const SIDEBAR_DEFAULT_FILTERS_KEY = 'moneycal.sidebarDefaultFilters.v1';
 const DEFAULT_SIDEBAR_FILTERS = {
   onlyMySchedules: false,
-  showAptSply: true,
+  /** 첫 방문·저장 이력 없음: 아파트 청약·국내기업 실적은 끔. 메뉴에서 켜거나 설정(톱니)으로 기본 체크 저장 */
+  showAptSply: false,
   showIpo: true,
-  /** 첫 방문·저장 이력 없음: 국내기업 실적발표일(DART)도 켜 둠. 설정(톱니)에서 기본 체크 저장 가능 */
-  showDartPeriodic: true,
+  showDartPeriodic: false,
   showFred: true,
   showBok: true,
   showAllGroups: true,
