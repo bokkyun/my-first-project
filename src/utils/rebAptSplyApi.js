@@ -148,6 +148,7 @@ export function getOdcloudReceiptEndYmd8(item) {
   const v = item.RCEPT_ENDDE
     ?? item.SPLY_RCEPT_ENDDE
     ?? item.SPLY_RCEPT_CLSDE
+    ?? item.RCEPT_CLSDE
     ?? item.RCRIT_ENDDE
     ?? item.RCRIT_ENDDAY
     ?? item.SUBSCR_ENDDE
@@ -169,6 +170,8 @@ export function getOdcloudReceiptStartYmd8(item) {
     ?? item.SPLY_RCEPT_STTDE
     ?? item.RCRIT_BGN_DE
     ?? item.RCRIT_BGNDE
+    ?? item.PBLANC_DE
+    ?? item.PBLANC_DT
     ?? item.rceptBgnde
     ?? item.rcept_bgnde
     ?? item['접수시작일']
@@ -258,7 +261,12 @@ export function filterOdcloudItemsCalendarRelevant(items, lookbackDays = 120) {
     if (end) return end >= cutoff;
     const start = getOdcloudReceiptStartYmd8(row);
     if (start) return start >= cutoff;
-    return false;
+    /**
+     * 무순위·불법행위재공급 등은 표준 RCEPT_* 키가 비어 있고
+     * 공고문 문자열·별칭 필드에만 날짜가 있는 경우가 있어 Upcoming 과 동일하게 스캔
+     */
+    const scav = scavengeLatestYmd8FromRow(row);
+    return Boolean(scav && scav >= cutoff);
   });
 }
 
@@ -295,6 +303,15 @@ export function mapOdcloudItemToCalendarEvent(item, index) {
   const p1 = firstT('공고번호', 'PBLANC_NO');
   const p2 = firstT('주택관리번호', 'HOUSE_MGMT_NO', 'HSMP_MGMT_NO');
   const pbl = p1 || p2 ? ` (${[p1, p2].filter(Boolean).join(' / ')})` : '';
+  const supplyKind = firstT(
+    'HOUSE_SECD_NM',
+    'HSPPLY_SECD_NM',
+    'HSMP_SCOR_CLAS_NM',
+    'SUBSCRPT_CLAS_NM',
+    'RCEPT_CLAS_NM',
+    'RCEPT_CLAS',
+  );
+  const supplyTag = supplyKind && !`${titleCore}${pbl}`.includes(supplyKind) ? ` — ${supplyKind}` : '';
 
   const startYmd = firstT(
     'RCEPT_BGNDE',
@@ -302,6 +319,8 @@ export function mapOdcloudItemToCalendarEvent(item, index) {
     'SPLY_RCEPT_STTDE',
     'RCRIT_BGN_DE',
     'RCRIT_BGNDE',
+    'PBLANC_DE',
+    'PBLANC_DT',
     'SUBSCR_BGNDE',
     'rceptBgnde',
     'rcept_bgnde',
@@ -316,6 +335,7 @@ export function mapOdcloudItemToCalendarEvent(item, index) {
     'RCEPT_ENDDE',
     'SPLY_RCEPT_ENDDE',
     'SPLY_RCEPT_CLSDE',
+    'RCEPT_CLSDE',
     'RCRIT_ENDDE',
     'RCRIT_ENDDAY',
     'SUBSCR_ENDDE',
@@ -351,7 +371,7 @@ export function mapOdcloudItemToCalendarEvent(item, index) {
 
   return {
     id,
-    title: `${titleCore}${pbl}`,
+    title: `${titleCore}${pbl}${supplyTag}`,
     starts_at: starts,
     ends_at: ends,
     is_all_day: true,
