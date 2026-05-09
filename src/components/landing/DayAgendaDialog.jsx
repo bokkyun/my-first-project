@@ -50,6 +50,7 @@ function DayAgendaDialog({
   groups,
   onNewEvent,
   onEventPick,
+  newEventButtonLabel = '새 일정 추가',
 }) {
   const colorFor = (ev) => {
     if (ev.color) return ev.color;
@@ -85,7 +86,7 @@ function DayAgendaDialog({
           onClick={onNewEvent}
           sx={{ mb: 2, py: 1.1 }}
         >
-          새 일정 추가
+          {newEventButtonLabel}
         </Button>
         <Divider sx={{ my: 2 }} />
         <Typography variant="body2" fontWeight={600} color="text.primary" sx={{ mb: 1 }}>

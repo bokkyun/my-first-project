@@ -108,7 +108,7 @@ export function useAuth() {
   const signInWithGoogle = async () => {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${getAppBaseUrl()}/calendar` },
+      options: { redirectTo: `${getAppBaseUrl()}/` },
     });
     return { data, error };
   };

@@ -2,7 +2,7 @@
   "name": "MoneyCal",
   "short_name": "MoneyCal",
   "description": "공모주와 아파트청약 스케줄이 내 달력에 자동등록+알람 기능. 내가 등록한 공유 스케줄은 팀원, 가족, 친구 등 선택적으로 공유하여 공유받은 팀원 달력에도 내가 등록한 스케줄 표시해주는 만능 금융스케줄+내스케줄+팀스케줄 관리툴입니다.",
-  "start_url": "/calendar",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#1a73e8",

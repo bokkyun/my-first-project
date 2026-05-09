@@ -54,7 +54,7 @@ function GroupCreatePage() {
     if (createError) {
       setError('그룹 생성 중 오류가 발생했습니다.');
     } else {
-      navigate('/calendar');
+      navigate('/');
     }
   };
 
@@ -65,7 +65,7 @@ function GroupCreatePage() {
         <Paper elevation={2} sx={{ p: 4, borderRadius: 3 }}>
           {/* 헤더 */}
           <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-            <IconButton onClick={() => navigate('/calendar')} sx={{ mr: 1 }}>
+            <IconButton onClick={() => navigate('/')} sx={{ mr: 1 }}>
               <ArrowBack />
             </IconButton>
             <Typography variant="h6" fontWeight={700}>새 그룹 만들기</Typography>
@@ -170,7 +170,7 @@ function GroupCreatePage() {
             <Box sx={{ display: 'flex', gap: 2 }}>
               <Button
                 variant="outlined"
-                onClick={() => navigate('/calendar')}
+                onClick={() => navigate('/')}
                 sx={{ flex: 1, borderRadius: 2 }}
               >
                 취소

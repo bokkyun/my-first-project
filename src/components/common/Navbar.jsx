@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   AppBar, Toolbar, Typography, IconButton, Box, Menu, MenuItem,
   Avatar, Tooltip, Divider, ListItemIcon, Badge, useMediaQuery, useTheme,
+  Button, CircularProgress,
 } from '@mui/material';
 import {
   CalendarMonth, GroupAdd, PersonAdd,
@@ -23,7 +24,7 @@ import { getAuthDisplayName, getDisplayEmail, getAvatarLetter } from '../../util
  */
 function Navbar({ profile, onMenuClick }) {
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading } = useAuth();
   const [anchorEl, setAnchorEl] = useState(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -31,41 +32,96 @@ function Navbar({ profile, onMenuClick }) {
   const handleMenuOpen = (e) => setAnchorEl(e.currentTarget);
   const handleMenuClose = () => setAnchorEl(null);
 
+  const goHome = () => navigate('/');
+
   const handleSignOut = async () => {
     handleMenuClose();
     await signOut();
-    navigate('/login');
+    navigate('/');
   };
 
   const displayName = profile?.nickname || getAuthDisplayName(user);
   const displayEmail = getDisplayEmail(profile, user);
   const avatarLetter = getAvatarLetter(profile, user);
 
+  if (loading) {
+    return (
+      <AppBar position="sticky" elevation={1} sx={{ bgcolor: 'white', color: 'text.primary' }}>
+        <Toolbar sx={{ gap: 1 }}>
+          {isMobile && onMenuClick && (
+            <IconButton onClick={onMenuClick} edge="start" sx={{ mr: 0.5 }} disabled>
+              <MenuIcon />
+            </IconButton>
+          )}
+          <CalendarMonth sx={{ color: 'primary.main', mr: 0.5 }} />
+          <Typography variant="h6" fontWeight={700} color="primary.main" sx={{ flexShrink: 0 }}>
+            MoneyCal
+          </Typography>
+          <Box sx={{ flex: 1 }} />
+          <CircularProgress size={22} sx={{ color: 'primary.main' }} />
+        </Toolbar>
+      </AppBar>
+    );
+  }
+
+  if (!user) {
+    return (
+      <AppBar position="sticky" elevation={1} sx={{ bgcolor: 'white', color: 'text.primary' }}>
+        <Toolbar sx={{ gap: 1, flexWrap: 'wrap' }}>
+          {isMobile && onMenuClick && (
+            <IconButton onClick={onMenuClick} edge="start" sx={{ mr: 0.5 }}>
+              <MenuIcon />
+            </IconButton>
+          )}
+          <CalendarMonth sx={{ color: 'primary.main', mr: 0.5 }} />
+          <Typography
+            variant="h6"
+            fontWeight={700}
+            color="primary.main"
+            sx={{ cursor: 'pointer', flexShrink: 0 }}
+            onClick={goHome}
+          >
+            MoneyCal
+          </Typography>
+
+          <Box sx={{ flex: 1 }} />
+
+          <Button component={Link} to="/intro" color="inherit" size="small" sx={{ fontWeight: 600, textTransform: 'none' }}>
+            소개
+          </Button>
+          <Button component={Link} to="/login" variant="outlined" size="small" sx={{ borderRadius: 2 }}>
+            로그인
+          </Button>
+          <Button component={Link} to="/signup" variant="contained" size="small" sx={{ borderRadius: 2 }}>
+            회원가입
+          </Button>
+        </Toolbar>
+      </AppBar>
+    );
+  }
+
   return (
     <AppBar position="sticky" elevation={1} sx={{ bgcolor: 'white', color: 'text.primary' }}>
       <Toolbar sx={{ gap: 1 }}>
-        {/* 모바일 햄버거 버튼 */}
         {isMobile && onMenuClick && (
           <IconButton onClick={onMenuClick} edge="start" sx={{ mr: 0.5 }}>
             <MenuIcon />
           </IconButton>
         )}
 
-        {/* 로고 */}
         <CalendarMonth sx={{ color: 'primary.main', mr: 0.5 }} />
         <Typography
           variant="h6"
           fontWeight={700}
           color="primary.main"
           sx={{ cursor: 'pointer', flexShrink: 0 }}
-          onClick={() => navigate('/calendar')}
+          onClick={goHome}
         >
           MoneyCal
         </Typography>
 
         <Box sx={{ flex: 1 }} />
 
-        {/* 우측 아이콘 */}
         <Tooltip title="알림">
           <IconButton>
             <Badge badgeContent={0} color="error">

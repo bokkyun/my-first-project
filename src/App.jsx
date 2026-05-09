@@ -37,22 +37,16 @@ function App() {
 
   return (
     <Routes>
-      <Route path="/" element={<LandingPage />} />
+      <Route path="/" element={<CalendarPage />} />
+      <Route path="/intro" element={<LandingPage />} />
       <Route path="/about" element={<AboutPage />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/terms" element={<TermsPage />} />
-      <Route path="/login" element={user ? <Navigate to="/calendar" replace /> : <LoginPage />} />
-      <Route path="/signup" element={user ? <Navigate to="/calendar" replace /> : <SignupPage />} />
+      <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
+      <Route path="/signup" element={user ? <Navigate to="/" replace /> : <SignupPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/update-password" element={<UpdatePasswordPage />} />
-      <Route
-        path="/calendar"
-        element={
-          <ProtectedRoute user={user} loading={loading}>
-            <CalendarPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/calendar" element={<CalendarPage />} />
       <Route
         path="/groups/create"
         element={
@@ -77,7 +71,7 @@ function App() {
           </ProtectedRoute>
         }
       />
-      <Route path="*" element={<Navigate to={user ? '/calendar' : '/'} replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

@@ -5,14 +5,14 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions,
 } from '@mui/material';
 import { Add, Circle, InfoOutlined, Settings } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import GroupInfoDialog from '../landing/GroupInfoDialog';
 import AdBanner from './AdBanner';
 
 const SIDEBAR_WIDTH = 220;
 const DEFAULT_FILTER_SETTINGS = {
   onlyMySchedules: false,
-  showAptSply: false,
+  showAptSply: true,
   showIpo: true,
   showDartPeriodic: false,
   showFred: true,
@@ -80,6 +80,7 @@ function Sidebar({
   onDeleteGroup,
   onChangeAdmin,
   onChangePassword,
+  isGuest = false,
 }) {
   const navigate = useNavigate();
   const theme = useTheme();
@@ -236,139 +237,154 @@ function Sidebar({
 
       <Divider sx={{ mb: 1 }} />
 
-      <Tooltip title="그룹 만들기 페이지로 이동">
-        <Button
-          variant="text"
-          color="inherit"
-          fullWidth
-          endIcon={<Add aria-hidden />}
-          onClick={() => { navigate('/groups/create'); if (onMobileClose) onMobileClose(); }}
-          sx={{
-            justifyContent: 'space-between',
-            px: 1,
-            py: 0.5,
-            mb: 0.75,
-            fontWeight: 600,
-            textTransform: 'none',
-            color: 'text.primary',
-            borderRadius: 1,
-            '&:hover': { bgcolor: 'action.hover' },
-          }}
-        >
-          새로운 그룹 생성하기
-        </Button>
-      </Tooltip>
-
-      {onOnlyMySchedulesChange && (
-        <List dense disablePadding sx={{ mb: 0.75 }}>
-          <ListItem disablePadding sx={{ mb: 0.25 }}>
-            <FormControlLabel
-              sx={{ alignItems: 'flex-start', m: 0 }}
-              control={(
-                <Checkbox
-                  checked={onlyMySchedules}
-                  onChange={(e) => onOnlyMySchedulesChange(e.target.checked)}
-                  size="small"
-                  sx={{ py: 0.25, alignSelf: 'flex-start', mt: 0.125 }}
-                />
-              )}
-              label={(
-                <Box>
-                  <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1.28 }}>내 일정만</Typography>
-                  <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.12, mt: 0.1 }}>
-                    내가 등록한 일정만 표시
-                  </Typography>
-                </Box>
-              )}
-            />
-          </ListItem>
-        </List>
-      )}
-
-      <>
-        <Typography variant="subtitle2" fontWeight={700} color="text.secondary" sx={{ mb: 0.5 }}>
-          내 그룹
-        </Typography>
-        <List dense disablePadding sx={{ mt: 0.25 }}>
-          {groups.length > 0 && (
-            <>
-          <ListItem disablePadding sx={{ mb: 0.25 }}>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={allChecked}
-                  indeterminate={someChecked}
-                  onChange={onToggleAll}
-                  size="small"
-                  sx={{ py: 0.25 }}
-                />
-              }
-              label={<Typography variant="body2" fontWeight={600}>전체</Typography>}
-            />
-          </ListItem>
-          {groups.map((group) => (
-            <ListItem key={group.id} disablePadding sx={{ display: 'flex', alignItems: 'center' }}>
-              <FormControlLabel
-                sx={{ flex: 1, mr: 0, minWidth: 0 }}
-                control={
-                  <Checkbox
-                    checked={visibleGroupIds.includes(group.id)}
-                    onChange={() => onToggleGroup(group.id)}
-                    size="small"
-                    sx={{ py: 0.25, color: group.color, '&.Mui-checked': { color: group.color } }}
-                  />
-                }
-                label={
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0 }}>
-                    <Circle sx={{ fontSize: 10, color: group.color, flexShrink: 0 }} />
-                    <Typography variant="body2" noWrap sx={{ maxWidth: 100 }}>
-                      {group.name}
-                    </Typography>
-                  </Box>
-                }
-              />
-              <Tooltip title="멤버 보기 / 탈퇴">
-                <IconButton
-                  size="small"
-                  onClick={() => setInfoGroup(group)}
-                  sx={{ flexShrink: 0, opacity: 0.5, '&:hover': { opacity: 1 } }}
-                >
-                  <InfoOutlined sx={{ fontSize: 16 }} />
-                </IconButton>
-              </Tooltip>
-            </ListItem>
-          ))}
-            </>
-          )}
-        </List>
-        {groups.length === 0 && (
-        <Box sx={{ textAlign: 'center', py: 1.5 }}>
-          <Typography variant="caption" color="text.disabled">
-            아직 속한 그룹이 없어요
+      {isGuest ? (
+        <Box sx={{ p: 1.5, bgcolor: 'grey.50', borderRadius: 2, mb: 1 }}>
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1.5, lineHeight: 1.5 }}>
+            로그인하면 내 일정·팀 일정·알림·그룹 공유를 쓸 수 있어요. 비회원도 위 체크로 공모·청약·한국은행 등 참고 일정을 볼 수 있습니다.
           </Typography>
-          <Box mt={1}>
-            <Chip
-              label="그룹 가입하기"
-              size="small"
-              onClick={() => { navigate('/groups/join'); if (onMobileClose) onMobileClose(); }}
-              clickable
-            />
-          </Box>
+          <Button component={Link} to="/login" variant="contained" size="small" fullWidth sx={{ mb: 1, textTransform: 'none' }}>
+            로그인
+          </Button>
+          <Button component={Link} to="/signup" variant="outlined" size="small" fullWidth sx={{ textTransform: 'none' }}>
+            회원가입
+          </Button>
         </Box>
-        )}
-      </>
+      ) : (
+        <>
+          <Tooltip title="그룹 만들기 페이지로 이동">
+            <Button
+              variant="text"
+              color="inherit"
+              fullWidth
+              endIcon={<Add aria-hidden />}
+              onClick={() => { navigate('/groups/create'); if (onMobileClose) onMobileClose(); }}
+              sx={{
+                justifyContent: 'space-between',
+                px: 1,
+                py: 0.5,
+                mb: 0.75,
+                fontWeight: 600,
+                textTransform: 'none',
+                color: 'text.primary',
+                borderRadius: 1,
+                '&:hover': { bgcolor: 'action.hover' },
+              }}
+            >
+              새로운 그룹 생성하기
+            </Button>
+          </Tooltip>
 
-      <Divider sx={{ my: 1.5 }} />
+          {onOnlyMySchedulesChange && (
+            <List dense disablePadding sx={{ mb: 0.75 }}>
+              <ListItem disablePadding sx={{ mb: 0.25 }}>
+                <FormControlLabel
+                  sx={{ alignItems: 'flex-start', m: 0 }}
+                  control={(
+                    <Checkbox
+                      checked={onlyMySchedules}
+                      onChange={(e) => onOnlyMySchedulesChange(e.target.checked)}
+                      size="small"
+                      sx={{ py: 0.25, alignSelf: 'flex-start', mt: 0.125 }}
+                    />
+                  )}
+                  label={(
+                    <Box>
+                      <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1.28 }}>내 일정만</Typography>
+                      <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.12, mt: 0.1 }}>
+                        내가 등록한 일정만 표시
+                      </Typography>
+                    </Box>
+                  )}
+                />
+              </ListItem>
+            </List>
+          )}
 
-      {/* 그룹 가입 링크 */}
-      <Chip
-        label="+ 그룹 가입"
-        size="small"
-        variant="outlined"
-        onClick={() => { navigate('/groups/join'); if (onMobileClose) onMobileClose(); }}
-        clickable
-        sx={{ width: '100%' }}
-      />
+          <>
+            <Typography variant="subtitle2" fontWeight={700} color="text.secondary" sx={{ mb: 0.5 }}>
+              내 그룹
+            </Typography>
+            <List dense disablePadding sx={{ mt: 0.25 }}>
+              {groups.length > 0 && (
+                <>
+                  <ListItem disablePadding sx={{ mb: 0.25 }}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={allChecked}
+                          indeterminate={someChecked}
+                          onChange={onToggleAll}
+                          size="small"
+                          sx={{ py: 0.25 }}
+                        />
+                      }
+                      label={<Typography variant="body2" fontWeight={600}>전체</Typography>}
+                    />
+                  </ListItem>
+                  {groups.map((group) => (
+                    <ListItem key={group.id} disablePadding sx={{ display: 'flex', alignItems: 'center' }}>
+                      <FormControlLabel
+                        sx={{ flex: 1, mr: 0, minWidth: 0 }}
+                        control={
+                          <Checkbox
+                            checked={visibleGroupIds.includes(group.id)}
+                            onChange={() => onToggleGroup(group.id)}
+                            size="small"
+                            sx={{ py: 0.25, color: group.color, '&.Mui-checked': { color: group.color } }}
+                          />
+                        }
+                        label={
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0 }}>
+                            <Circle sx={{ fontSize: 10, color: group.color, flexShrink: 0 }} />
+                            <Typography variant="body2" noWrap sx={{ maxWidth: 100 }}>
+                              {group.name}
+                            </Typography>
+                          </Box>
+                        }
+                      />
+                      <Tooltip title="멤버 보기 / 탈퇴">
+                        <IconButton
+                          size="small"
+                          onClick={() => setInfoGroup(group)}
+                          sx={{ flexShrink: 0, opacity: 0.5, '&:hover': { opacity: 1 } }}
+                        >
+                          <InfoOutlined sx={{ fontSize: 16 }} />
+                        </IconButton>
+                      </Tooltip>
+                    </ListItem>
+                  ))}
+                </>
+              )}
+            </List>
+            {groups.length === 0 && (
+              <Box sx={{ textAlign: 'center', py: 1.5 }}>
+                <Typography variant="caption" color="text.disabled">
+                  아직 속한 그룹이 없어요
+                </Typography>
+                <Box mt={1}>
+                  <Chip
+                    label="그룹 가입하기"
+                    size="small"
+                    onClick={() => { navigate('/groups/join'); if (onMobileClose) onMobileClose(); }}
+                    clickable
+                  />
+                </Box>
+              </Box>
+            )}
+          </>
+
+          <Divider sx={{ my: 1.5 }} />
+
+          <Chip
+            label="+ 그룹 가입"
+            size="small"
+            variant="outlined"
+            onClick={() => { navigate('/groups/join'); if (onMobileClose) onMobileClose(); }}
+            clickable
+            sx={{ width: '100%' }}
+          />
+        </>
+      )}
 
       {/* 광고 배너 */}
       <AdBanner
@@ -437,12 +453,15 @@ function Sidebar({
               />
             </ListItem>
             <Divider sx={{ my: 1 }} />
+            {!isGuest && (
             <ListItem disablePadding>
               <FormControlLabel
                 control={<Checkbox checked={settingsDraft.onlyMySchedules} onChange={(e) => updateSettingsDraft('onlyMySchedules', e.target.checked)} size="small" />}
                 label={<Typography variant="body2">내 일정만</Typography>}
               />
             </ListItem>
+            )}
+            {!isGuest && (
             <ListItem disablePadding>
               <FormControlLabel
                 control={<Checkbox checked={settingsDraft.showAllGroups} onChange={(e) => updateSettingsDraft('showAllGroups', e.target.checked)} size="small" />}
@@ -456,6 +475,7 @@ function Sidebar({
                 )}
               />
             </ListItem>
+            )}
           </List>
         </DialogContent>
         <DialogActions sx={{ px: 2, py: 1.5 }}>

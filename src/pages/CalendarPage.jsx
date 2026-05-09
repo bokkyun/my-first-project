@@ -4,6 +4,7 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import useMediaQuery from '@mui/material/useMediaQuery';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useUserProfile } from '../hooks/useUserProfile';
 import { useGroups } from '../hooks/useGroups';
@@ -30,7 +31,7 @@ import { eventPassesSidebarCalendarFilters } from '../utils/calendarEventFilters
 const SIDEBAR_DEFAULT_FILTERS_KEY = 'moneycal.sidebarDefaultFilters.v1';
 const DEFAULT_SIDEBAR_FILTERS = {
   onlyMySchedules: false,
-  showAptSply: false,
+  showAptSply: true,
   showIpo: true,
   showDartPeriodic: false,
   showFred: true,
@@ -86,11 +87,12 @@ function eventOverlapsFocusedRange(ev, rangeStart, rangeEndExclusive) {
 
 function CalendarPage() {
   const theme = useTheme();
+  const navigate = useNavigate();
   const isMobileCalendarUx = useMediaQuery(theme.breakpoints.down('md'));
   const { user } = useAuth();
   const { profile } = useUserProfile(user);
 
-  const { groups, loading: groupsLoading, leaveGroup, deleteGroup, fetchGroupMembers, changeGroupAdmin, changeGroupPassword } = useGroups(user?.id);
+  const { groups, leaveGroup, deleteGroup, fetchGroupMembers, changeGroupAdmin, changeGroupPassword } = useGroups(user?.id);
   const [sidebarDefaultFilters, setSidebarDefaultFilters] = useState(readSidebarDefaultFilters);
   const [visibleGroupIds, setVisibleGroupIds] = useState([]);
   const [onlyMySchedules, setOnlyMySchedules] = useState(() => readSidebarDefaultFilters().onlyMySchedules);
@@ -183,8 +185,8 @@ function CalendarPage() {
       .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
   }, [calendarEvents, selectedDate, focusedViewRange, visibleGroupIds, onlyMySchedules, user?.id]);
 
-  /** 당일 스케줄 브라우저 알림 */
-  useNotifications(events);
+  /** 당일 스케줄 브라우저 알림 — 로그인 사용자만 */
+  useNotifications(user?.id ? events : []);
 
   /** 그룹 배열 참조가 바뀌어도 ID 집합이 같으면 필터 선택을 유지하기 위한 키 */
   const myGroupIdsKey = [...groups].map((g) => g.id).sort().join(',');
@@ -232,10 +234,10 @@ function CalendarPage() {
     }
   };
 
-  /** 날짜 클릭 — 모바일: 하루 일정 시트, 데스크톱: 바로 새 일정 */
+  /** 날짜 클릭 — 모바일·비로그인: 하루 일정 시트, 로그인 데스크톱: 바로 새 일정 */
   const handleDateClick = (dateStr) => {
     setSelectedDate(dateStr);
-    if (isMobileCalendarUx) {
+    if (isMobileCalendarUx || !user?.id) {
       setDayAgendaOpen(true);
     } else {
       setNewDialogOpen(true);
@@ -286,6 +288,11 @@ function CalendarPage() {
   };
 
   const handleDayAgendaNewEvent = () => {
+    if (!user?.id) {
+      setDayAgendaOpen(false);
+      navigate('/login');
+      return;
+    }
     setDayAgendaOpen(false);
     setNewDialogOpen(true);
   };
@@ -442,6 +449,7 @@ function CalendarPage() {
           onDeleteGroup={deleteGroup}
           onChangeAdmin={changeGroupAdmin}
           onChangePassword={changeGroupPassword}
+          isGuest={!user}
         />
 
         <Box sx={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -459,6 +467,7 @@ function CalendarPage() {
               flexWrap: 'wrap',
             }}
           >
+          {user?.id && (
           <Button
             variant="outlined"
             size="small"
@@ -468,6 +477,7 @@ function CalendarPage() {
           >
             일정검색
           </Button>
+          )}
           {user?.id && (
             <Button
               variant="outlined"
@@ -502,6 +512,7 @@ function CalendarPage() {
         groups={groups}
         onNewEvent={handleDayAgendaNewEvent}
         onEventPick={handleDayAgendaPickEvent}
+        newEventButtonLabel={user?.id ? '새 일정 추가' : '로그인하고 일정 추가'}
       />
 
       <MyEventSearchDialog

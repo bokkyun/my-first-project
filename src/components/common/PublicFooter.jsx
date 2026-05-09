@@ -43,6 +43,8 @@ function PublicFooter() {
                 서비스
               </Typography>
               {[
+                { label: '캘린더(참고 일정)', to: '/' },
+                { label: 'MoneyCal 소개', to: '/intro' },
                 { label: '서비스 소개', to: '/about' },
                 { label: '로그인', to: '/login' },
                 { label: '회원가입', to: '/signup' },

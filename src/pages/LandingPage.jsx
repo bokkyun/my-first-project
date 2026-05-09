@@ -14,17 +14,17 @@ const FEATURES = [
   {
     icon: <ShowChart sx={{ fontSize: 40, color: '#1565c0' }} />,
     title: '공모주 공시 일정',
-    desc: '로그인 후 캘린더에서 표시를 켜면 Open DART(금융위 전자공시) 기준 공시·제출 일정을 월별로 겹쳐 봅니다. VITE_DART_CRTFC_KEY가 빌드에 포함되어야 하며, 정적 배포(GitHub Pages 등)에서는 CORS 대비 프록시가 필요할 수 있습니다.',
+    desc: '비회원도 메인 화면 캘린더에서 표시를 켜면 Open DART(금융위 전자공시) 기준 공시·제출 일정을 월별로 겹쳐 볼 수 있어요. VITE_DART_CRTFC_KEY가 빌드에 포함되어야 하며, 정적 배포(GitHub Pages 등)에서는 CORS 대비 프록시가 필요할 수 있습니다.',
   },
   {
     icon: <ShowChart sx={{ fontSize: 40, color: '#2e7d32' }} />,
     title: '국내기업 실적발표일',
-    desc: 'Open DART(금융위 전자공시) 기준 국내 상장사 실적·정기공시 접수 일정을 캘린더에 겹쳐 볼 수 있습니다. 캘린더 사이드바에서「국내기업 실적발표일」을 켜면 됩니다.',
+    desc: '로그인 없이도 메인 캘린더에서「국내기업 실적발표일」을 켜면 Open DART 기준 실적·정기공시 접수 일정을 겹쳐 볼 수 있습니다.',
   },
   {
     icon: <Apartment sx={{ fontSize: 40, color: '#546e7a' }} />,
     title: '아파트 분양·청약',
-    desc: '로그인 후 캘린더에서 표시를 켜면 국토교통부 등 공공데이터 무순위·청약 분양 일정을 겹쳐 봅니다. VITE_DATA_GO_KR_SERVICE_KEY 등 필요한 변수가 빌드·배포 환경에 설정되어야 합니다.',
+    desc: '비회원도 메인 캘린더에서 아파트 청약·분양 표시를 켜면 국토교통부 등 공공데이터 무순위·청약 분양 일정을 겹쳐 볼 수 있습니다. VITE_DATA_GO_KR_SERVICE_KEY 등이 빌드·배포 환경에 설정되어 있어야 합니다.',
   },
   {
     icon: <Group sx={{ fontSize: 40, color: '#9c27b0' }} />,
@@ -84,7 +84,11 @@ function LandingPage() {
       >
         <Container maxWidth="lg">
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', py: 1.5 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box
+              component={Link}
+              to="/"
+              sx={{ display: 'flex', alignItems: 'center', gap: 1, textDecoration: 'none', color: 'inherit' }}
+            >
               <CalendarMonth sx={{ color: 'primary.main', fontSize: 30 }} />
               <Typography variant="h6" fontWeight={700} color="primary.main">MoneyCal</Typography>
             </Box>
@@ -159,7 +163,7 @@ function LandingPage() {
             </Button>
             <Button
               component={Link}
-              to="/calendar"
+              to="/"
               variant="outlined"
               size="large"
               endIcon={<ArrowForward />}
