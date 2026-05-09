@@ -14,7 +14,7 @@ const DEFAULT_FILTER_SETTINGS = {
   onlyMySchedules: false,
   showAptSply: true,
   showIpo: true,
-  showDartPeriodic: false,
+  showDartPeriodic: true,
   showFred: true,
   showBok: true,
   showAllGroups: true,
@@ -61,11 +61,11 @@ function Sidebar({
   onToggleAll,
   onlyMySchedules = false,
   onOnlyMySchedulesChange,
-  showAptSply = false,
+  showAptSply = true,
   onShowAptSplyChange,
   showIpo = true,
   onShowIpoChange,
-  showDartPeriodic = false,
+  showDartPeriodic = true,
   onShowDartPeriodicChange,
   showFred = true,
   onShowFredChange,
@@ -416,8 +416,8 @@ function Sidebar({
       >
         <DialogTitle sx={{ pb: 1 }}>
           <Typography fontWeight={700}>처음 열 때 기본 체크</Typography>
-          <Typography variant="caption" color="text.secondary">
-            저장하면 다음 방문부터 이 체크 상태로 시작합니다.
+          <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5, lineHeight: 1.45 }}>
+            저장하면 다음 방문부터 이 체크 상태로 시작합니다. 아파트 청약·국내기업 실적발표일은 앱 기본으로 켜져 있으며, 여기서 끄거나 다른 조합으로 저장할 수 있습니다.
           </Typography>
         </DialogTitle>
         <DialogContent dividers>

@@ -33,7 +33,8 @@ const DEFAULT_SIDEBAR_FILTERS = {
   onlyMySchedules: false,
   showAptSply: true,
   showIpo: true,
-  showDartPeriodic: false,
+  /** 첫 방문·저장 이력 없음: 국내기업 실적발표일(DART)도 켜 둠. 설정(톱니)에서 기본 체크 저장 가능 */
+  showDartPeriodic: true,
   showFred: true,
   showBok: true,
   showAllGroups: true,
