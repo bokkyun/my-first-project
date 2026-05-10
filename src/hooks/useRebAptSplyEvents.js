@@ -96,7 +96,7 @@ export function useRebAptSplyEvents(enabled, viewRange) {
       if (mode === 'odcloud') {
         const seen = new Set();
         list = merged.filter((row) => {
-          const k = [row.HOUSE_MGMT_NO, row.HSMP_MGMT_NO, row.PBLANC_NO, row.RCEPT_ENDDE, row.HSMP_NM]
+          const k = [row.HOUSE_MANAGE_NO, row.HOUSE_MGMT_NO, row.HSMP_MGMT_NO, row.PBLANC_NO, row.RCEPT_ENDDE, row.SUBSCRPT_RCEPT_ENDDE, row.GNRL_RCEPT_ENDDE, row.HSMP_NM]
             .map((x) => String(x ?? ''))
             .join('\u0001');
           if (seen.has(k)) return false;

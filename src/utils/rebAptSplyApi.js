@@ -145,10 +145,13 @@ function isPlausibleKoreanYmd8(ymd8) {
  */
 export function getOdcloudReceiptEndYmd8(item) {
   if (!item || typeof item !== 'object') return '';
+  /** 잔여·무순위(getRemndrLttot…): 접수종료일이 GNRL_/SUBSCRPT_ 필드만 있는 경우 많음 */
   const v = item.RCEPT_ENDDE
     ?? item.SPLY_RCEPT_ENDDE
     ?? item.SPLY_RCEPT_CLSDE
     ?? item.RCEPT_CLSDE
+    ?? item.SUBSCRPT_RCEPT_ENDDE
+    ?? item.GNRL_RCEPT_ENDDE
     ?? item.RCRIT_ENDDE
     ?? item.RCRIT_ENDDAY
     ?? item.SUBSCR_ENDDE
@@ -165,9 +168,12 @@ export function getOdcloudReceiptEndYmd8(item) {
  */
 export function getOdcloudReceiptStartYmd8(item) {
   if (!item || typeof item !== 'object') return '';
+  /** 잔여·무순위: 접수시작일이 GNRL_/SUBSCRPT_ 로만 오는 행 존재(불법·계약취소 재공급 등) */
   const v = item.RCEPT_BGNDE
     ?? item.SPLY_RCEPT_BGNDE
     ?? item.SPLY_RCEPT_STTDE
+    ?? item.SUBSCRPT_RCEPT_BGNDE
+    ?? item.GNRL_RCEPT_BGNDE
     ?? item.RCRIT_BGN_DE
     ?? item.RCRIT_BGNDE
     ?? item.PBLANC_DE
@@ -301,7 +307,7 @@ export function mapOdcloudItemToCalendarEvent(item, index) {
   ) || '아파트 분양';
   const titleCore = [region, nameForCalendar].filter((x) => x).join(' · ');
   const p1 = firstT('공고번호', 'PBLANC_NO');
-  const p2 = firstT('주택관리번호', 'HOUSE_MGMT_NO', 'HSMP_MGMT_NO');
+  const p2 = firstT('주택관리번호', 'HOUSE_MANAGE_NO', 'HOUSE_MGMT_NO', 'HSMP_MGMT_NO');
   const pbl = p1 || p2 ? ` (${[p1, p2].filter(Boolean).join(' / ')})` : '';
   const supplyKind = firstT(
     'HOUSE_SECD_NM',
@@ -317,6 +323,8 @@ export function mapOdcloudItemToCalendarEvent(item, index) {
     'RCEPT_BGNDE',
     'SPLY_RCEPT_BGNDE',
     'SPLY_RCEPT_STTDE',
+    'SUBSCRPT_RCEPT_BGNDE',
+    'GNRL_RCEPT_BGNDE',
     'RCRIT_BGN_DE',
     'RCRIT_BGNDE',
     'PBLANC_DE',
@@ -331,11 +339,14 @@ export function mapOdcloudItemToCalendarEvent(item, index) {
     '모집공고일',
     '접수기간',
   );
+  /** 계약체결일(CNTRCT_CNCLS_*) 등은 청약접수일보다 늦게 오는 경우가 많아 접수 필드를 끝까지 두고 채택 */
   const endYmd = firstT(
     'RCEPT_ENDDE',
     'SPLY_RCEPT_ENDDE',
     'SPLY_RCEPT_CLSDE',
     'RCEPT_CLSDE',
+    'SUBSCRPT_RCEPT_ENDDE',
+    'GNRL_RCEPT_ENDDE',
     'RCRIT_ENDDE',
     'RCRIT_ENDDAY',
     'SUBSCR_ENDDE',
@@ -364,7 +375,7 @@ export function mapOdcloudItemToCalendarEvent(item, index) {
   const ends = parseYmdToIsoEndOfDay(endYmd) || parseYmdToIsoEndOfDay(startYmd) || starts;
 
   const idKey =
-    firstT('주택관리번호', 'HOUSE_MGMT_NO', 'HSMP_MGMT_NO')
+    firstT('주택관리번호', 'HOUSE_MANAGE_NO', 'HOUSE_MGMT_NO', 'HSMP_MGMT_NO')
     + firstT('공고번호', 'PBLANC_NO')
     + String(index);
   const id = `reb-od-${idKey.replace(/[^a-zA-Z0-9가-힣\-_]/g, '_').slice(0, 80)}-${index}`;

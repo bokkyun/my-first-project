@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
+import { readSupabaseFunctionErrorMessage } from '../utils/readSupabaseFunctionError';
 
 const KR_MACRO_FLAG = '🇰🇷';
 
@@ -44,6 +45,28 @@ function toYmd(d) {
   return `${y}-${m}-${day}`;
 }
 
+/** Edge Function JSON 본문의 data.error 를 사용자 안내 문장으로 */
+function formatBokFunctionBodyError(data) {
+  if (!data || typeof data !== 'object') return null;
+  const err = data.error;
+  if (err == null) return null;
+  const hint = typeof data.hint === 'string' ? data.hint.trim() : '';
+  if (err === 'missing_bok_ecos_key') {
+    return '한국은행 일정: Edge Function에 BOK_ECOS_API_KEY(한국은행 ECOS 인증키) 시크릿이 없습니다. Supabase → Project Settings → Edge Functions → Secrets에 추가한 뒤 fetch-bok-releases를 다시 배포해 주세요.';
+  }
+  if (hint) return `${String(err)} — ${hint}`;
+  return String(err);
+}
+
+/** invoke 단계 HTTP 오류 메시지 보강 */
+function enrichBokInvokeHttpMessage(msg) {
+  const m = String(msg);
+  if (/non-2xx/i.test(m) && !m.includes('—')) {
+    return `${m} Supabase 대시보드에서 Edge Function「fetch-bok-releases」배포 여부·실행 로그·시크릿(BOK_ECOS_API_KEY)을 확인해 주세요.(404면 함수 미배포)`;
+  }
+  return m;
+}
+
 function mapBokRowToCalendarEvent(row) {
   const ymd = row.release_date;
   const rawCalendarTitle = String(row.title || '').trim();
@@ -82,6 +105,32 @@ function mapBokRowToCalendarEvent(row) {
   };
 }
 
+const CACHE_PREFIX = 'moneycal.bokReleases.v1';
+const CACHE_TTL_MS = 1000 * 60 * 60 * 6; /** 6시간 — 공표일정은 자주 바뀌지 않음 */
+
+function readBokCache(start, end) {
+  if (typeof sessionStorage === 'undefined') return null;
+  try {
+    const key = `${CACHE_PREFIX}:${start}:${end}`;
+    const raw = sessionStorage.getItem(key);
+    if (!raw) return null;
+    const o = JSON.parse(raw);
+    if (!o || typeof o.t !== 'number' || Date.now() - o.t > CACHE_TTL_MS) return null;
+    return o;
+  } catch {
+    return null;
+  }
+}
+
+function writeBokCache(start, end, payload) {
+  try {
+    const key = `${CACHE_PREFIX}:${start}:${end}`;
+    sessionStorage.setItem(key, JSON.stringify({ t: Date.now(), ...payload }));
+  } catch {
+    /* 할당량 등 */
+  }
+}
+
 /**
  * 한국은행 통계공표일정 → 캘린더용 이벤트
  * 일정 출처: 한국은행 월간통계 공표일정, 상세 링크: 한국은행/ECOS 공식 페이지
@@ -93,38 +142,52 @@ export function useBokEconomicEvents(enabled, viewRange) {
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState(null);
 
-  const fetchRows = useCallback(async () => {
+  const runFetch = useCallback(async (opts = {}) => {
+    const bypassCache = opts.bypassCache === true;
     if (!viewRange?.start || !viewRange?.end) {
       setRawRows([]);
       setFetchError(null);
       return;
     }
 
+    const pad = (d, days) => {
+      const x = new Date(d);
+      x.setDate(x.getDate() + days);
+      return toYmd(x);
+    };
+    const start = pad(viewRange.start, -3);
+    const end = pad(viewRange.end, 5);
+
+    if (!bypassCache) {
+      const cached = readBokCache(start, end);
+      if (cached && Array.isArray(cached.releases)) {
+        setRawRows(cached.releases);
+        setFetchError(null);
+        setLoading(false);
+        return;
+      }
+    }
+
     setLoading(true);
     setFetchError(null);
     try {
-      const pad = (d, days) => {
-        const x = new Date(d);
-        x.setDate(x.getDate() + days);
-        return toYmd(x);
-      };
       const { data, error } = await supabase.functions.invoke('fetch-bok-releases', {
-        body: {
-          start: pad(viewRange.start, -3),
-          end: pad(viewRange.end, 5),
-        },
+        body: { start, end },
       });
       if (error) {
-        setFetchError(error.message || String(error));
+        const detail = await readSupabaseFunctionErrorMessage(error);
+        setFetchError(enrichBokInvokeHttpMessage(detail));
         setRawRows([]);
         return;
       }
       if (data && typeof data === 'object' && data.error) {
-        setFetchError(String(data.error));
+        setFetchError(formatBokFunctionBodyError(data) || String(data.error));
         setRawRows([]);
         return;
       }
-      setRawRows(Array.isArray(data?.releases) ? data.releases : []);
+      const releases = Array.isArray(data?.releases) ? data.releases : [];
+      setRawRows(releases);
+      writeBokCache(start, end, { releases });
     } catch (e) {
       setFetchError(e?.message || String(e));
       setRawRows([]);
@@ -137,10 +200,15 @@ export function useBokEconomicEvents(enabled, viewRange) {
     if (!enabled) {
       setRawRows([]);
       setFetchError(null);
+      setLoading(false);
       return;
     }
-    void fetchRows();
-  }, [enabled, fetchRows]);
+    /** 달력 뷰 전환 시 datesSet이 연속으로 올 수 있어 한 번만 요청하도록 묶음 */
+    const t = setTimeout(() => {
+      void runFetch({});
+    }, 200);
+    return () => clearTimeout(t);
+  }, [enabled, runFetch]);
 
   const events = useMemo(() => {
     if (!enabled) return [];
@@ -151,6 +219,6 @@ export function useBokEconomicEvents(enabled, viewRange) {
     events,
     loading,
     error: enabled ? fetchError : null,
-    refetch: fetchRows,
+    refetch: () => runFetch({ bypassCache: true }),
   };
 }

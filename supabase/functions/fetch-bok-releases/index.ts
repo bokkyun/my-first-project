@@ -152,11 +152,13 @@ async function fetchCalendarMonth(month: string): Promise<Record<string, unknown
 
   const res = await fetch(url.toString(), {
     headers: {
-      'User-Agent': 'MoneyCal/1.0 BOK calendar fetcher',
-      Accept: 'text/html,application/xhtml+xml',
+      'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+      Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
     },
   });
-  if (!res.ok) throw new Error(`BOK calendar HTTP ${res.status}`);
+  if (!res.ok) throw new Error(`BOK calendar HTTP ${res.status}: ${url}`);
 
   const bytes = await res.arrayBuffer();
   const html = new TextDecoder('utf-8').decode(bytes);
@@ -238,16 +240,31 @@ Deno.serve(async (req) => {
     const seen = new Set<string>();
     const releases: Record<string, unknown>[] = [];
 
-    for (const month of listMonths(start, end)) {
-      const rows = await fetchCalendarMonth(month);
-      for (const row of rows) {
-        const date = String(row.release_date);
-        if (date < start || date > end) continue;
-        const key = `${row.category_code}\u0001${row.release_date}\u0001${row.title}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        releases.push(row);
-      }
+    const months = listMonths(start, end);
+    const monthErrors: string[] = [];
+    /** 순차 호출 대신 소량 병렬로 총 지연 단축 (BOK 부하 고려해 청크 크기 제한) */
+    const CHUNK = 5;
+    for (let i = 0; i < months.length; i += CHUNK) {
+      const batch = months.slice(i, i + CHUNK);
+      const settled = await Promise.allSettled(batch.map((m) => fetchCalendarMonth(m)));
+      settled.forEach((res, j) => {
+        const month = batch[j];
+        if (res.status === 'fulfilled') {
+          for (const row of res.value) {
+            const date = String(row.release_date);
+            if (date < start || date > end) continue;
+            const key = `${row.category_code}\u0001${row.release_date}\u0001${row.title}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            releases.push(row);
+          }
+        } else {
+          const reason = res.reason;
+          const line = reason instanceof Error ? reason.message : String(reason);
+          monthErrors.push(`${month}: ${line}`);
+          console.error(`fetch-bok-releases month ${month}`, reason);
+        }
+      });
     }
     for (const row of buildFxReserveEvents(start, end)) {
       const key = `${row.category_code}\u0001${row.release_date}\u0001${row.title}`;
@@ -257,15 +274,40 @@ Deno.serve(async (req) => {
     }
 
     releases.sort((a, b) => String(a.release_date).localeCompare(String(b.release_date)));
-    return new Response(JSON.stringify({ ok: true, releases }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+
+    /** 비어 있고 월별 요청이 모두 실패한 경우에만 error — UI가 non-2xx 대신 본문으로 안내 */
+    if (releases.length === 0 && monthErrors.length > 0) {
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          releases: [],
+          error: monthErrors.slice(0, 5).join(' | '),
+          hint:
+            '한국은행 공표일정 페이지 접근이 차단되었거나 HTML 형식이 바뀌었을 수 있습니다. Supabase Edge Function 로그를 확인하세요.',
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      );
+    }
+
+    return new Response(
+      JSON.stringify({
+        ok: true,
+        releases,
+        ...(monthErrors.length > 0 ? { warnings: monthErrors.slice(0, 3) } : {}),
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
   } catch (e) {
     console.error(e);
     const msg = e instanceof Error ? e.message : String(e);
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({
+        ok: false,
+        releases: [],
+        error: msg,
+        hint: 'fetch-bok-releases 내부 오류입니다. Supabase Edge Function 로그를 확인해 주세요.',
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+    );
   }
 });
