@@ -129,9 +129,12 @@ function CalendarView({
           eventContent={(arg) => {
             const ex = arg.event.extendedProps;
             const nickname = ex.creatorNickname;
-            const isIpo = ex._external === 'ipo';
-            const isDartReport = ex._external === 'dart-report';
-            const compactCalendarTitle = isIpo || isDartReport;
+            const isIpo = ex._external === 'ipo' || ex._external === 'summary-ipo';
+            const isDartReport = ex._external === 'dart-report' || ex._external === 'summary-dart';
+            const isAptSummary = ex._external === 'summary-apt';
+            const isSummary = !!ex._isSummary;
+
+            const compactCalendarTitle = (isIpo || isDartReport || isAptSummary) && !isSummary;
             const displayTitle = String(arg.event.title || '').replace(/^(📈|🏢|📊|📅|📋)\s*/u, '');
             /** 공모주·정기공시: 제목은 JS에서 3글자+… 처리 */
             const compactTitleSx = compactCalendarTitle
@@ -148,10 +151,10 @@ function CalendarView({
               : null;
             /** 데스크톱: 등록 일정 글씨 크게·칸 안에 좌우 맞춤 줄바꿈 · 모바일: 한 줄 말줄임 */
             const titleSx = compactTitleSx
-              || (isMobile
+              || (isMobile || isSummary
                 ? {
                   fontWeight: 600,
-                  fontSize: '0.75rem',
+                  fontSize: isSummary ? (isMobile ? '0.7rem' : '0.8rem') : '0.75rem',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
@@ -171,7 +174,7 @@ function CalendarView({
                   maxWidth: '100%',
                   minWidth: 0,
                 });
-            const showNickname = nickname && !isIpo && !isDartReport;
+            const showNickname = nickname && !isIpo && !isDartReport && !isSummary;
             const titleText = compactCalendarTitle ? truncateIpoCalendarTitle(displayTitle) : displayTitle;
             return (
               <Box sx={{

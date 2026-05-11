@@ -247,6 +247,11 @@ function CalendarPage() {
 
   /** 일정 상세 다이얼로그 열기 */
   const openEventDetail = (ev) => {
+    if (ev._isSummary) {
+      setSelectedDate(ev._summaryDate);
+      setDayAgendaOpen(true);
+      return;
+    }
     if (ev._external === 'reb-apt' || ev._external === 'reb-odcloud') {
       setSelectedAptEvent(ev);
       setAptDetailOpen(true);

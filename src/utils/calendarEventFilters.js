@@ -11,7 +11,10 @@ export function eventPassesSidebarCalendarFilters(ev, {
   onlyMySchedules,
   currentUserId,
 }) {
-  if (ev._external === 'reb-apt' || ev._external === 'reb-odcloud' || ev._external === 'ipo' || ev._external === 'dart-report' || ev._external === 'fred' || ev._external === 'bok') {
+  const isExternal = ev._external === 'reb-apt' || ev._external === 'reb-odcloud' || ev._external === 'ipo' || ev._external === 'dart-report' || ev._external === 'fred' || ev._external === 'bok';
+  const isSummary = String(ev._external || '').startsWith('summary-');
+
+  if (isExternal || isSummary) {
     if (onlyMySchedules) return false;
     return true;
   }
