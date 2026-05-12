@@ -1,7 +1,7 @@
 import {
-  Dialog, DialogTitle, DialogContent, IconButton, Typography, Box, Divider, Paper,
+  Dialog, DialogTitle, DialogContent, IconButton, Typography, Box, Paper, Button,
 } from '@mui/material';
-import { Close, InfoOutlined } from '@mui/icons-material';
+import { Close, OpenInNew } from '@mui/icons-material';
 import { getRebAptDialogSections } from '../../utils/rebAptFieldLabels';
 
 function formatKoDateRange(startsAt, endsAt, allDay) {
@@ -59,8 +59,17 @@ function RowItem({ label, v, k, compact }) {
 function ExternalAptEventDialog({ open, onClose, event }) {
   if (!event || !event._rebRaw) return null;
   const raw = event._rebRaw;
-  const { summary, rest } = getRebAptDialogSections(raw);
+  const { summary } = getRebAptDialogSections(raw);
   const dateText = formatKoDateRange(event.starts_at, event.ends_at, event.is_all_day);
+
+  const urlKeys = ['PBLANC_URL', 'HMPG_ADRES'];
+  const pblancUrl = urlKeys.reduce((found, k) => {
+    if (found) return found;
+    const v = raw[k];
+    return v && String(v).trim().startsWith('http') ? String(v).trim() : null;
+  }, null);
+
+  const summaryFiltered = summary.filter((row) => !urlKeys.includes(row.k));
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
@@ -71,45 +80,40 @@ function ExternalAptEventDialog({ open, onClose, event }) {
         <IconButton onClick={onClose} size="small"><Close /></IconButton>
       </DialogTitle>
       <DialogContent dividers sx={{ maxHeight: { xs: '80vh', sm: 560 }, overflow: 'auto' }}>
-        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1, color: 'text.secondary' }}>
-          <InfoOutlined fontSize="small" />
-          <Typography variant="caption">편집·삭제는 캘린더 일정과 별도입니다.</Typography>
-        </Box>
         {dateText && (
           <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
             {dateText}
           </Typography>
         )}
 
-        {summary.length > 0 && (
+        {summaryFiltered.length > 0 && (
           <Box sx={{ mb: 2 }}>
             <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 0.5 }}>
               주요 항목
             </Typography>
             <Paper variant="outlined" sx={{ mt: 0.5, p: 1.5, bgcolor: (t) => t.palette.mode === 'dark' ? 'action.hover' : 'grey.50' }}>
-              {summary.map((row) => (
+              {summaryFiltered.map((row) => (
                 <RowItem key={row.k} k={row.k} label={row.label} v={row.v} compact />
               ))}
             </Paper>
           </Box>
         )}
 
-        {rest.length > 0 && (
-          <Box>
-            <Divider sx={{ my: 1.5 }} />
-            <Typography variant="overline" color="text.secondary" sx={{ fontWeight: 700, letterSpacing: 0.5 }}>
-              전체 항목
-            </Typography>
-            <Typography variant="caption" color="text.secondary" display="block" sx={{ mb: 1 }}>
-              한글 라벨은 앱에서 매핑한 것이며, 괄호 안은 API 원본 키입니다. 미매핑 키는 영문 그대로 보일 수 있습니다.
-            </Typography>
-            {rest.map((row) => (
-              <RowItem key={row.k} k={row.k} label={row.label} v={row.v} />
-            ))}
-          </Box>
+        {pblancUrl && (
+          <Button
+            variant="contained"
+            fullWidth
+            href={pblancUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            endIcon={<OpenInNew />}
+            sx={{ mt: 1, py: 1.2, fontWeight: 700 }}
+          >
+            모집공고보기
+          </Button>
         )}
 
-        {summary.length === 0 && rest.length === 0 && (
+        {summaryFiltered.length === 0 && !pblancUrl && (
           <Typography variant="body2" color="text.secondary">표시할 항목이 없습니다.</Typography>
         )}
       </DialogContent>
