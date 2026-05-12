@@ -31,10 +31,9 @@ import { eventPassesSidebarCalendarFilters } from '../utils/calendarEventFilters
 const SIDEBAR_DEFAULT_FILTERS_KEY = 'moneycal.sidebarDefaultFilters.v1';
 const DEFAULT_SIDEBAR_FILTERS = {
   onlyMySchedules: false,
-  /** 첫 방문·저장 이력 없음: 아파트 청약·국내기업 실적은 끔. 메뉴에서 켜거나 설정(톱니)으로 기본 체크 저장 */
-  showAptSply: false,
+  showAptSply: true,
   showIpo: true,
-  showDartPeriodic: false,
+  showDartPeriodic: true,
   showFred: true,
   showBok: true,
   showAllGroups: true,
@@ -165,10 +164,47 @@ function CalendarPage() {
     return list;
   }, [events, aptSplyList, showAptSply, ipoList, showIpo, dartPeriodicList, showDartPeriodic, showFred, fredCalendarEvents, showBok, bokCalendarEvents]);
 
-  /** 표시 중인 뷰 구간에 속하는 일정만(월 뷰에서는 해당 월만, 전·익월 칸 제외) */
+  /** 표시 중인 뷰 구간에 속하는 일정만(월 뷰에서는 해당 월만, 전·익월 칸 제외) + 공모주·청약·실적은 날짜별 요약 */
   const calendarEventsForGrid = useMemo(() => {
     const { start, end } = focusedViewRange;
-    return calendarEvents.filter((ev) => eventOverlapsFocusedRange(ev, start, end));
+    const filtered = calendarEvents.filter((ev) => eventOverlapsFocusedRange(ev, start, end));
+
+    const summaryBuckets = {};
+    const kept = [];
+
+    for (const ev of filtered) {
+      const ext = ev._external;
+      let typeKey;
+      if (ext === 'ipo') typeKey = 'ipo';
+      else if (ext === 'dart-report') typeKey = 'dart';
+      else if (ext === 'reb-apt' || ext === 'reb-odcloud') typeKey = 'apt';
+      else { kept.push(ev); continue; }
+
+      const d = new Date(ev.starts_at);
+      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const key = `${typeKey}-${dateStr}`;
+      if (!summaryBuckets[key]) summaryBuckets[key] = { type: typeKey, date: dateStr, events: [] };
+      summaryBuckets[key].events.push(ev);
+    }
+
+    const COLOR_MAP = { ipo: '#1b5e20', dart: '#0d47a1', apt: '#0d47a1' };
+    const LABEL_MAP = { ipo: '공모주', dart: '실적발표', apt: '아파트청약' };
+    const EXT_MAP = { ipo: 'summary-ipo', dart: 'summary-dart', apt: 'summary-apt' };
+
+    const summaries = Object.values(summaryBuckets).map(({ type, date, events: evts }) => ({
+      id: `summary-${type}-${date}`,
+      title: `${LABEL_MAP[type]} ${evts.length}건`,
+      starts_at: `${date}T00:00:00`,
+      ends_at: `${date}T23:59:59`,
+      is_all_day: true,
+      color: COLOR_MAP[type],
+      _external: EXT_MAP[type],
+      _isSummary: true,
+      _summaryDate: date,
+      _summaryCount: evts.length,
+    }));
+
+    return [...kept, ...summaries];
   }, [calendarEvents, focusedViewRange]);
 
   const dayEventsForSheet = useMemo(() => {

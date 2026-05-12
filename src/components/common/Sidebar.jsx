@@ -12,9 +12,9 @@ import AdBanner from './AdBanner';
 const SIDEBAR_WIDTH = 220;
 const DEFAULT_FILTER_SETTINGS = {
   onlyMySchedules: false,
-  showAptSply: false,
+  showAptSply: true,
   showIpo: true,
-  showDartPeriodic: false,
+  showDartPeriodic: true,
   showFred: true,
   showBok: true,
   showAllGroups: true,
@@ -417,7 +417,7 @@ function Sidebar({
         <DialogTitle sx={{ pb: 1 }}>
           <Typography fontWeight={700}>처음 열 때 기본 체크</Typography>
           <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 0.5, lineHeight: 1.45 }}>
-            저장하면 다음 방문부터 이 체크 상태로 시작합니다. 아파트 청약·국내기업 실적발표일은 처음에는 꺼져 있고, 필요할 때 켠 뒤 저장해 두면 매번 그렇게 열립니다.
+            저장하면 다음 방문부터 이 체크 상태로 시작합니다. 불필요한 항목은 체크 해제 후 저장해 두면 매번 그 상태로 열립니다.
           </Typography>
         </DialogTitle>
         <DialogContent dividers>
