@@ -7,13 +7,13 @@ import { Box, useMediaQuery, useTheme } from '@mui/material';
 import { isCoffeeEvent } from '../../utils/eventCoffee';
 import { eventPassesSidebarCalendarFilters } from '../../utils/calendarEventFilters';
 
-/** 공모주(ipo) 칸: 3글자 초과 시 앞 3글자 + ... (유니코드 글자 단위, 한 줄 고정) */
+/** 공모주(ipo) 칸: 4글자 초과 시 앞 4글자 + … (유니코드 글자 단위, 한 줄 고정) */
 function truncateIpoCalendarTitle(title) {
   const s = String(title ?? '').trim();
   if (!s) return s;
   const chars = [...s];
-  if (chars.length <= 3) return s;
-  return `${chars.slice(0, 3).join('')}...`;
+  if (chars.length <= 4) return s;
+  return `${chars.slice(0, 4).join('')}…`;
 }
 
 /**
@@ -93,6 +93,8 @@ function CalendarView({
           boxShadow: 1,
           height: '100%',
           minWidth: 0,
+          '& .fc-daygrid-event': { px: 0, mx: 0 },
+          '& .fc-event-main': { px: '1px' },
         }}
       >
         <FullCalendar
@@ -178,8 +180,7 @@ function CalendarView({
             const titleText = compactCalendarTitle ? truncateIpoCalendarTitle(displayTitle) : displayTitle;
             return (
               <Box sx={{
-                pl: 0.125,
-                pr: 0.125,
+                px: '1px',
                 overflow: 'hidden',
                 width: '100%',
                 maxWidth: '100%',
