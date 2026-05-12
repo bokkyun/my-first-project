@@ -188,12 +188,12 @@ function CalendarPage() {
     }
 
     const COLOR_MAP = { ipo: '#1b5e20', dart: '#0d47a1', apt: '#0d47a1' };
-    const LABEL_MAP = { ipo: '공모주', dart: '실적발표', apt: '아파트청약' };
+    const LABEL_MAP = { ipo: '공모', dart: '실적', apt: '청약' };
     const EXT_MAP = { ipo: 'summary-ipo', dart: 'summary-dart', apt: 'summary-apt' };
 
     const summaries = Object.values(summaryBuckets).map(({ type, date, events: evts }) => ({
       id: `summary-${type}-${date}`,
-      title: `${LABEL_MAP[type]} ${evts.length}건`,
+      title: `${LABEL_MAP[type]}${evts.length}건`,
       starts_at: `${date}T00:00:00`,
       ends_at: `${date}T23:59:59`,
       is_all_day: true,

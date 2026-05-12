@@ -93,8 +93,9 @@ function CalendarView({
           boxShadow: 1,
           height: '100%',
           minWidth: 0,
-          '& .fc-daygrid-event': { px: 0, mx: 0 },
-          '& .fc-event-main': { px: '1px' },
+          '& .fc-daygrid-event': { px: '0 !important', mx: '0 !important' },
+          '& .fc-event-main': { px: '1px !important' },
+          '& .fc-h-event': { px: '0 !important' },
         }}
       >
         <FullCalendar
@@ -136,14 +137,13 @@ function CalendarView({
             const isAptSummary = ex._external === 'summary-apt';
             const isSummary = !!ex._isSummary;
 
-            const compactCalendarTitle = (isIpo || isDartReport || isAptSummary) && !isSummary;
+            const compactCalendarTitle = isIpo || isDartReport || isAptSummary;
             const displayTitle = String(arg.event.title || '').replace(/^(📈|🏢|📊|📅|📋)\s*/u, '');
-            /** 공모주·정기공시: 제목은 JS에서 3글자+… 처리 */
             const compactTitleSx = compactCalendarTitle
               ? {
                 fontWeight: 700,
-                fontSize: isMobile ? '0.6875rem' : '0.7rem',
-                lineHeight: 1.35,
+                fontSize: isMobile ? '0.6rem' : '0.65rem',
+                lineHeight: 1.3,
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
                 width: '100%',
@@ -180,7 +180,7 @@ function CalendarView({
             const titleText = compactCalendarTitle ? truncateIpoCalendarTitle(displayTitle) : displayTitle;
             return (
               <Box sx={{
-                px: '1px',
+                px: 0,
                 overflow: 'hidden',
                 width: '100%',
                 maxWidth: '100%',
