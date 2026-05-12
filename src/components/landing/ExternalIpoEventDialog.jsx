@@ -1,7 +1,7 @@
 import {
   Dialog, DialogTitle, DialogContent, IconButton, Typography, Box, Divider, Paper, Button,
 } from '@mui/material';
-import { Close, InfoOutlined, OpenInNew } from '@mui/icons-material';
+import { Close, OpenInNew } from '@mui/icons-material';
 
 const LABELS = {
   corp_name: '기업명',
@@ -65,10 +65,6 @@ function ExternalIpoEventDialog({ open, onClose, event }) {
         <IconButton onClick={onClose} size="small"><Close /></IconButton>
       </DialogTitle>
       <DialogContent dividers sx={{ maxHeight: { xs: '80vh', sm: 560 }, overflow: 'auto' }}>
-        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mb: 1, color: 'text.secondary' }}>
-          <InfoOutlined fontSize="small" />
-          <Typography variant="caption">편집·삭제는 캘린더 일정과 별도입니다.</Typography>
-        </Box>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>{formatRange()}</Typography>
         <Divider sx={{ my: 1 }} />
           <Typography variant="overline" color="primary" sx={{ fontWeight: 700, letterSpacing: 0.5 }}>
