@@ -197,17 +197,23 @@ function DayAgendaDialog({
       </Dialog>
 
       {/* ── 레벨 2: 공모주/청약/실적 개별 목록 OR 매수신호 카테고리 목록 ── */}
-      <Dialog open={!!subType} onClose={handleSubClose} fullWidth maxWidth="sm" PaperProps={{ sx: { borderRadius: 2 } }}>
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {subInfo && (
-              <Chip label={subInfo.label} size="small" sx={{ bgcolor: subInfo.color, color: '#fff', fontWeight: 700 }} />
-            )}
-            <Typography variant="h6" component="span" fontWeight={700}>{subEvents.length}건</Typography>
+      <Dialog open={!!subType} onClose={handleSubClose} fullWidth maxWidth="xs" PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}>
+        {/* 컬러 헤더 */}
+        <Box sx={{ bgcolor: subInfo?.color || '#455a64', px: 2.5, pt: 2, pb: 1.75, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)', fontWeight: 600, letterSpacing: 0.5 }}>
+              {subInfo?.label}
+            </Typography>
+            <Typography variant="h6" fontWeight={700} sx={{ color: '#fff', lineHeight: 1.2 }}>
+              {subEvents.length}건
+            </Typography>
           </Box>
-          <IconButton onClick={handleSubClose} aria-label="닫기" size="small"><Close /></IconButton>
-        </DialogTitle>
-        <DialogContent dividers sx={{ pt: 2, pb: 2 }}>
+          <IconButton onClick={handleSubClose} size="small" aria-label="닫기"
+            sx={{ color: 'rgba(255,255,255,0.8)', '&:hover': { color: '#fff', bgcolor: 'rgba(255,255,255,0.15)' } }}>
+            <Close fontSize="small" />
+          </IconButton>
+        </Box>
+        <DialogContent sx={{ pt: 1.5, pb: 2, px: 1.5 }}>
           {subType === 'signal' ? (
             /* 매수신호: 카테고리별 요약 */
             <List disablePadding>
@@ -222,23 +228,23 @@ function DayAgendaDialog({
               ))}
             </List>
           ) : (
-            /* 공모주/청약/실적: 개별 종목 */
             subEvents.length === 0 ? (
-              <Typography color="text.secondary" sx={{ py: 1.5 }}>항목이 없습니다.</Typography>
+              <Typography color="text.secondary" sx={{ py: 1.5, px: 1 }}>항목이 없습니다.</Typography>
             ) : (
               <List disablePadding>
                 {subEvents.map((ev) => (
                   <ListItemButton
                     key={ev.id}
                     onClick={() => { handleSubClose(); onEventPick(ev); }}
-                    sx={{ borderRadius: 1, mb: 0.75, border: '1px solid', borderColor: 'divider', alignItems: 'flex-start', pl: 1, py: 1.25 }}
+                    sx={{ borderRadius: 1.5, mb: 0.5, alignItems: 'flex-start', pl: 1.25, py: 1.25,
+                      '&:hover': { bgcolor: 'action.hover' } }}
                   >
-                    <Box sx={{ width: 4, alignSelf: 'stretch', minHeight: 40, borderRadius: 1, bgcolor: subInfo?.color || '#1976d2', mr: 1.25, flexShrink: 0 }} />
+                    <Box sx={{ width: 3, alignSelf: 'stretch', minHeight: 36, borderRadius: 2, bgcolor: subInfo?.color || '#1976d2', mr: 1.5, flexShrink: 0 }} />
                     <ListItemText
                       primary={displayTitle(ev)}
                       secondary={formatEventSubtitle(ev)}
-                      primaryTypographyProps={{ fontWeight: 600, fontSize: '0.95rem' }}
-                      secondaryTypographyProps={{ fontSize: '0.8rem' }}
+                      primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
+                      secondaryTypographyProps={{ fontSize: '0.78rem', color: 'text.secondary' }}
                     />
                   </ListItemButton>
                 ))}
@@ -249,36 +255,52 @@ function DayAgendaDialog({
       </Dialog>
 
       {/* ── 레벨 3: 매수신호 카테고리 내 개별 종목 ── */}
-      <Dialog open={!!signalCategory} onClose={() => setSignalCategory(null)} fullWidth maxWidth="sm" PaperProps={{ sx: { borderRadius: 2 } }}>
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            {activeCatInfo && (
-              <Chip label={activeCatInfo.label} size="small" sx={{ bgcolor: activeCatInfo.color, color: '#fff', fontWeight: 700 }} />
-            )}
-            <Typography variant="h6" component="span" fontWeight={700}>{categoryEvents.length}건</Typography>
+      <Dialog open={!!signalCategory} onClose={() => setSignalCategory(null)} fullWidth maxWidth="xs" PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}>
+        {/* 컬러 헤더 */}
+        <Box sx={{ bgcolor: activeCatInfo?.color || '#e65100', px: 2.5, pt: 2, pb: 1.75, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Box>
+            <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.8)', fontWeight: 600, letterSpacing: 0.5 }}>
+              {activeCatInfo?.label}
+            </Typography>
+            <Typography variant="h6" fontWeight={700} sx={{ color: '#fff', lineHeight: 1.2 }}>
+              {categoryEvents.length}건
+            </Typography>
           </Box>
-          <IconButton onClick={() => setSignalCategory(null)} aria-label="닫기" size="small"><Close /></IconButton>
-        </DialogTitle>
-        <DialogContent dividers sx={{ pt: 2, pb: 2 }}>
+          <IconButton onClick={() => setSignalCategory(null)} size="small" aria-label="닫기"
+            sx={{ color: 'rgba(255,255,255,0.8)', '&:hover': { color: '#fff', bgcolor: 'rgba(255,255,255,0.15)' } }}>
+            <Close fontSize="small" />
+          </IconButton>
+        </Box>
+        <DialogContent sx={{ pt: 1.5, pb: 2, px: 1.5 }}>
           {categoryEvents.length === 0 ? (
-            <Typography color="text.secondary" sx={{ py: 1.5 }}>항목이 없습니다.</Typography>
+            <Typography color="text.secondary" sx={{ py: 1.5, px: 1 }}>항목이 없습니다.</Typography>
           ) : (
             <List disablePadding>
               {categoryEvents.map((ev) => {
                 const row = ev._signalRow;
+                const marketColor = row?.market === 'KOSPI' ? '#1565c0' : '#6a1b9a';
+                const marketBg   = row?.market === 'KOSPI' ? '#e3f2fd' : '#f3e5f5';
                 return (
                   <ListItemButton
                     key={ev.id}
                     onClick={() => { setSignalCategory(null); handleSubClose(); onEventPick(ev); }}
-                    sx={{ borderRadius: 1, mb: 0.75, border: '1px solid', borderColor: 'divider', alignItems: 'flex-start', pl: 1, py: 1.25 }}
+                    sx={{ borderRadius: 1.5, mb: 0.5, alignItems: 'center', pl: 1.25, pr: 1, py: 1.25,
+                      '&:hover': { bgcolor: 'action.hover' } }}
                   >
-                    <Box sx={{ width: 4, alignSelf: 'stretch', minHeight: 40, borderRadius: 1, bgcolor: activeCatInfo?.color || '#e65100', mr: 1.25, flexShrink: 0 }} />
-                    <ListItemText
-                      primary={row ? `${row.name || row.code}` : displayTitle(ev)}
-                      secondary={row ? `${row.signal_name || row.signal_type} · ${row.market || ''}` : ''}
-                      primaryTypographyProps={{ fontWeight: 600, fontSize: '0.95rem' }}
-                      secondaryTypographyProps={{ fontSize: '0.8rem' }}
-                    />
+                    <Box sx={{ width: 3, alignSelf: 'stretch', minHeight: 36, borderRadius: 2, bgcolor: activeCatInfo?.color || '#e65100', mr: 1.5, flexShrink: 0 }} />
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography fontWeight={700} fontSize="0.9rem" noWrap>
+                        {row?.name || row?.code || displayTitle(ev)}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary" noWrap>
+                        {row?.signal_name || row?.signal_type || ''}
+                      </Typography>
+                    </Box>
+                    {row?.market && (
+                      <Chip label={row.market} size="small"
+                        sx={{ ml: 1, height: 20, fontSize: '0.7rem', fontWeight: 700,
+                          bgcolor: marketBg, color: marketColor, flexShrink: 0 }} />
+                    )}
                   </ListItemButton>
                 );
               })}

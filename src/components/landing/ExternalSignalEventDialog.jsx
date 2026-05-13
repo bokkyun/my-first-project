@@ -1,33 +1,39 @@
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
   IconButton,
   Typography,
   Box,
   Chip,
-  Stack,
+  Divider,
 } from '@mui/material';
-import { Close } from '@mui/icons-material';
+import { Close, TrendingUp, Speed, BarChart } from '@mui/icons-material';
 
-function categoryColor(category) {
-  if (category === '추세') return 'primary';
-  if (category === '모멘텀') return 'success';
-  if (category === '볼린저') return 'secondary';
-  return 'default';
-}
+const CATEGORY_CONFIG = {
+  추세:   { color: '#1565c0', bg: '#e3f2fd', icon: TrendingUp, label: '추세지표' },
+  모멘텀: { color: '#2e7d32', bg: '#e8f5e9', icon: Speed,     label: '모멘텀지표' },
+  볼린저: { color: '#6a1b9a', bg: '#f3e5f5', icon: BarChart,  label: '볼린저밴드' },
+};
 
-function formatAt(startsAt) {
+const SIGNAL_DESC = {
+  MACD_GOLDEN_CROSS:     'MACD선이 시그널선을 상향 돌파 — 매수 모멘텀 발생',
+  MA_GOLDEN_CROSS:       '5일 이동평균이 20일선을 상향 돌파 — 단기 추세 전환',
+  PRICE_ABOVE_MA20:      '주가가 20일 이동평균선 위로 올라섬 — 중기 추세 회복',
+  MA_ALIGNMENT:          '단기·중기·장기 이동평균 정배열 성립 — 강한 상승 추세',
+  RSI_OVERSOLD_EXIT:     'RSI가 과매도 구간(30 이하)에서 회복 — 반등 신호',
+  RSI_50_CROSS:          'RSI가 중립선(50)을 상향 돌파 — 상승 추세 진입',
+  STOCH_GOLDEN_CROSS:    '스토캐스틱 %K선이 %D선 상향 돌파 — 매수 신호',
+  CCI_MINUS100_CROSS:    'CCI가 -100선 상향 돌파 — 과매도 탈출 반등',
+  BOLL_LOWER_BOUNCE:     '볼린저 하단 밴드에서 주가 반등 — 지지선 확인',
+  BOLL_SQUEEZE_BREAKOUT: '밴드 수축 후 상단 돌파 — 강한 추세 시작 예고',
+  BOLL_MIDLINE_RECOVERY: '볼린저 중심선(20일 MA) 회복 — 추세 정상화',
+};
+
+function formatDate(startsAt) {
   if (!startsAt) return '-';
   const d = new Date(startsAt);
   if (Number.isNaN(d.getTime())) return startsAt;
-  return d.toLocaleString('ko-KR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return d.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' });
 }
 
 /**
@@ -37,37 +43,104 @@ function ExternalSignalEventDialog({ open, onClose, event }) {
   const row = event?._signalRow;
   if (!row) return null;
 
+  const cfg = CATEGORY_CONFIG[row.signal_category] || {
+    color: '#455a64', bg: '#eceff1', icon: BarChart, label: '시그널',
+  };
+  const CategoryIcon = cfg.icon;
+  const desc = SIGNAL_DESC[row.signal_type] || '';
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
-      <DialogTitle sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 1, pb: 1 }}>
-        <Box sx={{ minWidth: 0, flex: 1 }}>
-          <Typography fontWeight={700} sx={{ pr: 1 }}>
-            {row.name || row.code} - {row.signal_name || row.signal_type}
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            {formatAt(event?.starts_at)} (16:00 신호 캘린더)
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="xs"
+      fullWidth
+      PaperProps={{ sx: { borderRadius: 3, overflow: 'hidden' } }}
+    >
+      {/* 컬러 헤더 */}
+      <Box sx={{ bgcolor: cfg.color, px: 2.5, pt: 2.5, pb: 2, position: 'relative' }}>
+        <IconButton
+          onClick={onClose}
+          size="small"
+          aria-label="닫기"
+          sx={{ position: 'absolute', top: 10, right: 10, color: 'rgba(255,255,255,0.8)', '&:hover': { color: '#fff', bgcolor: 'rgba(255,255,255,0.15)' } }}
+        >
+          <Close fontSize="small" />
+        </IconButton>
+
+        {/* 카테고리 뱃지 */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75, mb: 1.5 }}>
+          <Box sx={{ bgcolor: 'rgba(255,255,255,0.2)', borderRadius: '50%', p: 0.5, display: 'flex' }}>
+            <CategoryIcon sx={{ color: '#fff', fontSize: 16 }} />
+          </Box>
+          <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.9)', fontWeight: 600, letterSpacing: 0.5 }}>
+            {cfg.label}
           </Typography>
         </Box>
-        <IconButton onClick={onClose} size="small" aria-label="닫기">
-          <Close />
-        </IconButton>
-      </DialogTitle>
-      <DialogContent dividers>
-        <Stack spacing={1.25}>
-          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-            <Chip label={row.signal_category || '시그널'} color={categoryColor(row.signal_category)} size="small" />
-            <Chip label={row.market || '시장미상'} variant="outlined" size="small" />
+
+        {/* 종목명 */}
+        <Typography variant="h6" fontWeight={700} sx={{ color: '#fff', lineHeight: 1.2, mb: 0.5, pr: 3 }}>
+          {row.name || row.code}
+        </Typography>
+
+        {/* 신호명 */}
+        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)', fontWeight: 500 }}>
+          {row.signal_name || row.signal_type}
+        </Typography>
+      </Box>
+
+      <DialogContent sx={{ p: 0 }}>
+        {/* 신호 설명 */}
+        {desc && (
+          <Box sx={{ px: 2.5, py: 2, bgcolor: cfg.bg }}>
+            <Typography variant="body2" sx={{ color: cfg.color, fontWeight: 500, lineHeight: 1.6 }}>
+              {desc}
+            </Typography>
           </Box>
-          <Typography variant="body2"><strong>종목코드:</strong> {row.code || '-'}</Typography>
-          <Typography variant="body2"><strong>종목명:</strong> {row.name || '-'}</Typography>
-          <Typography variant="body2"><strong>신호유형:</strong> {row.signal_type || '-'}</Typography>
-          <Typography variant="body2"><strong>신호명:</strong> {row.signal_name || '-'}</Typography>
-          <Typography variant="caption" color="text.secondary">
-            이 항목은 자동 스캐너가 저장한 기술적 지표 신호입니다. 사용자 일정 수정/삭제 대상은 아닙니다.
+        )}
+
+        <Divider />
+
+        {/* 종목 정보 */}
+        <Box sx={{ px: 2.5, py: 2, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          <InfoRow label="종목코드" value={row.code || '-'} />
+          <InfoRow label="시장" value={
+            <Chip
+              label={row.market || '시장미상'}
+              size="small"
+              sx={{ height: 22, fontSize: '0.75rem', fontWeight: 600,
+                bgcolor: row.market === 'KOSPI' ? '#e3f2fd' : '#f3e5f5',
+                color: row.market === 'KOSPI' ? '#1565c0' : '#6a1b9a' }}
+            />
+          } />
+          <InfoRow label="발생일" value={formatDate(event?.starts_at)} />
+        </Box>
+
+        <Divider />
+
+        {/* 면책 안내 */}
+        <Box sx={{ px: 2.5, py: 1.5 }}>
+          <Typography variant="caption" color="text.disabled" sx={{ lineHeight: 1.5 }}>
+            자동 스캐너가 감지한 기술적 지표 신호입니다. 투자 판단의 참고 자료로만 활용하세요.
           </Typography>
-        </Stack>
+        </Box>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function InfoRow({ label, value }) {
+  return (
+    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ flexShrink: 0 }}>
+        {label}
+      </Typography>
+      {typeof value === 'string' ? (
+        <Typography variant="body2" fontWeight={600} sx={{ textAlign: 'right' }}>
+          {value}
+        </Typography>
+      ) : value}
+    </Box>
   );
 }
 
