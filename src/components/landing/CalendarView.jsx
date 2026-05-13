@@ -65,76 +65,155 @@ function CalendarView({
     if (!root) return undefined;
 
     const harness = root.querySelector('.fc-view-harness');
+    const monthView = root.querySelector('.fc-dayGridMonth-view');
     const scrollGrid = root.querySelector('.fc-dayGridMonth-view .fc-scrollgrid');
-    if (!harness || !scrollGrid) return undefined;
+    if (!harness || !monthView || !scrollGrid) return undefined;
 
-    const colWidth = () => harness.clientWidth / 5;
+    const clearCellMinWidths = () => {
+      monthView.querySelectorAll('.fc-col-header-cell, .fc-daygrid-day').forEach((cell) => {
+        cell.style.minWidth = '';
+      });
+      monthView.querySelectorAll('table.fc-scrollgrid-sync-table').forEach((t) => {
+        t.style.minWidth = '';
+      });
+      scrollGrid.style.minWidth = '';
+    };
 
-    /** 스냅 위치: [일 쪽, 월~금, 토 쪽] (일~토 7칸 중 5칸 창) */
-    const snapXs = () => {
-      const c = colWidth();
-      const max = Math.max(0, harness.scrollWidth - harness.clientWidth);
+    /** 테이블만 넓혀도 FC가 100%로 줄이는 경우가 있어, 각 요일 칸(th/td)에 최소 너비를 줘 7×(뷰/5) > 뷰 가로 스크롤을 만든다 */
+    const applyColumnMinWidths = (cellMinPx) => {
+      if (cellMinPx <= 0) return;
+      monthView.querySelectorAll('.fc-col-header-cell, .fc-daygrid-day').forEach((cell) => {
+        cell.style.minWidth = `${cellMinPx}px`;
+      });
+      const totalMin = `${(cellMinPx * 7).toFixed(2)}px`;
+      scrollGrid.style.minWidth = totalMin;
+      monthView.querySelectorAll('table.fc-scrollgrid-sync-table').forEach((t) => {
+        t.style.minWidth = totalMin;
+      });
+    };
+
+    /** 가로 스크롤이 실제로 일어나는 요소(fc-scroller 등). scroll은 버블하지 않으므로 반드시 이 노드에 리스너를 단다 */
+    const findHorizontalScrollHost = () => {
+      let bestOverflow = null;
+      let bestOverflowDelta = 0;
+      let bestAny = null;
+      let bestAnyDelta = 0;
+      monthView.querySelectorAll('*').forEach((el) => {
+        const delta = el.scrollWidth - el.clientWidth;
+        if (delta <= 6) return;
+        if (delta > bestAnyDelta) {
+          const t = el.tagName;
+          if (!['TD', 'TH', 'TR', 'TABLE', 'TBODY', 'THEAD', 'TFOOT', 'COL', 'COLGROUP'].includes(t)) {
+            bestAnyDelta = delta;
+            bestAny = el;
+          }
+        }
+        const { overflowX } = getComputedStyle(el);
+        if (overflowX === 'auto' || overflowX === 'scroll') {
+          if (delta > bestOverflowDelta) {
+            bestOverflowDelta = delta;
+            bestOverflow = el;
+          }
+        }
+      });
+      if (bestOverflow) return bestOverflow;
+      if (bestAny) return bestAny;
+      if (harness.scrollWidth - harness.clientWidth > 6) return harness;
+      return null;
+    };
+
+    const colWidth = (host) => host.clientWidth / 5;
+
+    const snapXs = (host) => {
+      const c = colWidth(host);
+      const max = Math.max(0, host.scrollWidth - host.clientWidth);
       return [0, c, Math.min(2 * c, max)];
     };
 
-    const snapToNearest = (smooth) => {
-      const snaps = snapXs();
-      const x = harness.scrollLeft;
+    const snapToNearest = (host, smooth) => {
+      const snaps = snapXs(host);
+      const x = host.scrollLeft;
       const nearest = snaps.reduce(
         (best, s) => (Math.abs(x - s) < Math.abs(x - best) ? s : best),
         snaps[1],
       );
       if (Math.abs(x - nearest) > 3) {
-        harness.scrollTo({ left: nearest, behavior: smooth ? 'smooth' : 'instant' });
+        host.scrollTo({ left: nearest, behavior: smooth ? 'smooth' : 'instant' });
       }
     };
 
+    let scrollHost = null;
+    let attachedHost = null;
+
+    const detachScrollListeners = () => {
+      if (!attachedHost) return;
+      attachedHost.removeEventListener('scrollend', onScrollEnd);
+      attachedHost.removeEventListener('scroll', scheduleIdleSnap);
+      attachedHost.removeEventListener('touchend', scheduleIdleSnap);
+      attachedHost = null;
+    };
+
+    const bindScrollHost = () => {
+      scrollHost = findHorizontalScrollHost();
+      return !!scrollHost;
+    };
+
+    let idleSnapTimer;
+    const scheduleIdleSnap = () => {
+      if (!scrollHost) return;
+      clearTimeout(idleSnapTimer);
+      idleSnapTimer = setTimeout(() => snapToNearest(scrollHost, true), 160);
+    };
+
+    const onScrollEnd = () => {
+      if (!scrollHost) return;
+      clearTimeout(idleSnapTimer);
+      snapToNearest(scrollHost, true);
+    };
+
+    const attachScrollListeners = () => {
+      detachScrollListeners();
+      if (!scrollHost) return;
+      scrollHost.addEventListener('scrollend', onScrollEnd);
+      scrollHost.addEventListener('scroll', scheduleIdleSnap, { passive: true });
+      scrollHost.addEventListener('touchend', scheduleIdleSnap, { passive: true });
+      attachedHost = scrollHost;
+    };
+
     /** resetToWeekdays: 달 이동 직후 가운데(월~금)에서 시작 */
-    const applyMinWidth = (resetToWeekdays) => {
+    const applyLayout = (resetToWeekdays) => {
       requestAnimationFrame(() => {
-        const w = harness.clientWidth;
-        if (w <= 0) return;
-        scrollGrid.style.minWidth = `${(w * 7) / 5}px`;
+        const refW = monthView.clientWidth || harness.clientWidth;
+        if (refW <= 0) return;
+        const cellMin = refW / 5;
+        applyColumnMinWidths(cellMin);
         requestAnimationFrame(() => {
-          if (resetToWeekdays) {
-            harness.scrollLeft = colWidth();
-          } else {
-            snapToNearest(false);
-          }
+          requestAnimationFrame(() => {
+            if (!bindScrollHost()) return;
+            if (resetToWeekdays) {
+              scrollHost.scrollLeft = colWidth(scrollHost);
+            } else {
+              snapToNearest(scrollHost, false);
+            }
+            attachScrollListeners();
+          });
         });
       });
     };
 
-    applyMinWidth(true);
-
-    let idleSnapTimer;
-    const scheduleIdleSnap = () => {
-      clearTimeout(idleSnapTimer);
-      idleSnapTimer = setTimeout(() => snapToNearest(true), 160);
-    };
-
-    const onScrollEnd = () => {
-      clearTimeout(idleSnapTimer);
-      snapToNearest(true);
-    };
-
-    harness.addEventListener('scrollend', onScrollEnd);
-    harness.addEventListener('scroll', scheduleIdleSnap, { passive: true });
-    harness.addEventListener('touchend', scheduleIdleSnap, { passive: true });
+    applyLayout(true);
 
     const ro = new ResizeObserver(() => {
-      applyMinWidth(false);
+      applyLayout(false);
     });
-    ro.observe(harness);
+    ro.observe(monthView);
 
     return () => {
       ro.disconnect();
       clearTimeout(idleSnapTimer);
-      harness.removeEventListener('scrollend', onScrollEnd);
-      harness.removeEventListener('scroll', scheduleIdleSnap);
-      harness.removeEventListener('touchend', scheduleIdleSnap);
-      scrollGrid.style.minWidth = '';
-      harness.scrollLeft = 0;
+      detachScrollListeners();
+      clearCellMinWidths();
+      if (scrollHost) scrollHost.scrollLeft = 0;
     };
   }, [monthWeekdaySwipe, monthSwipeKey]);
 
