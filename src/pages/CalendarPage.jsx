@@ -15,6 +15,7 @@ import { useDartIpoEvents } from '../hooks/useDartIpoEvents';
 import { useDartPeriodicReports } from '../hooks/useDartPeriodicReports';
 import { useFredEconomicEvents } from '../hooks/useFredEconomicEvents';
 import { useBokEconomicEvents } from '../hooks/useBokEconomicEvents';
+import { useSignalEvents } from '../hooks/useSignalEvents';
 import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar';
 import CalendarView from '../components/landing/CalendarView';
@@ -23,6 +24,7 @@ import EventDetailDialog from '../components/landing/EventDetailDialog';
 import ExternalAptEventDialog from '../components/landing/ExternalAptEventDialog';
 import ExternalIpoEventDialog from '../components/landing/ExternalIpoEventDialog';
 import ExternalFredEventDialog from '../components/landing/ExternalFredEventDialog';
+import ExternalSignalEventDialog from '../components/landing/ExternalSignalEventDialog';
 import DayAgendaDialog from '../components/landing/DayAgendaDialog';
 import MyEventSearchDialog from '../components/landing/MyEventSearchDialog';
 import SubwayScheduleBar from '../components/common/SubwayScheduleBar';
@@ -36,13 +38,32 @@ const DEFAULT_SIDEBAR_FILTERS = {
   showDartPeriodic: true,
   showFred: true,
   showBok: true,
+  showBuySignals: true,
+  signalTypeFilters: {
+    MACD_GOLDEN_CROSS: true,
+    MA_GOLDEN_CROSS: true,
+    PRICE_ABOVE_MA20: true,
+    MA_ALIGNMENT: true,
+    RSI_OVERSOLD_EXIT: true,
+    RSI_50_CROSS: true,
+    STOCH_GOLDEN_CROSS: true,
+    CCI_MINUS100_CROSS: true,
+    BOLL_LOWER_BOUNCE: true,
+    BOLL_SQUEEZE_BREAKOUT: true,
+    BOLL_MIDLINE_RECOVERY: true,
+  },
   showAllGroups: true,
 };
 
 function normalizeSidebarFilters(value) {
+  const signalTypeFilters = {
+    ...DEFAULT_SIDEBAR_FILTERS.signalTypeFilters,
+    ...((value && value.signalTypeFilters) || {}),
+  };
   return {
     ...DEFAULT_SIDEBAR_FILTERS,
     ...(value && typeof value === 'object' ? value : {}),
+    signalTypeFilters,
   };
 }
 
@@ -101,6 +122,8 @@ function CalendarPage() {
   const [showDartPeriodic, setShowDartPeriodic] = useState(() => readSidebarDefaultFilters().showDartPeriodic);
   const [showFred, setShowFred] = useState(() => readSidebarDefaultFilters().showFred);
   const [showBok, setShowBok] = useState(() => readSidebarDefaultFilters().showBok);
+  const [showBuySignals, setShowBuySignals] = useState(() => readSidebarDefaultFilters().showBuySignals);
+  const [signalTypeFilters, setSignalTypeFilters] = useState(() => readSidebarDefaultFilters().signalTypeFilters);
   const [viewRange, setViewRange] = useState(() => {
     const now = new Date();
     return {
@@ -124,6 +147,8 @@ function CalendarPage() {
   const [selectedIpoEvent, setSelectedIpoEvent] = useState(null);
   const [fredDetailOpen, setFredDetailOpen] = useState(false);
   const [selectedFredEvent, setSelectedFredEvent] = useState(null);
+  const [signalDetailOpen, setSignalDetailOpen] = useState(false);
+  const [selectedSignalEvent, setSelectedSignalEvent] = useState(null);
   /** 모바일 사이드바 */
   const [sidebarOpen, setSidebarOpen] = useState(false);
   /** 다이얼로그·시트 — selectedDate 는 dayEventsForSheet 보다 먼저 선언해야 함 */
@@ -153,6 +178,13 @@ function CalendarPage() {
     loading: bokLoading,
     error: bokError,
   } = useBokEconomicEvents(showBok, viewRange);
+  const enabledSignalTypes = useMemo(
+    () => Object.entries(signalTypeFilters)
+      .filter(([, checked]) => checked)
+      .map(([signalType]) => signalType),
+    [signalTypeFilters]
+  );
+  const { events: signalEvents, error: signalError } = useSignalEvents(showBuySignals, viewRange, enabledSignalTypes);
 
   const calendarEvents = useMemo(() => {
     const list = [...events];
@@ -161,8 +193,9 @@ function CalendarPage() {
     if (showDartPeriodic) list.push(...dartPeriodicList);
     if (showFred) list.push(...fredCalendarEvents);
     if (showBok) list.push(...bokCalendarEvents);
+    list.push(...signalEvents);
     return list;
-  }, [events, aptSplyList, showAptSply, ipoList, showIpo, dartPeriodicList, showDartPeriodic, showFred, fredCalendarEvents, showBok, bokCalendarEvents]);
+  }, [events, aptSplyList, showAptSply, ipoList, showIpo, dartPeriodicList, showDartPeriodic, showFred, fredCalendarEvents, showBok, bokCalendarEvents, signalEvents]);
 
   /** 표시 중인 뷰 구간에 속하는 일정만(월 뷰에서는 해당 월만, 전·익월 칸 제외) + 공모주·청약·실적은 날짜별 요약 */
   const calendarEventsForGrid = useMemo(() => {
@@ -252,6 +285,8 @@ function CalendarPage() {
     setShowDartPeriodic(normalized.showDartPeriodic);
     setShowFred(normalized.showFred);
     setShowBok(normalized.showBok);
+    setShowBuySignals(normalized.showBuySignals);
+    setSignalTypeFilters(normalized.signalTypeFilters);
     setVisibleGroupIds(normalized.showAllGroups ? groups.map((g) => g.id) : []);
     setSnack({ open: true, msg: '메뉴 기본 체크 설정을 저장했습니다.', severity: 'success' });
   }, [groups]);
@@ -301,6 +336,11 @@ function CalendarPage() {
     if (ev._external === 'fred' || ev._external === 'bok') {
       setSelectedFredEvent(ev);
       setFredDetailOpen(true);
+      return;
+    }
+    if (ev._external === 'signal') {
+      setSelectedSignalEvent(ev);
+      setSignalDetailOpen(true);
       return;
     }
     setSelectedEvent(ev);
@@ -382,6 +422,12 @@ function CalendarPage() {
       setSnack({ open: true, msg: `한국은행 일정: ${bokError}`, severity: 'error' });
     }
   }, [showBok, bokError]);
+
+  useEffect(() => {
+    if (signalError) {
+      setSnack({ open: true, msg: `시그널 일정: ${signalError}`, severity: 'error' });
+    }
+  }, [signalError]);
 
   const handleFredSync = useCallback(async () => {
     if (!user?.id) {
@@ -482,6 +528,10 @@ function CalendarPage() {
           onShowFredChange={setShowFred}
           showBok={showBok}
           onShowBokChange={setShowBok}
+          showBuySignals={showBuySignals}
+          onShowBuySignalsChange={setShowBuySignals}
+          signalTypeFilters={signalTypeFilters}
+          onSignalTypeFiltersChange={setSignalTypeFilters}
           defaultFilters={sidebarDefaultFilters}
           onDefaultFiltersSave={handleSaveSidebarDefaultFilters}
           mobileOpen={sidebarOpen}
@@ -594,6 +644,11 @@ function CalendarPage() {
         open={fredDetailOpen}
         onClose={() => { setFredDetailOpen(false); setSelectedFredEvent(null); }}
         event={selectedFredEvent}
+      />
+      <ExternalSignalEventDialog
+        open={signalDetailOpen}
+        onClose={() => { setSignalDetailOpen(false); setSelectedSignalEvent(null); }}
+        event={selectedSignalEvent}
       />
 
       <EventDetailDialog

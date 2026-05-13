@@ -17,6 +17,20 @@ const DEFAULT_FILTER_SETTINGS = {
   showDartPeriodic: true,
   showFred: true,
   showBok: true,
+  showBuySignals: true,
+  signalTypeFilters: {
+    MACD_GOLDEN_CROSS: true,
+    MA_GOLDEN_CROSS: true,
+    PRICE_ABOVE_MA20: true,
+    MA_ALIGNMENT: true,
+    RSI_OVERSOLD_EXIT: true,
+    RSI_50_CROSS: true,
+    STOCH_GOLDEN_CROSS: true,
+    CCI_MINUS100_CROSS: true,
+    BOLL_LOWER_BOUNCE: true,
+    BOLL_SQUEEZE_BREAKOUT: true,
+    BOLL_MIDLINE_RECOVERY: true,
+  },
   showAllGroups: true,
 };
 
@@ -71,6 +85,10 @@ function Sidebar({
   onShowFredChange,
   showBok = true,
   onShowBokChange,
+  showBuySignals = true,
+  onShowBuySignalsChange,
+  signalTypeFilters = DEFAULT_FILTER_SETTINGS.signalTypeFilters,
+  onSignalTypeFiltersChange,
   defaultFilters = DEFAULT_FILTER_SETTINGS,
   onDefaultFiltersSave,
   mobileOpen = false,
@@ -89,6 +107,8 @@ function Sidebar({
   const [infoGroup, setInfoGroup] = useState(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsDraft, setSettingsDraft] = useState(defaultFilters);
+  const [signalSettingsOpen, setSignalSettingsOpen] = useState(false);
+  const [signalSettingsDraft, setSignalSettingsDraft] = useState(signalTypeFilters);
 
   const allChecked = groups.length > 0 && visibleGroupIds.length === groups.length;
   const someChecked = visibleGroupIds.length > 0 && visibleGroupIds.length < groups.length;
@@ -96,6 +116,14 @@ function Sidebar({
   const openSettings = () => {
     setSettingsDraft({ ...DEFAULT_FILTER_SETTINGS, ...defaultFilters });
     setSettingsOpen(true);
+  };
+
+  const openSignalSettings = () => {
+    setSignalSettingsDraft({
+      ...DEFAULT_FILTER_SETTINGS.signalTypeFilters,
+      ...signalTypeFilters,
+    });
+    setSignalSettingsOpen(true);
   };
 
   const updateSettingsDraft = (key, checked) => {
@@ -114,6 +142,39 @@ function Sidebar({
   /** 상단: 외부 일정 토글 — 내 일정만은 「새 그룹 생성」과 「내 그룹」·「전체」 사이 */
   const topFilterCheckboxes = (
     <>
+      {onShowBuySignalsChange && (
+        <ListItem
+          disablePadding
+          sx={{ mb: 0.25, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+        >
+          <FormControlLabel
+            sx={{ alignItems: 'center', m: 0, flex: 1, minWidth: 0 }}
+            control={(
+              <Checkbox
+                checked={showBuySignals}
+                onChange={(e) => onShowBuySignalsChange(e.target.checked)}
+                size="small"
+                sx={{ py: 0.25 }}
+              />
+            )}
+            label={(
+              <Typography variant="body2" fontWeight={600}>매수시그널종목</Typography>
+            )}
+          />
+          <Tooltip title="매수 시그널 항목 설정">
+            <span>
+              <IconButton
+                size="small"
+                onClick={openSignalSettings}
+                aria-label="매수 시그널 설정"
+                sx={{ ml: 0.5 }}
+              >
+                <Settings sx={{ fontSize: 17 }} />
+              </IconButton>
+            </span>
+          </Tooltip>
+        </ListItem>
+      )}
       {onShowAptSplyChange && (
         <ListItem disablePadding sx={{ mb: 0.25 }}>
           <FormControlLabel
@@ -424,6 +485,12 @@ function Sidebar({
           <List dense disablePadding>
             <ListItem disablePadding>
               <FormControlLabel
+                control={<Checkbox checked={settingsDraft.showBuySignals} onChange={(e) => updateSettingsDraft('showBuySignals', e.target.checked)} size="small" />}
+                label={<Typography variant="body2">매수시그널종목</Typography>}
+              />
+            </ListItem>
+            <ListItem disablePadding>
+              <FormControlLabel
                 control={<Checkbox checked={settingsDraft.showAptSply} onChange={(e) => updateSettingsDraft('showAptSply', e.target.checked)} size="small" />}
                 label={<Typography variant="body2">아파트 청약·분양</Typography>}
               />
@@ -483,6 +550,67 @@ function Sidebar({
           <Box sx={{ flex: 1 }} />
           <Button onClick={() => setSettingsOpen(false)} color="inherit" size="small">취소</Button>
           <Button onClick={saveSettings} variant="contained" size="small">저장</Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog
+        open={signalSettingsOpen}
+        onClose={() => setSignalSettingsOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{ sx: { borderRadius: 2 } }}
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          <Typography fontWeight={700}>매수 시그널 설정</Typography>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.5 }}>1. 추세지표</Typography>
+          <List dense disablePadding sx={{ mb: 1 }}>
+            <ListItem disablePadding><FormControlLabel control={<Checkbox checked={!!signalSettingsDraft.MACD_GOLDEN_CROSS} onChange={(e) => setSignalSettingsDraft((p) => ({ ...p, MACD_GOLDEN_CROSS: e.target.checked }))} size="small" />} label={<Typography variant="body2">1) MACD골든크로스</Typography>} /></ListItem>
+            <ListItem disablePadding><FormControlLabel control={<Checkbox checked={!!signalSettingsDraft.MA_GOLDEN_CROSS} onChange={(e) => setSignalSettingsDraft((p) => ({ ...p, MA_GOLDEN_CROSS: e.target.checked }))} size="small" />} label={<Typography variant="body2">2) 단기 이평선골든크로스</Typography>} /></ListItem>
+            <ListItem disablePadding><FormControlLabel control={<Checkbox checked={!!signalSettingsDraft.PRICE_ABOVE_MA20} onChange={(e) => setSignalSettingsDraft((p) => ({ ...p, PRICE_ABOVE_MA20: e.target.checked }))} size="small" />} label={<Typography variant="body2">3) 주가 이평선돌파</Typography>} /></ListItem>
+            <ListItem disablePadding><FormControlLabel control={<Checkbox checked={!!signalSettingsDraft.MA_ALIGNMENT} onChange={(e) => setSignalSettingsDraft((p) => ({ ...p, MA_ALIGNMENT: e.target.checked }))} size="small" />} label={<Typography variant="body2">4) 정배열진입</Typography>} /></ListItem>
+          </List>
+          <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.5 }}>2. 모멘텀지표</Typography>
+          <List dense disablePadding sx={{ mb: 1 }}>
+            <ListItem disablePadding><FormControlLabel control={<Checkbox checked={!!signalSettingsDraft.RSI_OVERSOLD_EXIT} onChange={(e) => setSignalSettingsDraft((p) => ({ ...p, RSI_OVERSOLD_EXIT: e.target.checked }))} size="small" />} label={<Typography variant="body2">1) RSI과매도 이탈</Typography>} /></ListItem>
+            <ListItem disablePadding><FormControlLabel control={<Checkbox checked={!!signalSettingsDraft.RSI_50_CROSS} onChange={(e) => setSignalSettingsDraft((p) => ({ ...p, RSI_50_CROSS: e.target.checked }))} size="small" />} label={<Typography variant="body2">2) RSI 50선 돌파</Typography>} /></ListItem>
+            <ListItem disablePadding><FormControlLabel control={<Checkbox checked={!!signalSettingsDraft.STOCH_GOLDEN_CROSS} onChange={(e) => setSignalSettingsDraft((p) => ({ ...p, STOCH_GOLDEN_CROSS: e.target.checked }))} size="small" />} label={<Typography variant="body2">3) 스토캐스틱 골든크로스</Typography>} /></ListItem>
+            <ListItem disablePadding><FormControlLabel control={<Checkbox checked={!!signalSettingsDraft.CCI_MINUS100_CROSS} onChange={(e) => setSignalSettingsDraft((p) => ({ ...p, CCI_MINUS100_CROSS: e.target.checked }))} size="small" />} label={<Typography variant="body2">4) CCI -100선 돌파</Typography>} /></ListItem>
+          </List>
+          <Typography variant="subtitle2" fontWeight={700} sx={{ mb: 0.5 }}>3. 볼리저밴드</Typography>
+          <List dense disablePadding>
+            <ListItem disablePadding><FormControlLabel control={<Checkbox checked={!!signalSettingsDraft.BOLL_LOWER_BOUNCE} onChange={(e) => setSignalSettingsDraft((p) => ({ ...p, BOLL_LOWER_BOUNCE: e.target.checked }))} size="small" />} label={<Typography variant="body2">1) 하단 밴드 반등</Typography>} /></ListItem>
+            <ListItem disablePadding><FormControlLabel control={<Checkbox checked={!!signalSettingsDraft.BOLL_SQUEEZE_BREAKOUT} onChange={(e) => setSignalSettingsDraft((p) => ({ ...p, BOLL_SQUEEZE_BREAKOUT: e.target.checked }))} size="small" />} label={<Typography variant="body2">2) 밴드폭 수축 후 돌파</Typography>} /></ListItem>
+            <ListItem disablePadding><FormControlLabel control={<Checkbox checked={!!signalSettingsDraft.BOLL_MIDLINE_RECOVERY} onChange={(e) => setSignalSettingsDraft((p) => ({ ...p, BOLL_MIDLINE_RECOVERY: e.target.checked }))} size="small" />} label={<Typography variant="body2">3) 중심선 회복</Typography>} /></ListItem>
+          </List>
+        </DialogContent>
+        <DialogActions sx={{ px: 2, py: 1.5 }}>
+          <Button
+            onClick={() => setSignalSettingsDraft({ ...DEFAULT_FILTER_SETTINGS.signalTypeFilters })}
+            color="inherit"
+            size="small"
+          >
+            전체선택
+          </Button>
+          <Button
+            onClick={() => setSignalSettingsDraft(Object.fromEntries(Object.keys(DEFAULT_FILTER_SETTINGS.signalTypeFilters).map((k) => [k, false])))}
+            color="inherit"
+            size="small"
+          >
+            전체해제
+          </Button>
+          <Box sx={{ flex: 1 }} />
+          <Button onClick={() => setSignalSettingsOpen(false)} color="inherit" size="small">취소</Button>
+          <Button
+            onClick={() => {
+              if (onSignalTypeFiltersChange) onSignalTypeFiltersChange(signalSettingsDraft);
+              setSignalSettingsOpen(false);
+            }}
+            variant="contained"
+            size="small"
+          >
+            적용
+          </Button>
         </DialogActions>
       </Dialog>
     </>
