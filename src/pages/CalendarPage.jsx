@@ -211,6 +211,7 @@ function CalendarPage() {
       if (ext === 'ipo') typeKey = 'ipo';
       else if (ext === 'dart-report') typeKey = 'dart';
       else if (ext === 'reb-apt' || ext === 'reb-odcloud') typeKey = 'apt';
+      else if (ext === 'signal') typeKey = 'signal';
       else { kept.push(ev); continue; }
 
       const d = new Date(ev.starts_at);
@@ -220,9 +221,9 @@ function CalendarPage() {
       summaryBuckets[key].events.push(ev);
     }
 
-    const COLOR_MAP = { ipo: '#1b5e20', dart: '#0d47a1', apt: '#0d47a1' };
-    const LABEL_MAP = { ipo: '공모', dart: '실적', apt: '청약' };
-    const EXT_MAP = { ipo: 'summary-ipo', dart: 'summary-dart', apt: 'summary-apt' };
+    const COLOR_MAP = { ipo: '#1b5e20', dart: '#0d47a1', apt: '#0d47a1', signal: '#e65100' };
+    const LABEL_MAP = { ipo: '공모', dart: '실적', apt: '청약', signal: '매수신호' };
+    const EXT_MAP = { ipo: 'summary-ipo', dart: 'summary-dart', apt: 'summary-apt', signal: 'summary-signal' };
 
     const summaries = Object.values(summaryBuckets).map(({ type, date, events: evts }) => ({
       id: `summary-${type}-${date}`,
