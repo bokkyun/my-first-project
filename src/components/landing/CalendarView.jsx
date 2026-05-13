@@ -1,4 +1,6 @@
-import { useRef, useCallback } from 'react';
+import {
+  useRef, useCallback, useLayoutEffect, useState,
+} from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -7,7 +9,7 @@ import { Box, useMediaQuery, useTheme } from '@mui/material';
 import { isCoffeeEvent } from '../../utils/eventCoffee';
 import { eventPassesSidebarCalendarFilters } from '../../utils/calendarEventFilters';
 
-/** 공모주(ipo) 칸: 4글자 초과 시 앞 4글자 + … (유니코드 글자 단위, 한 줄 고정) */
+/** 공모주(ipo) 등 데스크톱 월간 칸: 4글자 초과 시 앞 4글자 + … (모바일은 칸 너비 CSS 말줄임 사용) */
 function truncateIpoCalendarTitle(title) {
   const s = String(title ?? '').trim();
   if (!s) return s;
@@ -45,6 +47,49 @@ function CalendarView({
   const calendarRef = useRef(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  /** 모바일 월간: 좌우 스와이프(가로 스크롤)용 — datesSet 마다 재계산 */
+  const [monthSwipeKey, setMonthSwipeKey] = useState('');
+  const [activeViewType, setActiveViewType] = useState('dayGridMonth');
+
+  /**
+   * 모바일 월간만 일~토 순(일요일 첫 칸). 기본 가로 스크롤을 한 칸 밀어 월~금이 보이게 함.
+   * 데스크톱은 로케일 기본 요일 시작 유지.
+   */
+  const monthWeekdaySwipe = isMobile && activeViewType === 'dayGridMonth';
+
+  useLayoutEffect(() => {
+    if (!monthWeekdaySwipe) return undefined;
+
+    const api = calendarRef.current?.getApi?.();
+    const root = api?.getEl?.();
+    if (!root) return undefined;
+
+    const harness = root.querySelector('.fc-view-harness');
+    const scrollGrid = root.querySelector('.fc-dayGridMonth-view .fc-scrollgrid');
+    if (!harness || !scrollGrid) return undefined;
+
+    const apply = () => {
+      requestAnimationFrame(() => {
+        const w = harness.clientWidth;
+        if (w <= 0) return;
+        scrollGrid.style.minWidth = `${(w * 7) / 5}px`;
+        const colW = w / 5;
+        harness.scrollLeft = colW;
+      });
+    };
+
+    apply();
+    const ro = new ResizeObserver(() => {
+      apply();
+    });
+    ro.observe(harness);
+
+    return () => {
+      ro.disconnect();
+      scrollGrid.style.minWidth = '';
+      harness.scrollLeft = 0;
+    };
+  }, [monthWeekdaySwipe, monthSwipeKey]);
 
   /** 이벤트를 FullCalendar 포맷으로 변환 */
   const fcEvents = useCallback(() => {
@@ -96,6 +141,16 @@ function CalendarView({
           '& .fc-daygrid-event': { px: '0 !important', mx: '0 !important' },
           '& .fc-event-main': { px: '1px !important' },
           '& .fc-h-event': { px: '0 !important' },
+          ...(monthWeekdaySwipe
+            ? {
+              '& .fc .fc-view-harness': {
+                overflowX: 'auto',
+                WebkitOverflowScrolling: 'touch',
+                overscrollBehaviorX: 'contain',
+                touchAction: 'pan-x pan-y',
+              },
+            }
+            : {}),
         }}
       >
         <FullCalendar
@@ -103,6 +158,7 @@ function CalendarView({
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"
           locale="ko"
+          {...(isMobile ? { firstDay: 0 } : {})}
           headerToolbar={isMobile ? {
             left: 'prev,next',
             center: 'title',
@@ -128,7 +184,13 @@ function CalendarView({
             const clickedDateStr = cell?.getAttribute?.('data-date') || null;
             onEventClick(info.event.extendedProps, clickedDateStr);
           }}
-          datesSet={onDatesSet || undefined}
+          datesSet={(info) => {
+            setActiveViewType(info.view.type);
+            if (info.view.type === 'dayGridMonth') {
+              setMonthSwipeKey(`${info.view.currentStart?.toISOString?.() ?? ''}-${info.view.currentEnd?.toISOString?.() ?? ''}`);
+            }
+            onDatesSet?.(info);
+          }}
           eventContent={(arg) => {
             const ex = arg.event.extendedProps;
             const nickname = ex.creatorNickname;
@@ -139,13 +201,15 @@ function CalendarView({
 
             const compactCalendarTitle = isIpo || isDartReport || isAptSummary;
             const displayTitle = String(arg.event.title || '').replace(/^(📈|🏢|📊|📅|📋)\s*/u, '');
+            /** 모바일: 칸 너비에 맞춰 한 줄 + 말줄임(…). 데스크톱 외부일정 압축은 기존 고정 글자수 유지 */
             const compactTitleSx = compactCalendarTitle
               ? {
                 fontWeight: 700,
-                fontSize: isMobile ? '0.6rem' : '0.65rem',
+                fontSize: isMobile ? '0.72rem' : '0.65rem',
                 lineHeight: 1.3,
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
+                textOverflow: 'ellipsis',
                 width: '100%',
                 maxWidth: '100%',
                 minWidth: 0,
@@ -156,10 +220,13 @@ function CalendarView({
               || (isMobile || isSummary
                 ? {
                   fontWeight: 600,
-                  fontSize: isSummary ? (isMobile ? '0.7rem' : '0.8rem') : '0.75rem',
+                  fontSize: isSummary ? (isMobile ? '0.72rem' : '0.8rem') : '0.78rem',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
+                  width: '100%',
+                  maxWidth: '100%',
+                  minWidth: 0,
                 }
                 : {
                   fontWeight: 600,
@@ -177,7 +244,9 @@ function CalendarView({
                   minWidth: 0,
                 });
             const showNickname = nickname && !isIpo && !isDartReport && !isSummary;
-            const titleText = compactCalendarTitle ? truncateIpoCalendarTitle(displayTitle) : displayTitle;
+            const titleText = compactCalendarTitle && !isMobile
+              ? truncateIpoCalendarTitle(displayTitle)
+              : displayTitle;
             return (
               <Box sx={{
                 px: 0,
