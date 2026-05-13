@@ -52,8 +52,8 @@ function CalendarView({
   const [activeViewType, setActiveViewType] = useState('dayGridMonth');
 
   /**
-   * 모바일 월간만 일~토 순(일요일 첫 칸). 기본 가로 스크롤을 한 칸 밀어 월~금이 보이게 함.
-   * 데스크톱은 로케일 기본 요일 시작 유지.
+   * 모바일 월간만 일~토 순. 가로 폭을 7/5로 넓혀 5칸(뷰포트)만 보이게 하고,
+   * 스와이프 종료 시 스냅: 왼쪽=일요일 구간 · 가운데=월~금 · 오른쪽=토요일 구간.
    */
   const monthWeekdaySwipe = isMobile && activeViewType === 'dayGridMonth';
 
@@ -68,24 +68,71 @@ function CalendarView({
     const scrollGrid = root.querySelector('.fc-dayGridMonth-view .fc-scrollgrid');
     if (!harness || !scrollGrid) return undefined;
 
-    const apply = () => {
+    const colWidth = () => harness.clientWidth / 5;
+
+    /** 스냅 위치: [일 쪽, 월~금, 토 쪽] (일~토 7칸 중 5칸 창) */
+    const snapXs = () => {
+      const c = colWidth();
+      const max = Math.max(0, harness.scrollWidth - harness.clientWidth);
+      return [0, c, Math.min(2 * c, max)];
+    };
+
+    const snapToNearest = (smooth) => {
+      const snaps = snapXs();
+      const x = harness.scrollLeft;
+      const nearest = snaps.reduce(
+        (best, s) => (Math.abs(x - s) < Math.abs(x - best) ? s : best),
+        snaps[1],
+      );
+      if (Math.abs(x - nearest) > 3) {
+        harness.scrollTo({ left: nearest, behavior: smooth ? 'smooth' : 'instant' });
+      }
+    };
+
+    /** resetToWeekdays: 달 이동 직후 가운데(월~금)에서 시작 */
+    const applyMinWidth = (resetToWeekdays) => {
       requestAnimationFrame(() => {
         const w = harness.clientWidth;
         if (w <= 0) return;
         scrollGrid.style.minWidth = `${(w * 7) / 5}px`;
-        const colW = w / 5;
-        harness.scrollLeft = colW;
+        requestAnimationFrame(() => {
+          if (resetToWeekdays) {
+            harness.scrollLeft = colWidth();
+          } else {
+            snapToNearest(false);
+          }
+        });
       });
     };
 
-    apply();
+    applyMinWidth(true);
+
+    let idleSnapTimer;
+    const scheduleIdleSnap = () => {
+      clearTimeout(idleSnapTimer);
+      idleSnapTimer = setTimeout(() => snapToNearest(true), 160);
+    };
+
+    const onScrollEnd = () => {
+      clearTimeout(idleSnapTimer);
+      snapToNearest(true);
+    };
+
+    harness.addEventListener('scrollend', onScrollEnd);
+    harness.addEventListener('scroll', scheduleIdleSnap, { passive: true });
+    harness.addEventListener('touchend', scheduleIdleSnap, { passive: true });
+
     const ro = new ResizeObserver(() => {
-      apply();
+      applyMinWidth(false);
     });
     ro.observe(harness);
 
     return () => {
       ro.disconnect();
+      clearTimeout(idleSnapTimer);
+      harness.removeEventListener('scrollend', onScrollEnd);
+      harness.removeEventListener('scroll', scheduleIdleSnap);
+      harness.removeEventListener('touchend', scheduleIdleSnap);
       scrollGrid.style.minWidth = '';
       harness.scrollLeft = 0;
     };

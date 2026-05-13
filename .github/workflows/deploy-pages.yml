@@ -1,0 +1,73 @@
+# GitHub Pages — 이 저장소(bokkyun/my-first-project) 단독 배포용
+# (모노레포 the_first-project 가 원격에 없을 때 사용)
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [master, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Require Supabase secrets
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
+            echo "::error::GitHub → Settings → Secrets and variables → Actions 에 VITE_SUPABASE_URL 과 VITE_SUPABASE_ANON_KEY 를 추가한 뒤 다시 실행해 주세요."
+            exit 1
+          fi
+
+      - name: Install and build
+        env:
+          VITE_BASE: /${{ github.event.repository.name }}/
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_DATA_GO_KR_SERVICE_KEY: ${{ secrets.VITE_DATA_GO_KR_SERVICE_KEY }}
+          VITE_REB_APT_SPLY_PATH: ${{ secrets.VITE_REB_APT_SPLY_PATH }}
+          VITE_REB_APT_PAGE_SIZE: ${{ secrets.VITE_REB_APT_PAGE_SIZE }}
+          VITE_REB_APT_DATA_GO_ORIGIN: ${{ secrets.VITE_REB_APT_DATA_GO_ORIGIN }}
+          VITE_REB_APT_API_MODE: ${{ secrets.VITE_REB_APT_API_MODE }}
+          VITE_REB_APT_ODCLOUD_PATH: ${{ secrets.VITE_REB_APT_ODCLOUD_PATH }}
+          VITE_REB_APT_ODCLOUD_ORIGIN: ${{ secrets.VITE_REB_APT_ODCLOUD_ORIGIN }}
+        run: |
+          npm install
+          npm run build
+          cp dist/index.html dist/404.html
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+        with:
+          enablement: true
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
