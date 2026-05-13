@@ -142,39 +142,6 @@ function Sidebar({
   /** 상단: 외부 일정 토글 — 내 일정만은 「새 그룹 생성」과 「내 그룹」·「전체」 사이 */
   const topFilterCheckboxes = (
     <>
-      {onShowBuySignalsChange && (
-        <ListItem
-          disablePadding
-          sx={{ mb: 0.25, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-        >
-          <FormControlLabel
-            sx={{ alignItems: 'center', m: 0, flex: 1, minWidth: 0 }}
-            control={(
-              <Checkbox
-                checked={showBuySignals}
-                onChange={(e) => onShowBuySignalsChange(e.target.checked)}
-                size="small"
-                sx={{ py: 0.25 }}
-              />
-            )}
-            label={(
-              <Typography variant="body2" fontWeight={600}>매수시그널종목</Typography>
-            )}
-          />
-          <Tooltip title="매수 시그널 항목 설정">
-            <span>
-              <IconButton
-                size="small"
-                onClick={openSignalSettings}
-                aria-label="매수 시그널 설정"
-                sx={{ ml: 0.5 }}
-              >
-                <Settings sx={{ fontSize: 17 }} />
-              </IconButton>
-            </span>
-          </Tooltip>
-        </ListItem>
-      )}
       {onShowAptSplyChange && (
         <ListItem disablePadding sx={{ mb: 0.25 }}>
           <FormControlLabel
@@ -273,6 +240,39 @@ function Sidebar({
               </Box>
             )}
           />
+        </ListItem>
+      )}
+      {onShowBuySignalsChange && (
+        <ListItem
+          disablePadding
+          sx={{ mb: 0.25, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+        >
+          <FormControlLabel
+            sx={{ alignItems: 'center', m: 0, flex: 1, minWidth: 0 }}
+            control={(
+              <Checkbox
+                checked={showBuySignals}
+                onChange={(e) => onShowBuySignalsChange(e.target.checked)}
+                size="small"
+                sx={{ py: 0.25 }}
+              />
+            )}
+            label={(
+              <Typography variant="body2" fontWeight={600}>매수시그널종목</Typography>
+            )}
+          />
+          <Tooltip title="매수 시그널 항목 설정">
+            <span>
+              <IconButton
+                size="small"
+                onClick={openSignalSettings}
+                aria-label="매수 시그널 설정"
+                sx={{ ml: 0.5 }}
+              >
+                <Settings sx={{ fontSize: 17 }} />
+              </IconButton>
+            </span>
+          </Tooltip>
         </ListItem>
       )}
     </>
