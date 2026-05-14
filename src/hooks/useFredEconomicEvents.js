@@ -1,7 +1,12 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 
-const TRACKED_FRED_SERIES = new Set(['PAYEMS', 'CPIAUCSL', 'M2SL', 'GDPC1', 'UNRATE']);
+/** 캘린더에 노출할 FRED 시리즈(sync-fred-releases 가 적재한 series_id 와 일치해야 함) */
+const TRACKED_FRED_SERIES = new Set([
+  'PAYEMS', 'CPIAUCSL', 'M2SL', 'GDPC1', 'UNRATE',
+  /** PPI: BLS Producer Price Index — Final Demand (동일 발표일에 SA/NSA 둘 다 있으면 SA만 표시) */
+  'PPIFIS', 'PPIFID',
+]);
 const US_MACRO_FLAG = '🇺🇸';
 const FRED_SERIES_TITLES = {
   PAYEMS: '비농업고용 (NFP)',
@@ -9,6 +14,8 @@ const FRED_SERIES_TITLES = {
   M2SL: 'M2 통화량',
   GDPC1: '실질 GDP (연율 환산)',
   UNRATE: '실업률',
+  PPIFIS: 'PPI (생산자물가·최종수요)',
+  PPIFID: 'PPI (생산자물가·최종수요, 비계절조정)',
 };
 const ISM_PMI_URL = 'https://go.weareism.org/ism-manufacturing-pmi';
 
@@ -150,9 +157,15 @@ export function useFredEconomicEvents(enabled, viewRange, userId) {
 
   const events = useMemo(() => {
     if (!enabled) return [];
-    const fredEvents = (rawRows || [])
-      .filter((row) => TRACKED_FRED_SERIES.has(row.series_id))
-      .map(mapFredRowToCalendarEvent);
+    const filtered = (rawRows || []).filter((row) => TRACKED_FRED_SERIES.has(row.series_id));
+    const ppiSaDates = new Set(
+      filtered.filter((r) => r.series_id === 'PPIFIS').map((r) => r.release_date),
+    );
+    const deduped = filtered.filter((row) => {
+      if (row.series_id === 'PPIFID' && ppiSaDates.has(row.release_date)) return false;
+      return true;
+    });
+    const fredEvents = deduped.map(mapFredRowToCalendarEvent);
     return [...fredEvents, ...buildIsmPmiEvents(viewRange)];
   }, [rawRows, enabled, viewRange]);
 

@@ -613,6 +613,8 @@ function CalendarPage() {
         onClose={() => setMyEventSearchOpen(false)}
         events={events}
         userId={user?.id ?? null}
+        visibleGroupIds={visibleGroupIds}
+        onlyMySchedules={onlyMySchedules}
         onPickEvent={openEventDetail}
       />
 

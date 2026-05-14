@@ -36,6 +36,11 @@ const RELEASE_GROUPS: {
     release_id: 53,
     series: [{ series_id: 'GDPC1', title: '실질 GDP (연율 환산)' }],
   },
+  /** Producer Price Index — BLS, FRED release_id 46 */
+  {
+    release_id: 46,
+    series: [{ series_id: 'PPIFIS', title: 'PPI (생산자물가·최종수요)' }],
+  },
 ];
 
 const TRACKED_SERIES_IDS = RELEASE_GROUPS.flatMap((g) => g.series.map((s) => s.series_id));

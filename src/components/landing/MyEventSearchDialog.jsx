@@ -14,6 +14,7 @@ import {
   InputAdornment,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import { eventPassesSidebarCalendarFilters } from '../../utils/calendarEventFilters';
 
 function formatEventDateLine(ev) {
   if (!ev?.starts_at) return '';
@@ -28,13 +29,16 @@ function formatEventDateLine(ev) {
 }
 
 /**
- * 내가 등록한 일정만 제목·장소·메모 부분 일치 검색 — 결과는 이 다이얼로그 목록
+ * 내 일정 + 달력에 보이는 그룹 공유 일정을 제목·장소·메모로 검색.
+ * `events`는 이미 내 그룹 공유만 포함하도록 조회된 목록이며, 여기서는 달력과 동일한 사이드바 규칙으로 한 번 더 거릅니다.
  */
 export default function MyEventSearchDialog({
   open,
   onClose,
   events,
   userId,
+  visibleGroupIds = [],
+  onlyMySchedules = false,
   onPickEvent,
 }) {
   const [q, setQ] = useState('');
@@ -43,18 +47,24 @@ export default function MyEventSearchDialog({
     if (!open) setQ('');
   }, [open]);
 
+  const filterOpts = useMemo(() => ({
+    visibleGroupIds,
+    onlyMySchedules,
+    currentUserId: userId,
+  }), [visibleGroupIds, onlyMySchedules, userId]);
+
   const results = useMemo(() => {
     if (!userId) return [];
     const trimmed = q.trim().toLowerCase();
     if (!trimmed) return [];
     return events
+      .filter((ev) => eventPassesSidebarCalendarFilters(ev, filterOpts))
       .filter((ev) => {
-        if (ev.creator_id !== userId) return false;
         const blob = `${ev.title ?? ''} ${ev.location ?? ''} ${ev.memo ?? ''}`.toLowerCase();
         return blob.includes(trimmed);
       })
       .sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at));
-  }, [events, userId, q]);
+  }, [events, userId, q, filterOpts]);
 
   const handlePick = (ev) => {
     onPickEvent(ev);
@@ -68,7 +78,7 @@ export default function MyEventSearchDialog({
       </DialogTitle>
       <DialogContent sx={{ pt: 1 }}>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-          내가 등록한 일정만 검색됩니다. 제목·장소·메모에서 일부 일치하면 표시됩니다.
+          내가 등록한 일정과, 내 그룹에 공유되어 달력에 표시되는 일정을 검색합니다. 다른 그룹에만 공유된 타인 일정은 나오지 않습니다. 제목·장소·메모에서 일부 일치하면 표시됩니다.
         </Typography>
         <TextField
           autoFocus
@@ -107,6 +117,9 @@ export default function MyEventSearchDialog({
                       <Typography component="span" variant="caption" color="text.secondary" display="block">
                         {formatEventDateLine(ev)}
                         {ev.location ? ` · ${ev.location}` : ''}
+                        {ev.creator_id && ev.creator_id !== userId ? (
+                          ` · 공유${ev.creatorNickname ? ` · ${ev.creatorNickname}` : ''}`
+                        ) : null}
                       </Typography>
                     </Box>
                   }
