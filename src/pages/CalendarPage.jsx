@@ -611,7 +611,7 @@ function CalendarPage() {
       <MyEventSearchDialog
         open={myEventSearchOpen}
         onClose={() => setMyEventSearchOpen(false)}
-        events={events}
+        events={calendarEvents}
         userId={user?.id ?? null}
         visibleGroupIds={visibleGroupIds}
         onlyMySchedules={onlyMySchedules}

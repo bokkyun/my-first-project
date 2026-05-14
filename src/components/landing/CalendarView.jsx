@@ -532,10 +532,10 @@ function CalendarView({
           }}
           height="calc(100vh - 140px)"
           /**
-           * 모바일: 일수 제한·+N 링크 없음 → 날짜 칸(또는 블록) 탭 한 번에 DayAgendaDialog 로 통일
-           * 데스크톱: 칸 높이 제한 유지(+N 또는 팝오버 가능)
+           * 월간 칸에 표시할 일정 개수 제한을 두지 않음.
+           * (이전 데스크톱 전용 5건 제한은 매수 시그널·청약 요약 등이 +N 뒤로 밀려 잘 안 보이는 원인이 됨)
            */
-          dayMaxEvents={isMobile ? false : 5}
+          dayMaxEvents={false}
           moreLinkText={(n) => `+${n}`}
           moreLinkClick={(info) => {
             /** 혹시 +N 이 보일 때(+링크 숨김 실패 등) 같은 날짜 시트로 연결 */

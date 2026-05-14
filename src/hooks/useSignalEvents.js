@@ -13,6 +13,45 @@ function exclusiveEndToInclusiveLastYmd(exclusiveEnd) {
   return toYmd(last);
 }
 
+function addDaysToYmd(ymd, deltaDays) {
+  if (!ymd || typeof ymd !== 'string') return ymd;
+  const parts = ymd.split('-').map(Number);
+  if (parts.length !== 3 || parts.some((n) => Number.isNaN(n))) return ymd;
+  const [y, m, d] = parts;
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + deltaDays);
+  return toYmd(dt);
+}
+
+/** YYYY-MM-DD 두 끝(포함) 사이 일 수 */
+function spanDaysInclusive(startYmd, endYmd) {
+  if (!startYmd || !endYmd) return 0;
+  const partsS = startYmd.split('-').map(Number);
+  const partsE = endYmd.split('-').map(Number);
+  if (partsS.length !== 3 || partsE.length !== 3) return 0;
+  const [y1, m1, d1] = partsS;
+  const [y2, m2, d2] = partsE;
+  const t1 = new Date(y1, m1 - 1, d1).getTime();
+  const t2 = new Date(y2, m2 - 1, d2).getTime();
+  if (Number.isNaN(t1) || Number.isNaN(t2)) return 0;
+  return Math.round((t2 - t1) / 86400000) + 1;
+}
+
+/**
+ * 주·일 뷰처럼 화면에 잡힌 기간이 짧을 때 시그널만 너무 좁게 조회되는 것을 막기 위해
+ * 최소 일수(기본 42일)가 되도록 앞뒤로 늘린 조회 구간.
+ */
+function widenSignalQueryYmdRange(startYmd, endYmd, minSpanDays = 42) {
+  if (!startYmd || !endYmd) return { start: startYmd, end: endYmd };
+  const span = spanDaysInclusive(startYmd, endYmd);
+  if (span >= minSpanDays) return { start: startYmd, end: endYmd };
+  const pad = Math.ceil((minSpanDays - span) / 2);
+  return {
+    start: addDaysToYmd(startYmd, -pad),
+    end: addDaysToYmd(endYmd, pad),
+  };
+}
+
 function categoryColor(category) {
   if (category === '추세') return '#1976d2';
   if (category === '모멘텀') return '#2e7d32';
@@ -33,7 +72,8 @@ export function useSignalEvents(enabled, viewRange, enabledSignalTypes = []) {
     const endFromExclusive = exclusiveEndToInclusiveLastYmd(viewRange?.end);
     const endFallback = toYmd(viewRange?.end);
     const end = endFromExclusive || endFallback;
-    return { start, end };
+    if (!start || !end) return { start, end };
+    return widenSignalQueryYmdRange(start, end);
   }, [viewRange?.start, viewRange?.end]);
 
   const enabledTypesKey = useMemo(
