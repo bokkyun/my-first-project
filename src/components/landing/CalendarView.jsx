@@ -9,13 +9,16 @@ import { Box, useMediaQuery, useTheme } from '@mui/material';
 import { isCoffeeEvent } from '../../utils/eventCoffee';
 import { eventPassesSidebarCalendarFilters } from '../../utils/calendarEventFilters';
 
-/** 공모주(ipo) 등 데스크톱 월간 칸: 4글자 초과 시 앞 4글자 + … (모바일은 칸 너비 CSS 말줄임 사용) */
-function truncateIpoCalendarTitle(title) {
+/** 월간 그리드: 토·일 열 너비 = 평일 열 × 이 비율(낮을수록 주말이 좁아지고 월~금이 넓어짐) */
+const MONTH_WEEKEND_COL_WIDTH_RATIO = 0.5;
+
+/** 공모주(ipo) 등 데스크톱 월간 칸: 길면 앞부분 + … (모바일은 칸 너비 CSS 말줄임 사용) */
+function truncateIpoCalendarTitle(title, maxChars = 4) {
   const s = String(title ?? '').trim();
   if (!s) return s;
   const chars = [...s];
-  if (chars.length <= 4) return s;
-  return `${chars.slice(0, 4).join('')}…`;
+  if (chars.length <= maxChars) return s;
+  return `${chars.slice(0, maxChars).join('')}…`;
 }
 
 /** 두 터치 포인트 사이의 거리 계산 */
@@ -64,8 +67,8 @@ function CalendarView({
   const [isWeekExpanded, setIsWeekExpanded] = useState(false);
 
   /**
-   * 월간(dayGridMonth)에서만: 일~토 순, 가로 폭을 7/5로 넓혀 5칸(뷰포트)만 보이게 하고
-   * 스와이프·가로 스크롤로 일·토 구간 확인. (PC·태블릿 포함 — 좁은 화면 전용이면 PC에서 안 보이던 문제 방지)
+   * 월간(dayGridMonth)에서만: 일~토 순, 평일 칸은 refW/5·주말 칸은 더 좁게 두어
+   * 5칸(뷰포트)에 월~금을 넓게 보이게 하고, 스와이프·가로 스크롤로 일·토 구간 확인.
    * isWeekExpanded=true 시 7칸을 뷰포트에 맞춰 전체 표시.
    */
   const monthWeekdaySwipeLayout = activeViewType === 'dayGridMonth';
@@ -150,17 +153,31 @@ function CalendarView({
     };
 
     /**
-     * 테이블만 넓혀도 FC가 100%로 줄이는 경우가 있어, 각 요일 칸(th/td)에 최소 너비를 줘
-     * 7×cellMinPx 만큼 총 너비를 강제한다.
-     * 5일 뷰: cellMin = refW/5 → 7칸 합계 1.4×refW → 가로 스크롤
-     * 7일 뷰: cellMin = refW/7 → 7칸 합계 = refW → 스크롤 없음
+     * firstDay=0 기준 열 순서: 0=일 … 6=토. 주말 열은 좁게, 월~금은 넓게 해 제목을 더 보이게 함.
      */
-    const applyColumnMinWidths = (cellMinPx) => {
-      if (cellMinPx <= 0) return;
-      monthView.querySelectorAll('.fc-col-header-cell, .fc-daygrid-day').forEach((cell) => {
-        cell.style.minWidth = `${cellMinPx}px`;
+    const applyUnevenColumnMinWidths = (weekdayMinPx, weekendMinPx) => {
+      if (weekdayMinPx <= 0 || weekendMinPx <= 0) return;
+      const colMin = (colIdx) => ((colIdx === 0 || colIdx === 6) ? weekendMinPx : weekdayMinPx);
+
+      const headerThead = monthView.querySelector('.fc-scrollgrid-section-header thead');
+      if (headerThead) {
+        headerThead.querySelectorAll('.fc-col-header-cell').forEach((cell, idx) => {
+          if (idx < 7) cell.style.minWidth = `${colMin(idx)}px`;
+        });
+      } else {
+        monthView.querySelectorAll('.fc-col-header-cell').forEach((cell, idx) => {
+          if (idx < 7) cell.style.minWidth = `${colMin(idx)}px`;
+        });
+      }
+
+      monthView.querySelectorAll('.fc-daygrid-body tr').forEach((tr) => {
+        tr.querySelectorAll('td.fc-daygrid-day').forEach((cell, idx) => {
+          if (idx < 7) cell.style.minWidth = `${colMin(idx)}px`;
+        });
       });
-      const totalMin = `${(cellMinPx * 7).toFixed(2)}px`;
+
+      const totalPx = 5 * weekdayMinPx + 2 * weekendMinPx;
+      const totalMin = `${totalPx.toFixed(2)}px`;
       scrollGrid.style.minWidth = totalMin;
       monthView.style.minWidth = totalMin;
       monthView.querySelectorAll('table.fc-scrollgrid-sync-table').forEach((t) => {
@@ -203,20 +220,23 @@ function CalendarView({
       return null;
     };
 
-    const colWidth = (host) => host.clientWidth / 5;
+    /** 5일 스와이프 뷰: 월요일이 뷰포트 왼쪽에 오도록 할 스크롤 값(= 일요일 열 너비) */
+    let layoutMondayAlignScroll = 0;
 
     const snapXs = (host) => {
-      const c = colWidth(host);
       const max = Math.max(0, host.scrollWidth - host.clientWidth);
-      return [0, c, Math.min(2 * c, max)];
+      const mid = Math.min(Math.max(0, layoutMondayAlignScroll), max);
+      const snaps = [...new Set([0, mid, max])].sort((a, b) => a - b);
+      return snaps;
     };
 
     const snapToNearest = (host, smooth) => {
       const snaps = snapXs(host);
       const x = host.scrollLeft;
+      const fallback = snaps[Math.min(1, Math.max(0, snaps.length - 1))] ?? 0;
       const nearest = snaps.reduce(
         (best, s) => (Math.abs(x - s) < Math.abs(x - best) ? s : best),
-        snaps[1],
+        fallback,
       );
       if (Math.abs(x - nearest) > 3) {
         host.scrollTo({ left: nearest, behavior: smooth ? 'smooth' : 'auto' });
@@ -267,16 +287,24 @@ function CalendarView({
         const refW = monthView.clientWidth || harness.clientWidth;
         if (refW <= 0) return;
 
+        const r = MONTH_WEEKEND_COL_WIDTH_RATIO;
+
         if (isWeekExpanded) {
           /**
-           * 7일 전체 뷰: 각 칸 = refW/7 → 7칸 합계 = refW (스크롤 없음)
-           * clearCellMinWidths() 대신 명시적 크기 설정 — FC 자체 리사이즈 방지
+           * 7일 전체 뷰: 뷰포트 너비 refW 안에서 주말 열만 좁게(합계 = refW, 스크롤 없음)
+           * 5*Wd + 2*We = refW, We = r*Wd
            */
-          applyColumnMinWidths(refW / 7);
+          const weekdayMin7 = refW / (5 + 2 * r);
+          const weekendMin7 = weekdayMin7 * r;
+          layoutMondayAlignScroll = 0;
+          applyUnevenColumnMinWidths(weekdayMin7, weekendMin7);
           detachScrollListeners();
         } else {
-          /** 5일 뷰: 각 칸 = refW/5 → 7칸 합계 1.4×refW → 가로 스크롤 */
-          applyColumnMinWidths(refW / 5);
+          /** 5일 뷰: 평일 칸 = refW/5, 주말은 그 비율로 좁게 → 7칸 합계 < 1.4*refW, 가로 스크롤 */
+          const weekdayMin5 = refW / 5;
+          const weekendMin5 = weekdayMin5 * r;
+          layoutMondayAlignScroll = weekendMin5;
+          applyUnevenColumnMinWidths(weekdayMin5, weekendMin5);
           /** FC가 레이아웃을 한 프레임 늦게 잡는 경우가 있어 rAF로 몇 번 재시도 */
           const attachAfterMeasure = (attempt) => {
             requestAnimationFrame(() => {
@@ -286,7 +314,7 @@ function CalendarView({
               }
               if (!scrollHost) return;
               if (resetToWeekdays) {
-                scrollHost.scrollLeft = colWidth(scrollHost);
+                scrollHost.scrollLeft = layoutMondayAlignScroll;
               } else {
                 snapToNearest(scrollHost, false);
               }
@@ -483,7 +511,7 @@ function CalendarView({
                   lineHeight: 1.35,
                   whiteSpace: 'normal',
                   display: '-webkit-box',
-                  WebkitLineClamp: 4,
+                  WebkitLineClamp: 5,
                   WebkitBoxOrient: 'vertical',
                   overflow: 'hidden',
                   overflowWrap: 'anywhere',
@@ -497,8 +525,13 @@ function CalendarView({
             /** 7일 확장 뷰에서는 닉네임 숨김 (칸이 좁아 공간 부족) */
             const showNickname = nickname && !isIpo && !isDartReport && !isSummary && !(isMobile && isWeekExpanded);
             const titleText = compactCalendarTitle && !isMobile
-              ? truncateIpoCalendarTitle(displayTitle)
+              ? truncateIpoCalendarTitle(displayTitle, 8)
               : displayTitle;
+            const signalIndicatorLines = ex._external === 'signal'
+              && Array.isArray(ex._signalIndicatorLabels)
+              && ex._signalIndicatorLabels.length > 1
+              ? ex._signalIndicatorLabels
+              : null;
             return (
               <Box sx={{
                 px: 0,
@@ -513,6 +546,27 @@ function CalendarView({
                 <Box sx={titleSx}>
                   {titleText}
                 </Box>
+                {signalIndicatorLines && (
+                  <Box sx={{ mt: 0.2 }}>
+                    {signalIndicatorLines.map((lab) => (
+                      <Box
+                        key={lab}
+                        sx={{
+                          fontSize: isMobile ? '0.66rem' : '0.72rem',
+                          fontWeight: 600,
+                          lineHeight: 1.35,
+                          opacity: 0.92,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          maxWidth: '100%',
+                        }}
+                      >
+                        {lab}
+                      </Box>
+                    ))}
+                  </Box>
+                )}
                 {showNickname && (
                   <Box sx={{
                     fontSize: isMobile ? '0.65rem' : '0.75rem',

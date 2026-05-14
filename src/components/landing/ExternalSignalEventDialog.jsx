@@ -43,11 +43,14 @@ function ExternalSignalEventDialog({ open, onClose, event }) {
   const row = event?._signalRow;
   if (!row) return null;
 
+  const mergedRows = Array.isArray(event?._signalMergedRows) && event._signalMergedRows.length > 0
+    ? event._signalMergedRows
+    : [row];
+
   const cfg = CATEGORY_CONFIG[row.signal_category] || {
     color: '#455a64', bg: '#eceff1', icon: BarChart, label: '시그널',
   };
   const CategoryIcon = cfg.icon;
-  const desc = SIGNAL_DESC[row.signal_type] || '';
 
   return (
     <Dialog
@@ -83,21 +86,52 @@ function ExternalSignalEventDialog({ open, onClose, event }) {
           {row.name || row.code}
         </Typography>
 
-        {/* 신호명 */}
-        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)', fontWeight: 500 }}>
-          {row.signal_name || row.signal_type}
-        </Typography>
+        {/* 신호명 — 병합 시 여러 줄 */}
+        {mergedRows.length > 1 ? (
+          <Box component="ul" sx={{ m: 0, pl: 2.25, color: 'rgba(255,255,255,0.9)' }}>
+            {mergedRows.map((r) => (
+              <Typography
+                key={r.signal_type || `${r.code}-${r.signal_name}`}
+                component="li"
+                variant="body2"
+                sx={{ fontWeight: 500, mb: 0.35, display: 'list-item' }}
+              >
+                {r.signal_name || r.signal_type}
+              </Typography>
+            ))}
+          </Box>
+        ) : (
+          <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.85)', fontWeight: 500 }}>
+            {row.signal_name || row.signal_type}
+          </Typography>
+        )}
       </Box>
 
       <DialogContent sx={{ p: 0 }}>
-        {/* 신호 설명 */}
-        {desc && (
-          <Box sx={{ px: 2.5, py: 2, bgcolor: cfg.bg }}>
-            <Typography variant="body2" sx={{ color: cfg.color, fontWeight: 500, lineHeight: 1.6 }}>
-              {desc}
-            </Typography>
-          </Box>
-        )}
+        {mergedRows.map((r, idx) => {
+          const descOne = SIGNAL_DESC[r.signal_type] || '';
+          if (!descOne) return null;
+          return (
+            <Box
+              key={r.signal_type || String(idx)}
+              sx={{
+                px: 2.5,
+                py: 2,
+                bgcolor: cfg.bg,
+                ...(idx > 0 ? { borderTop: '1px solid', borderColor: 'divider' } : {}),
+              }}
+            >
+              {mergedRows.length > 1 && (
+                <Typography variant="caption" display="block" sx={{ color: cfg.color, fontWeight: 700, mb: 0.75 }}>
+                  {r.signal_name || r.signal_type}
+                </Typography>
+              )}
+              <Typography variant="body2" sx={{ color: cfg.color, fontWeight: 500, lineHeight: 1.6 }}>
+                {descOne}
+              </Typography>
+            </Box>
+          );
+        })}
 
         <Divider />
 

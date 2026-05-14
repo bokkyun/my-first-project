@@ -280,11 +280,14 @@ function DayAgendaDialog({
                 const row = ev._signalRow;
                 const marketColor = row?.market === 'KOSPI' ? '#1565c0' : '#6a1b9a';
                 const marketBg   = row?.market === 'KOSPI' ? '#e3f2fd' : '#f3e5f5';
+                const indicators = Array.isArray(ev._signalIndicatorLabels) && ev._signalIndicatorLabels.length > 0
+                  ? ev._signalIndicatorLabels
+                  : [row?.signal_name || row?.signal_type].filter(Boolean);
                 return (
                   <ListItemButton
                     key={ev.id}
                     onClick={() => { setSignalCategory(null); handleSubClose(); onEventPick(ev); }}
-                    sx={{ borderRadius: 1.5, mb: 0.5, alignItems: 'center', pl: 1.25, pr: 1, py: 1.25,
+                    sx={{ borderRadius: 1.5, mb: 0.5, alignItems: 'flex-start', pl: 1.25, pr: 1, py: 1.25,
                       '&:hover': { bgcolor: 'action.hover' } }}
                   >
                     <Box sx={{ width: 3, alignSelf: 'stretch', minHeight: 36, borderRadius: 2, bgcolor: activeCatInfo?.color || '#e65100', mr: 1.5, flexShrink: 0 }} />
@@ -292,9 +295,11 @@ function DayAgendaDialog({
                       <Typography fontWeight={700} fontSize="0.9rem" noWrap>
                         {row?.name || row?.code || displayTitle(ev)}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary" noWrap>
-                        {row?.signal_name || row?.signal_type || ''}
-                      </Typography>
+                      {indicators.map((line, i) => (
+                        <Typography key={`${i}-${line}`} variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.45 }}>
+                          {line}
+                        </Typography>
+                      ))}
                     </Box>
                     {row?.market && (
                       <Chip label={row.market} size="small"

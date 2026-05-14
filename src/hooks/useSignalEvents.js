@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { coversAllBuySignalTypes } from '../constants/buySignalTypes';
+import { groupSignalRowsForDisplay } from '../utils/signalDisplayMerge';
 
 function toYmd(date) {
   if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null;
@@ -58,6 +59,15 @@ function categoryColor(category) {
   if (category === '모멘텀') return '#2e7d32';
   if (category === '볼린저') return '#6a1b9a';
   return '#455a64';
+}
+
+/** 종목명에 스팩(SPAC)이 포함되면 표시·저장 대상에서 제외 (scanner.py 와 동일 규칙) */
+function isSpacSignalRow(row) {
+  const name = String(row?.name ?? '').trim();
+  if (!name) return false;
+  if (name.includes('스팩')) return true;
+  if (name.toUpperCase().includes('SPAC')) return true;
+  return false;
 }
 
 /** PostgREST 한 번에 가져오는 행 수(초과 시 range 로 이어 받음) */
@@ -153,16 +163,39 @@ export function useSignalEvents(enabled, viewRange, enabledSignalTypes = []) {
           rows = rows.filter((r) => allow.has(r.signal_type));
         }
 
-        const mapped = rows.map((row) => ({
-          id: `signal-${row.date}-${row.code}-${row.signal_type}`,
-          title: `[${row.signal_category || '시그널'}] ${row.name || row.code} ${row.signal_name || row.signal_type}`,
-          starts_at: `${row.date}T16:00:00+09:00`,
-          ends_at: `${row.date}T16:30:00+09:00`,
-          is_all_day: false,
-          color: categoryColor(row.signal_category),
-          _external: 'signal',
-          _signalRow: row,
-        }));
+        rows = rows.filter((r) => !isSpacSignalRow(r));
+
+        const groups = groupSignalRowsForDisplay(rows);
+        const mapped = groups.map((grp) => {
+          const sorted = grp;
+          const row = sorted[0];
+          const multi = sorted.length > 1;
+          const indicatorLabels = [
+            ...new Set(
+              sorted.map((r) => String(r.signal_name || r.signal_type || '').trim()).filter(Boolean),
+            ),
+          ];
+          const stock = row.name || row.code;
+          const title = multi
+            ? `[${row.signal_category || '시그널'}] ${stock}`
+            : `[${row.signal_category || '시그널'}] ${stock} ${row.signal_name || row.signal_type}`;
+          const codeKey = String(row.code ?? '').trim() || `name:${String(row.name ?? '').trim()}`;
+          const id = multi
+            ? `signal-${row.date}-${codeKey}-${row.signal_category || '기타'}-merged`
+            : `signal-${row.date}-${row.code}-${row.signal_type}`;
+          return {
+            id,
+            title,
+            starts_at: `${row.date}T16:00:00+09:00`,
+            ends_at: `${row.date}T16:30:00+09:00`,
+            is_all_day: false,
+            color: categoryColor(row.signal_category),
+            _external: 'signal',
+            _signalRow: row,
+            _signalMergedRows: multi ? sorted : undefined,
+            _signalIndicatorLabels: indicatorLabels,
+          };
+        });
 
         setEvents(mapped);
         setError(null);

@@ -59,6 +59,13 @@ function buildEventSearchBlob(ev) {
   if (sig && typeof sig === 'object') {
     chunks.push(sig.code, sig.name, sig.signal_type, sig.signal_name, sig.market);
   }
+  if (Array.isArray(ev._signalMergedRows)) {
+    for (const r of ev._signalMergedRows) {
+      if (r && typeof r === 'object') {
+        chunks.push(r.signal_type, r.signal_name);
+      }
+    }
+  }
   return chunks.filter(Boolean).join(' ').toLowerCase();
 }
 
