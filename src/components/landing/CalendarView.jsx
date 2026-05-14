@@ -18,6 +18,13 @@ function truncateIpoCalendarTitle(title) {
   return `${chars.slice(0, 4).join('')}…`;
 }
 
+/** 두 터치 포인트 사이의 거리 계산 */
+function getPinchDist(touches) {
+  const dx = touches[0].clientX - touches[1].clientX;
+  const dy = touches[0].clientY - touches[1].clientY;
+  return Math.sqrt(dx * dx + dy * dy);
+}
+
 /**
  * FullCalendar 기반 메인 캘린더 뷰
  *
@@ -50,12 +57,56 @@ function CalendarView({
   /** 모바일 월간: 좌우 스와이프(가로 스크롤)용 — datesSet 마다 재계산 */
   const [monthSwipeKey, setMonthSwipeKey] = useState('');
   const [activeViewType, setActiveViewType] = useState('dayGridMonth');
+  /**
+   * false: 기본 5일 뷰 (월~금, 스와이프로 일/토 확인)
+   * true: 7일 전체 뷰 (일~토 한 화면에 표시) — 두 손가락 핀치로 전환
+   */
+  const [isWeekExpanded, setIsWeekExpanded] = useState(false);
+  const pinchRef = useRef({ startDist: null, endDist: null });
 
   /**
    * 모바일 월간만 일~토 순. 가로 폭을 7/5로 넓혀 5칸(뷰포트)만 보이게 하고,
    * 스와이프 종료 시 스냅: 왼쪽=일요일 구간 · 가운데=월~금 · 오른쪽=토요일 구간.
+   * isWeekExpanded=true 시 7칸을 뷰포트에 맞춰 전체 표시.
    */
   const monthWeekdaySwipe = isMobile && activeViewType === 'dayGridMonth';
+
+  /** 두 손가락 핀치 제스처 — 시작 거리 기록 */
+  const handleTouchStart = useCallback((e) => {
+    if (!monthWeekdaySwipe || e.touches.length !== 2) {
+      pinchRef.current = { startDist: null, endDist: null };
+      return;
+    }
+    const dist = getPinchDist(e.touches);
+    pinchRef.current = { startDist: dist, endDist: dist };
+  }, [monthWeekdaySwipe]);
+
+  /** 두 손가락 핀치 제스처 — 현재 거리 갱신 */
+  const handleTouchMove = useCallback((e) => {
+    if (!monthWeekdaySwipe || e.touches.length !== 2) return;
+    if (pinchRef.current.startDist !== null) {
+      pinchRef.current.endDist = getPinchDist(e.touches);
+    }
+  }, [monthWeekdaySwipe]);
+
+  /**
+   * 두 손가락 핀치 제스처 — 종료 시 뷰 전환
+   * 오므리기(핀치인): 7일 전체 뷰로 전환
+   * 벌리기(핀치아웃): 5일 뷰로 복귀
+   */
+  const handleTouchEnd = useCallback(() => {
+    if (!monthWeekdaySwipe) return;
+    const { startDist, endDist } = pinchRef.current;
+    if (startDist !== null && endDist !== null && startDist > 30) {
+      const ratio = (endDist - startDist) / startDist;
+      if (ratio < -0.15) {
+        setIsWeekExpanded(true);
+      } else if (ratio > 0.15) {
+        setIsWeekExpanded(false);
+      }
+    }
+    pinchRef.current = { startDist: null, endDist: null };
+  }, [monthWeekdaySwipe]);
 
   useLayoutEffect(() => {
     if (!monthWeekdaySwipe) return undefined;
@@ -180,24 +231,33 @@ function CalendarView({
       attachedHost = scrollHost;
     };
 
-    /** resetToWeekdays: 달 이동 직후 가운데(월~금)에서 시작 */
+    /**
+     * isWeekExpanded=false: 각 칸을 viewport/5 너비로 강제 → 7칸 합계가 viewport를 초과해 가로 스크롤 발생
+     * isWeekExpanded=true: minWidth 해제 → FC 기본 7등분 레이아웃으로 전체가 한 화면에 표시
+     */
     const applyLayout = (resetToWeekdays) => {
       requestAnimationFrame(() => {
         const refW = monthView.clientWidth || harness.clientWidth;
         if (refW <= 0) return;
-        const cellMin = refW / 5;
-        applyColumnMinWidths(cellMin);
-        requestAnimationFrame(() => {
+
+        if (isWeekExpanded) {
+          clearCellMinWidths();
+          detachScrollListeners();
+        } else {
+          const cellMin = refW / 5;
+          applyColumnMinWidths(cellMin);
           requestAnimationFrame(() => {
-            if (!bindScrollHost()) return;
-            if (resetToWeekdays) {
-              scrollHost.scrollLeft = colWidth(scrollHost);
-            } else {
-              snapToNearest(scrollHost, false);
-            }
-            attachScrollListeners();
+            requestAnimationFrame(() => {
+              if (!bindScrollHost()) return;
+              if (resetToWeekdays) {
+                scrollHost.scrollLeft = colWidth(scrollHost);
+              } else {
+                snapToNearest(scrollHost, false);
+              }
+              attachScrollListeners();
+            });
           });
-        });
+        }
       });
     };
 
@@ -215,7 +275,7 @@ function CalendarView({
       clearCellMinWidths();
       if (scrollHost) scrollHost.scrollLeft = 0;
     };
-  }, [monthWeekdaySwipe, monthSwipeKey]);
+  }, [monthWeekdaySwipe, monthSwipeKey, isWeekExpanded]);
 
   /** 이벤트를 FullCalendar 포맷으로 변환 */
   const fcEvents = useCallback(() => {
@@ -256,6 +316,9 @@ function CalendarView({
       }}
     >
       <Box
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
         sx={{
           bgcolor: 'white',
           borderRadius: { xs: 2, md: 1 },
@@ -267,7 +330,7 @@ function CalendarView({
           '& .fc-daygrid-event': { px: '0 !important', mx: '0 !important' },
           '& .fc-event-main': { px: '1px !important' },
           '& .fc-h-event': { px: '0 !important' },
-          ...(monthWeekdaySwipe
+          ...(monthWeekdaySwipe && !isWeekExpanded
             ? {
               '& .fc .fc-view-harness': {
                 overflowX: 'auto',
@@ -311,8 +374,12 @@ function CalendarView({
             onEventClick(info.event.extendedProps, clickedDateStr);
           }}
           datesSet={(info) => {
-            setActiveViewType(info.view.type);
-            if (info.view.type === 'dayGridMonth') {
+            const newViewType = info.view.type;
+            setActiveViewType(newViewType);
+            if (newViewType !== 'dayGridMonth' && isWeekExpanded) {
+              setIsWeekExpanded(false);
+            }
+            if (newViewType === 'dayGridMonth') {
               setMonthSwipeKey(`${info.view.currentStart?.toISOString?.() ?? ''}-${info.view.currentEnd?.toISOString?.() ?? ''}`);
             }
             onDatesSet?.(info);
@@ -327,11 +394,12 @@ function CalendarView({
 
             const compactCalendarTitle = isIpo || isDartReport || isAptSummary;
             const displayTitle = String(arg.event.title || '').replace(/^(📈|🏢|📊|📅|📋)\s*/u, '');
-            /** 모바일: 칸 너비에 맞춰 한 줄 + 말줄임(…). 데스크톱 외부일정 압축은 기존 고정 글자수 유지 */
+
+            /** 외부 일정(공모주 등) 압축 표시 */
             const compactTitleSx = compactCalendarTitle
               ? {
                 fontWeight: 700,
-                fontSize: isMobile ? '0.72rem' : '0.65rem',
+                fontSize: isWeekExpanded ? '0.60rem' : (isMobile ? '0.72rem' : '0.65rem'),
                 lineHeight: 1.3,
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
@@ -341,12 +409,43 @@ function CalendarView({
                 minWidth: 0,
               }
               : null;
-            /** 데스크톱: 등록 일정 글씨 크게·칸 안에 좌우 맞춤 줄바꿈 · 모바일: 한 줄 말줄임 */
-            const titleSx = compactTitleSx
-              || (isMobile || isSummary
+
+            /**
+             * 모바일 5일 뷰 (기본, 넓은 칸): 2줄 제목 + 닉네임 표시 — 가독성 최적화
+             * 모바일 7일 뷰 (핀치 확장, 좁은 칸): 1줄 압축 표시
+             * 데스크톱: 4줄까지 표시
+             */
+            const titleSx = compactTitleSx || (
+              isMobile && isWeekExpanded
                 ? {
                   fontWeight: 600,
-                  fontSize: isSummary ? (isMobile ? '0.72rem' : '0.8rem') : '0.78rem',
+                  fontSize: '0.65rem',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  width: '100%',
+                  maxWidth: '100%',
+                  minWidth: 0,
+                }
+                : isMobile && !isSummary
+                ? {
+                  fontWeight: 600,
+                  fontSize: '0.80rem',
+                  lineHeight: 1.3,
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                  overflowWrap: 'anywhere',
+                  wordBreak: 'break-word',
+                  width: '100%',
+                  maxWidth: '100%',
+                  minWidth: 0,
+                }
+                : isMobile && isSummary
+                ? {
+                  fontWeight: 600,
+                  fontSize: '0.72rem',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
@@ -368,8 +467,11 @@ function CalendarView({
                   width: '100%',
                   maxWidth: '100%',
                   minWidth: 0,
-                });
-            const showNickname = nickname && !isIpo && !isDartReport && !isSummary;
+                }
+            );
+
+            /** 7일 확장 뷰에서는 닉네임 숨김 (칸이 좁아 공간 부족) */
+            const showNickname = nickname && !isIpo && !isDartReport && !isSummary && !(isMobile && isWeekExpanded);
             const titleText = compactCalendarTitle && !isMobile
               ? truncateIpoCalendarTitle(displayTitle)
               : displayTitle;
@@ -389,7 +491,7 @@ function CalendarView({
                 </Box>
                 {showNickname && (
                   <Box sx={{
-                    fontSize: isMobile ? '0.65rem' : '0.75rem',
+                    fontSize: isMobile ? '0.68rem' : '0.75rem',
                     opacity: 0.9,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
