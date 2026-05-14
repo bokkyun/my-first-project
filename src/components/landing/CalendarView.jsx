@@ -1,5 +1,5 @@
 import {
-  useRef, useCallback, useLayoutEffect, useState,
+  useRef, useCallback, useLayoutEffect, useEffect, useState,
 } from 'react';
 import FullCalendar from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -62,7 +62,6 @@ function CalendarView({
    * true: 7일 전체 뷰 (일~토 한 화면에 표시) — 두 손가락 핀치로 전환
    */
   const [isWeekExpanded, setIsWeekExpanded] = useState(false);
-  const pinchRef = useRef({ startDist: null, endDist: null });
 
   /**
    * 모바일 월간만 일~토 순. 가로 폭을 7/5로 넓혀 5칸(뷰포트)만 보이게 하고,
@@ -71,41 +70,60 @@ function CalendarView({
    */
   const monthWeekdaySwipe = isMobile && activeViewType === 'dayGridMonth';
 
-  /** 두 손가락 핀치 제스처 — 시작 거리 기록 */
-  const handleTouchStart = useCallback((e) => {
-    if (!monthWeekdaySwipe || e.touches.length !== 2) {
-      pinchRef.current = { startDist: null, endDist: null };
-      return;
-    }
-    const dist = getPinchDist(e.touches);
-    pinchRef.current = { startDist: dist, endDist: dist };
-  }, [monthWeekdaySwipe]);
-
-  /** 두 손가락 핀치 제스처 — 현재 거리 갱신 */
-  const handleTouchMove = useCallback((e) => {
-    if (!monthWeekdaySwipe || e.touches.length !== 2) return;
-    if (pinchRef.current.startDist !== null) {
-      pinchRef.current.endDist = getPinchDist(e.touches);
-    }
-  }, [monthWeekdaySwipe]);
-
   /**
-   * 두 손가락 핀치 제스처 — 종료 시 뷰 전환
-   * 오므리기(핀치인): 7일 전체 뷰로 전환
-   * 벌리기(핀치아웃): 5일 뷰로 복귀
+   * 핀치 제스처: React 합성 이벤트는 FullCalendar 내부 핸들러에 가로막힐 수 있어
+   * FC 루트 DOM에 직접 native 이벤트 리스너를 부착한다.
+   * 오므리기(핀치인, ratio < -0.15) → 7일 전체 뷰
+   * 벌리기(핀치아웃, ratio > 0.15) → 5일 뷰 복귀
    */
-  const handleTouchEnd = useCallback(() => {
-    if (!monthWeekdaySwipe) return;
-    const { startDist, endDist } = pinchRef.current;
-    if (startDist !== null && endDist !== null && startDist > 30) {
-      const ratio = (endDist - startDist) / startDist;
-      if (ratio < -0.15) {
-        setIsWeekExpanded(true);
-      } else if (ratio > 0.15) {
-        setIsWeekExpanded(false);
+  useEffect(() => {
+    if (!monthWeekdaySwipe) return undefined;
+
+    const api = calendarRef.current?.getApi?.();
+    const root = api?.getEl?.();
+    if (!root) return undefined;
+
+    let pStart = null;
+    let pLast = null;
+
+    const onStart = (e) => {
+      if (e.touches.length === 2) {
+        pStart = getPinchDist(e.touches);
+        pLast = pStart;
+      } else {
+        pStart = null;
+        pLast = null;
       }
-    }
-    pinchRef.current = { startDist: null, endDist: null };
+    };
+
+    const onMove = (e) => {
+      if (e.touches.length === 2 && pStart !== null) {
+        pLast = getPinchDist(e.touches);
+      }
+    };
+
+    const onEnd = () => {
+      if (pStart !== null && pLast !== null && pStart > 30) {
+        const ratio = (pLast - pStart) / pStart;
+        if (ratio < -0.15) {
+          setIsWeekExpanded(true);
+        } else if (ratio > 0.15) {
+          setIsWeekExpanded(false);
+        }
+      }
+      pStart = null;
+      pLast = null;
+    };
+
+    root.addEventListener('touchstart', onStart, { passive: true });
+    root.addEventListener('touchmove', onMove, { passive: true });
+    root.addEventListener('touchend', onEnd, { passive: true });
+
+    return () => {
+      root.removeEventListener('touchstart', onStart);
+      root.removeEventListener('touchmove', onMove);
+      root.removeEventListener('touchend', onEnd);
+    };
   }, [monthWeekdaySwipe]);
 
   useLayoutEffect(() => {
@@ -130,7 +148,12 @@ function CalendarView({
       scrollGrid.style.minWidth = '';
     };
 
-    /** 테이블만 넓혀도 FC가 100%로 줄이는 경우가 있어, 각 요일 칸(th/td)에 최소 너비를 줘 7×(뷰/5) > 뷰 가로 스크롤을 만든다 */
+    /**
+     * 테이블만 넓혀도 FC가 100%로 줄이는 경우가 있어, 각 요일 칸(th/td)에 최소 너비를 줘
+     * 7×cellMinPx 만큼 총 너비를 강제한다.
+     * 5일 뷰: cellMin = refW/5 → 7칸 합계 1.4×refW → 가로 스크롤
+     * 7일 뷰: cellMin = refW/7 → 7칸 합계 = refW → 스크롤 없음
+     */
     const applyColumnMinWidths = (cellMinPx) => {
       if (cellMinPx <= 0) return;
       monthView.querySelectorAll('.fc-col-header-cell, .fc-daygrid-day').forEach((cell) => {
@@ -231,21 +254,22 @@ function CalendarView({
       attachedHost = scrollHost;
     };
 
-    /**
-     * isWeekExpanded=false: 각 칸을 viewport/5 너비로 강제 → 7칸 합계가 viewport를 초과해 가로 스크롤 발생
-     * isWeekExpanded=true: minWidth 해제 → FC 기본 7등분 레이아웃으로 전체가 한 화면에 표시
-     */
+    /** resetToWeekdays: 달 이동 직후 가운데(월~금)에서 시작 */
     const applyLayout = (resetToWeekdays) => {
       requestAnimationFrame(() => {
         const refW = monthView.clientWidth || harness.clientWidth;
         if (refW <= 0) return;
 
         if (isWeekExpanded) {
-          clearCellMinWidths();
+          /**
+           * 7일 전체 뷰: 각 칸 = refW/7 → 7칸 합계 = refW (스크롤 없음)
+           * clearCellMinWidths() 대신 명시적 크기 설정 — FC 자체 리사이즈 방지
+           */
+          applyColumnMinWidths(refW / 7);
           detachScrollListeners();
         } else {
-          const cellMin = refW / 5;
-          applyColumnMinWidths(cellMin);
+          /** 5일 뷰: 각 칸 = refW/5 → 7칸 합계 1.4×refW → 가로 스크롤 */
+          applyColumnMinWidths(refW / 5);
           requestAnimationFrame(() => {
             requestAnimationFrame(() => {
               if (!bindScrollHost()) return;
@@ -316,9 +340,6 @@ function CalendarView({
       }}
     >
       <Box
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
         sx={{
           bgcolor: 'white',
           borderRadius: { xs: 2, md: 1 },
@@ -330,6 +351,7 @@ function CalendarView({
           '& .fc-daygrid-event': { px: '0 !important', mx: '0 !important' },
           '& .fc-event-main': { px: '1px !important' },
           '& .fc-h-event': { px: '0 !important' },
+          /** 5일 뷰: 가로 스크롤 허용 / 7일 뷰: 기본 overflow(스크롤 없음) */
           ...(monthWeekdaySwipe && !isWeekExpanded
             ? {
               '& .fc .fc-view-harness': {
@@ -376,6 +398,7 @@ function CalendarView({
           datesSet={(info) => {
             const newViewType = info.view.type;
             setActiveViewType(newViewType);
+            /** 월 뷰 벗어나면 7일 확장 뷰 초기화 */
             if (newViewType !== 'dayGridMonth' && isWeekExpanded) {
               setIsWeekExpanded(false);
             }
@@ -395,11 +418,14 @@ function CalendarView({
             const compactCalendarTitle = isIpo || isDartReport || isAptSummary;
             const displayTitle = String(arg.event.title || '').replace(/^(📈|🏢|📊|📅|📋)\s*/u, '');
 
-            /** 외부 일정(공모주 등) 압축 표시 */
+            /**
+             * 외부 일정(공모주 등) 압축 표시
+             * 7일 뷰(좁은 칸): 더 작은 폰트
+             */
             const compactTitleSx = compactCalendarTitle
               ? {
                 fontWeight: 700,
-                fontSize: isWeekExpanded ? '0.60rem' : (isMobile ? '0.72rem' : '0.65rem'),
+                fontSize: (isMobile && isWeekExpanded) ? '0.60rem' : (isMobile ? '0.72rem' : '0.65rem'),
                 lineHeight: 1.3,
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
@@ -411,8 +437,8 @@ function CalendarView({
               : null;
 
             /**
-             * 모바일 5일 뷰 (기본, 넓은 칸): 2줄 제목 + 닉네임 표시 — 가독성 최적화
-             * 모바일 7일 뷰 (핀치 확장, 좁은 칸): 1줄 압축 표시
+             * 모바일 5일 뷰 (기본, 넓은 칸): 0.80rem — 칸이 넓어 더 많은 글자 표시
+             * 모바일 7일 뷰 (핀치 확장, 좁은 칸): 0.65rem — 압축 표시
              * 데스크톱: 4줄까지 표시
              */
             const titleSx = compactTitleSx || (
@@ -427,25 +453,10 @@ function CalendarView({
                   maxWidth: '100%',
                   minWidth: 0,
                 }
-                : isMobile && !isSummary
+                : isMobile || isSummary
                 ? {
                   fontWeight: 600,
-                  fontSize: '0.80rem',
-                  lineHeight: 1.3,
-                  display: '-webkit-box',
-                  WebkitLineClamp: 2,
-                  WebkitBoxOrient: 'vertical',
-                  overflow: 'hidden',
-                  overflowWrap: 'anywhere',
-                  wordBreak: 'break-word',
-                  width: '100%',
-                  maxWidth: '100%',
-                  minWidth: 0,
-                }
-                : isMobile && isSummary
-                ? {
-                  fontWeight: 600,
-                  fontSize: '0.72rem',
+                  fontSize: isSummary ? (isMobile ? '0.72rem' : '0.8rem') : '0.80rem',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap',
@@ -491,7 +502,7 @@ function CalendarView({
                 </Box>
                 {showNickname && (
                   <Box sx={{
-                    fontSize: isMobile ? '0.68rem' : '0.75rem',
+                    fontSize: isMobile ? '0.65rem' : '0.75rem',
                     opacity: 0.9,
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
