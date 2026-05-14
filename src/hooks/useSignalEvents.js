@@ -59,9 +59,13 @@ function categoryColor(category) {
   return '#455a64';
 }
 
+/** 장 마감 뒤 DB 적재 등을 반영하기 위한 자동 재조회 주기(ms) */
+const SIGNAL_POLL_INTERVAL_MS = 90 * 1000;
+
 /**
  * signals 테이블 데이터를 캘린더 이벤트 형식으로 변환해 제공합니다.
  * 각 시그널은 해당 날짜 16:00~16:30 일정으로 렌더링됩니다.
+ * 매수 시그널 표시가 켜져 있으면 일정 간격으로 재조회하여, 배치 적재 후에도 새로고침 없이 반영됩니다.
  */
 export function useSignalEvents(enabled, viewRange, enabledSignalTypes = []) {
   const [events, setEvents] = useState([]);
@@ -130,8 +134,19 @@ export function useSignalEvents(enabled, viewRange, enabledSignalTypes = []) {
 
     void run();
 
+    if (!enabled) {
+      return () => {
+        active = false;
+      };
+    }
+
+    const intervalId = window.setInterval(() => {
+      void run();
+    }, SIGNAL_POLL_INTERVAL_MS);
+
     return () => {
       active = false;
+      window.clearInterval(intervalId);
     };
   }, [enabled, range.start, range.end, enabledTypesKey]);
 
