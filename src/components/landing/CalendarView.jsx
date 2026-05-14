@@ -54,7 +54,7 @@ function CalendarView({
   const calendarRef = useRef(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  /** 모바일 월간: 좌우 스와이프(가로 스크롤)용 — datesSet 마다 재계산 */
+  /** 월간 뷰: 5일 스와이프 레이아웃 재측정용 — datesSet 마다 갱신 */
   const [monthSwipeKey, setMonthSwipeKey] = useState('');
   const [activeViewType, setActiveViewType] = useState('dayGridMonth');
   /**
@@ -64,11 +64,11 @@ function CalendarView({
   const [isWeekExpanded, setIsWeekExpanded] = useState(false);
 
   /**
-   * 모바일 월간만 일~토 순. 가로 폭을 7/5로 넓혀 5칸(뷰포트)만 보이게 하고,
-   * 스와이프 종료 시 스냅: 왼쪽=일요일 구간 · 가운데=월~금 · 오른쪽=토요일 구간.
+   * 월간(dayGridMonth)에서만: 일~토 순, 가로 폭을 7/5로 넓혀 5칸(뷰포트)만 보이게 하고
+   * 스와이프·가로 스크롤로 일·토 구간 확인. (PC·태블릿 포함 — 좁은 화면 전용이면 PC에서 안 보이던 문제 방지)
    * isWeekExpanded=true 시 7칸을 뷰포트에 맞춰 전체 표시.
    */
-  const monthWeekdaySwipe = isMobile && activeViewType === 'dayGridMonth';
+  const monthWeekdaySwipeLayout = activeViewType === 'dayGridMonth';
 
   /**
    * 핀치 제스처: React 합성 이벤트는 FullCalendar 내부 핸들러에 가로막힐 수 있어
@@ -77,7 +77,7 @@ function CalendarView({
    * 벌리기(핀치아웃, ratio > 0.15) → 5일 뷰 복귀
    */
   useEffect(() => {
-    if (!monthWeekdaySwipe) return undefined;
+    if (!isMobile || activeViewType !== 'dayGridMonth') return undefined;
 
     const api = calendarRef.current?.getApi?.();
     const root = api?.getEl?.();
@@ -124,10 +124,10 @@ function CalendarView({
       root.removeEventListener('touchmove', onMove);
       root.removeEventListener('touchend', onEnd);
     };
-  }, [monthWeekdaySwipe]);
+  }, [isMobile, activeViewType]);
 
   useLayoutEffect(() => {
-    if (!monthWeekdaySwipe) return undefined;
+    if (!monthWeekdaySwipeLayout) return undefined;
 
     const api = calendarRef.current?.getApi?.();
     const root = api?.getEl?.();
@@ -146,6 +146,7 @@ function CalendarView({
         t.style.minWidth = '';
       });
       scrollGrid.style.minWidth = '';
+      monthView.style.minWidth = '';
     };
 
     /**
@@ -161,13 +162,19 @@ function CalendarView({
       });
       const totalMin = `${(cellMinPx * 7).toFixed(2)}px`;
       scrollGrid.style.minWidth = totalMin;
+      monthView.style.minWidth = totalMin;
       monthView.querySelectorAll('table.fc-scrollgrid-sync-table').forEach((t) => {
         t.style.minWidth = totalMin;
       });
     };
 
-    /** 가로 스크롤이 실제로 일어나는 요소(fc-scroller 등). scroll은 버블하지 않으므로 반드시 이 노드에 리스너를 단다 */
+    /**
+     * 가로 스크롤이 실제로 일어나는 요소. FC 내부 구조 변경에 대비해
+     * 1) view-harness(우리가 overflow-x를 준 노드) 2) overflow 스크롤러 3) 그 외 넓은 노드 순으로 고른다.
+     */
     const findHorizontalScrollHost = () => {
+      if (harness.scrollWidth - harness.clientWidth > 6) return harness;
+
       let bestOverflow = null;
       let bestOverflowDelta = 0;
       let bestAny = null;
@@ -212,7 +219,7 @@ function CalendarView({
         snaps[1],
       );
       if (Math.abs(x - nearest) > 3) {
-        host.scrollTo({ left: nearest, behavior: smooth ? 'smooth' : 'instant' });
+        host.scrollTo({ left: nearest, behavior: smooth ? 'smooth' : 'auto' });
       }
     };
 
@@ -270,9 +277,14 @@ function CalendarView({
         } else {
           /** 5일 뷰: 각 칸 = refW/5 → 7칸 합계 1.4×refW → 가로 스크롤 */
           applyColumnMinWidths(refW / 5);
-          requestAnimationFrame(() => {
+          /** FC가 레이아웃을 한 프레임 늦게 잡는 경우가 있어 rAF로 몇 번 재시도 */
+          const attachAfterMeasure = (attempt) => {
             requestAnimationFrame(() => {
-              if (!bindScrollHost()) return;
+              if (!bindScrollHost() && attempt < 10) {
+                attachAfterMeasure(attempt + 1);
+                return;
+              }
+              if (!scrollHost) return;
               if (resetToWeekdays) {
                 scrollHost.scrollLeft = colWidth(scrollHost);
               } else {
@@ -280,7 +292,8 @@ function CalendarView({
               }
               attachScrollListeners();
             });
-          });
+          };
+          attachAfterMeasure(0);
         }
       });
     };
@@ -299,7 +312,7 @@ function CalendarView({
       clearCellMinWidths();
       if (scrollHost) scrollHost.scrollLeft = 0;
     };
-  }, [monthWeekdaySwipe, monthSwipeKey, isWeekExpanded]);
+  }, [monthWeekdaySwipeLayout, monthSwipeKey, isWeekExpanded]);
 
   /** 이벤트를 FullCalendar 포맷으로 변환 */
   const fcEvents = useCallback(() => {
@@ -352,7 +365,7 @@ function CalendarView({
           '& .fc-event-main': { px: '1px !important' },
           '& .fc-h-event': { px: '0 !important' },
           /** 5일 뷰: 가로 스크롤 허용 / 7일 뷰: 기본 overflow(스크롤 없음) */
-          ...(monthWeekdaySwipe && !isWeekExpanded
+          ...(monthWeekdaySwipeLayout && !isWeekExpanded
             ? {
               '& .fc .fc-view-harness': {
                 overflowX: 'auto',
@@ -369,7 +382,7 @@ function CalendarView({
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView="dayGridMonth"
           locale="ko"
-          {...(isMobile ? { firstDay: 0 } : {})}
+          {...(activeViewType === 'dayGridMonth' ? { firstDay: 0 } : {})}
           headerToolbar={isMobile ? {
             left: 'prev,next',
             center: 'title',
