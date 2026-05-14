@@ -29,8 +29,12 @@ import DayAgendaDialog from '../components/landing/DayAgendaDialog';
 import MyEventSearchDialog from '../components/landing/MyEventSearchDialog';
 import SubwayScheduleBar from '../components/common/SubwayScheduleBar';
 import { eventPassesSidebarCalendarFilters } from '../utils/calendarEventFilters';
+import { ALL_BUY_SIGNAL_TYPE_KEYS } from '../constants/buySignalTypes';
 
 const SIDEBAR_DEFAULT_FILTERS_KEY = 'moneycal.sidebarDefaultFilters.v1';
+const DEFAULT_SIGNAL_TYPE_FILTERS = Object.fromEntries(
+  ALL_BUY_SIGNAL_TYPE_KEYS.map((k) => [k, true]),
+);
 const DEFAULT_SIDEBAR_FILTERS = {
   onlyMySchedules: false,
   showAptSply: true,
@@ -39,19 +43,7 @@ const DEFAULT_SIDEBAR_FILTERS = {
   showFred: true,
   showBok: true,
   showBuySignals: true,
-  signalTypeFilters: {
-    MACD_GOLDEN_CROSS: true,
-    MA_GOLDEN_CROSS: true,
-    PRICE_ABOVE_MA20: true,
-    MA_ALIGNMENT: true,
-    RSI_OVERSOLD_EXIT: true,
-    RSI_50_CROSS: true,
-    STOCH_GOLDEN_CROSS: true,
-    CCI_MINUS100_CROSS: true,
-    BOLL_LOWER_BOUNCE: true,
-    BOLL_SQUEEZE_BREAKOUT: true,
-    BOLL_MIDLINE_RECOVERY: true,
-  },
+  signalTypeFilters: DEFAULT_SIGNAL_TYPE_FILTERS,
   showAllGroups: true,
 };
 
@@ -82,9 +74,19 @@ function writeSidebarDefaultFilters(value) {
   window.localStorage.setItem(SIDEBAR_DEFAULT_FILTERS_KEY, JSON.stringify(normalizeSidebarFilters(value)));
 }
 
+function localYmd(d) {
+  if (!(d instanceof Date) || Number.isNaN(d.getTime())) return null;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 /** `dateStr` YYYY-MM-DD 가 로컬 달력 날짜와 겹치는지 */
 function eventOccursOnDate(ev, dateStr) {
-  if (!dateStr || !ev?.starts_at) return false;
+  if (!dateStr) return false;
+  if (ev._external === 'signal' && ev._signalRow?.date != null) {
+    const rowYmd = String(ev._signalRow.date).slice(0, 10);
+    return rowYmd === String(dateStr).slice(0, 10);
+  }
+  if (!ev?.starts_at) return false;
   const start = new Date(ev.starts_at);
   const end = ev.ends_at ? new Date(ev.ends_at) : start;
   const parts = dateStr.split('-').map(Number);
@@ -100,6 +102,15 @@ function eventOccursOnDate(ev, dateStr) {
  * 월 뷰에서는 해당 월만 표시하고 전·익월 패딩 칸 일정은 숨길 때 사용합니다.
  */
 function eventOverlapsFocusedRange(ev, rangeStart, rangeEndExclusive) {
+  if (ev._external === 'signal' && ev._signalRow?.date != null) {
+    const ymd = String(ev._signalRow.date).slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return false;
+    const startYmd = localYmd(rangeStart);
+    const lastInclusive = new Date(rangeEndExclusive.getTime() - 1);
+    const endYmd = localYmd(lastInclusive);
+    if (!startYmd || !endYmd) return false;
+    return ymd >= startYmd && ymd <= endYmd;
+  }
   if (!ev?.starts_at) return false;
   const start = new Date(ev.starts_at);
   const end = ev.ends_at ? new Date(ev.ends_at) : start;
@@ -214,8 +225,13 @@ function CalendarPage() {
       else if (ext === 'signal') typeKey = 'signal';
       else { kept.push(ev); continue; }
 
-      const d = new Date(ev.starts_at);
-      const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      let dateStr;
+      if (ext === 'signal' && ev._signalRow?.date != null) {
+        dateStr = String(ev._signalRow.date).slice(0, 10);
+      } else {
+        const d = new Date(ev.starts_at);
+        dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      }
       const key = `${typeKey}-${dateStr}`;
       if (!summaryBuckets[key]) summaryBuckets[key] = { type: typeKey, date: dateStr, events: [] };
       summaryBuckets[key].events.push(ev);

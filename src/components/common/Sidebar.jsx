@@ -8,8 +8,12 @@ import { Add, Circle, InfoOutlined, Settings } from '@mui/icons-material';
 import { Link, useNavigate } from 'react-router-dom';
 import GroupInfoDialog from '../landing/GroupInfoDialog';
 import AdBanner from './AdBanner';
+import { ALL_BUY_SIGNAL_TYPE_KEYS } from '../../constants/buySignalTypes';
 
 const SIDEBAR_WIDTH = 220;
+const DEFAULT_SIGNAL_TYPE_FILTERS = Object.fromEntries(
+  ALL_BUY_SIGNAL_TYPE_KEYS.map((k) => [k, true]),
+);
 const DEFAULT_FILTER_SETTINGS = {
   onlyMySchedules: false,
   showAptSply: true,
@@ -18,19 +22,7 @@ const DEFAULT_FILTER_SETTINGS = {
   showFred: true,
   showBok: true,
   showBuySignals: true,
-  signalTypeFilters: {
-    MACD_GOLDEN_CROSS: true,
-    MA_GOLDEN_CROSS: true,
-    PRICE_ABOVE_MA20: true,
-    MA_ALIGNMENT: true,
-    RSI_OVERSOLD_EXIT: true,
-    RSI_50_CROSS: true,
-    STOCH_GOLDEN_CROSS: true,
-    CCI_MINUS100_CROSS: true,
-    BOLL_LOWER_BOUNCE: true,
-    BOLL_SQUEEZE_BREAKOUT: true,
-    BOLL_MIDLINE_RECOVERY: true,
-  },
+  signalTypeFilters: DEFAULT_SIGNAL_TYPE_FILTERS,
   showAllGroups: true,
 };
 
