@@ -35,6 +35,10 @@ function ProtectedRoute({ children, user, loading }) {
 
 function App() {
   const { user, loading } = useAuth();
+  const isPromoSignalsWidget = typeof window !== 'undefined'
+    && new URLSearchParams(window.location.search).get('promo') === 'signals';
+
+  if (isPromoSignalsWidget) return <PromoSignalsPage />;
 
   return (
     <Routes>
