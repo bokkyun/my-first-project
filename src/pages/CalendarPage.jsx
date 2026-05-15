@@ -16,6 +16,7 @@ import { useDartPeriodicReports } from '../hooks/useDartPeriodicReports';
 import { useFredEconomicEvents } from '../hooks/useFredEconomicEvents';
 import { useBokEconomicEvents } from '../hooks/useBokEconomicEvents';
 import { useSignalEvents } from '../hooks/useSignalEvents';
+import { useTodayHotSignalStocks } from '../hooks/useTodayHotSignalStocks';
 import Navbar from '../components/common/Navbar';
 import Sidebar from '../components/common/Sidebar';
 import CalendarView from '../components/landing/CalendarView';
@@ -27,6 +28,7 @@ import ExternalFredEventDialog from '../components/landing/ExternalFredEventDial
 import ExternalSignalEventDialog from '../components/landing/ExternalSignalEventDialog';
 import DayAgendaDialog from '../components/landing/DayAgendaDialog';
 import MyEventSearchDialog from '../components/landing/MyEventSearchDialog';
+import TodayHotSignalBanner from '../components/landing/TodayHotSignalBanner';
 import SubwayScheduleBar from '../components/common/SubwayScheduleBar';
 import { eventPassesSidebarCalendarFilters } from '../utils/calendarEventFilters';
 import { ALL_BUY_SIGNAL_TYPE_KEYS } from '../constants/buySignalTypes';
@@ -196,6 +198,10 @@ function CalendarPage() {
     [signalTypeFilters]
   );
   const { events: signalEvents, error: signalError } = useSignalEvents(showBuySignals, viewRange, enabledSignalTypes);
+  const {
+    stocks: todayHotSignalStocks,
+    date: todayHotSignalDate,
+  } = useTodayHotSignalStocks({ minSignalCount: 3, limit: 8 });
 
   const calendarEvents = useMemo(() => {
     const list = [...events];
@@ -576,30 +582,34 @@ function CalendarPage() {
               flexWrap: 'wrap',
             }}
           >
-          {user?.id && (
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<SearchIcon />}
-            onClick={() => setMyEventSearchOpen(true)}
-            aria-label="일정 검색"
-          >
-            일정검색
-          </Button>
-          )}
-          {user?.id && (
-            <Button
-              variant="outlined"
-              size="small"
-              color="secondary"
-              onClick={() => void handleFredSync()}
-              disabled={fredLoading || bokLoading}
-              aria-label="FRED 거시지표 동기화"
-            >
-              {fredLoading ? '동기화 중…' : '거시지표 동기화'}
-            </Button>
-          )}
-        </Box>
+            <TodayHotSignalBanner
+              stocks={todayHotSignalStocks}
+              date={todayHotSignalDate}
+            />
+            {user?.id && (
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<SearchIcon />}
+                onClick={() => setMyEventSearchOpen(true)}
+                aria-label="일정 검색"
+              >
+                일정검색
+              </Button>
+            )}
+            {user?.id && (
+              <Button
+                variant="outlined"
+                size="small"
+                color="secondary"
+                onClick={() => void handleFredSync()}
+                disabled={fredLoading || bokLoading}
+                aria-label="FRED 거시지표 동기화"
+              >
+                {fredLoading ? '동기화 중…' : '거시지표 동기화'}
+              </Button>
+            )}
+          </Box>
           <CalendarView
             events={calendarEventsForGrid}
             groups={groups}

@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase';
 import { coversAllBuySignalTypes } from '../constants/buySignalTypes';
 import { groupSignalRowsForDisplay } from '../utils/signalDisplayMerge';
 
-function toYmd(date) {
+export function toYmd(date) {
   if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null;
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
@@ -62,7 +62,7 @@ function categoryColor(category) {
 }
 
 /** 종목명에 스팩(SPAC)이 포함되면 표시·저장 대상에서 제외 (scanner.py 와 동일 규칙) */
-function isSpacSignalRow(row) {
+export function isSpacSignalRow(row) {
   const name = String(row?.name ?? '').trim();
   if (!name) return false;
   if (name.includes('스팩')) return true;
@@ -75,9 +75,9 @@ const SIGNAL_PAGE_SIZE = 1000;
 /** 비정상적으로 큰 응답 방지 */
 const SIGNAL_FETCH_MAX_ROWS = 150_000;
 /** 배치 적재 후에도 반영되도록 주기적 재조회(ms) */
-const SIGNAL_POLL_INTERVAL_MS = 90_000;
+export const SIGNAL_POLL_INTERVAL_MS = 90_000;
 
-async function fetchSignalsForDateRange(startYmd, endYmd) {
+export async function fetchSignalsForDateRange(startYmd, endYmd) {
   const all = [];
   const seen = new Set();
   let offset = 0;

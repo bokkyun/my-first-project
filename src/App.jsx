@@ -13,6 +13,7 @@ import LandingPage from './pages/LandingPage';
 import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
 import AboutPage from './pages/AboutPage';
+import PromoSignalsPage from './pages/PromoSignalsPage';
 
 /**
  * 인증이 필요한 라우트 보호 컴포넌트
@@ -47,6 +48,7 @@ function App() {
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/update-password" element={<UpdatePasswordPage />} />
       <Route path="/calendar" element={<CalendarPage />} />
+      <Route path="/promo-signals" element={<PromoSignalsPage />} />
       <Route
         path="/groups/create"
         element={
