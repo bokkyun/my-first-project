@@ -61,10 +61,10 @@ function CalendarView({
   const [monthSwipeKey, setMonthSwipeKey] = useState('');
   const [activeViewType, setActiveViewType] = useState('dayGridMonth');
   /**
-   * false: 기본 5일 뷰 (월~금, 스와이프로 일/토 확인)
-   * true: 7일 전체 뷰 (일~토 한 화면에 표시) — 두 손가락 핀치로 전환
+   * true: 기본 7일 전체 뷰 (일~토 한 화면에 표시, 주말만 좁게)
+   * false: 5일 스와이프 뷰 (월~금, 스와이프로 일/토 확인) — 두 손가락 핀치로 전환
    */
-  const [isWeekExpanded, setIsWeekExpanded] = useState(false);
+  const [isWeekExpanded, setIsWeekExpanded] = useState(true);
 
   /**
    * 월간(dayGridMonth)에서만: 일~토 순, 평일 칸은 refW/5·주말 칸은 더 좁게 두어
@@ -152,6 +152,11 @@ function CalendarView({
         t.style.width = '';
         t.style.tableLayout = '';
       });
+      monthView.querySelectorAll('.fc-daygrid-body, table.fc-col-header').forEach((el) => {
+        el.style.minWidth = '';
+        el.style.width = '';
+        el.style.tableLayout = '';
+      });
       scrollGrid.style.minWidth = '';
       scrollGrid.style.width = '';
       monthView.style.minWidth = '';
@@ -205,6 +210,11 @@ function CalendarView({
         t.style.minWidth = totalMin;
         t.style.width = totalMin;
         t.style.tableLayout = 'fixed';
+      });
+      monthView.querySelectorAll('.fc-daygrid-body, table.fc-col-header').forEach((el) => {
+        el.style.minWidth = totalMin;
+        el.style.width = totalMin;
+        el.style.tableLayout = 'fixed';
       });
     };
 
