@@ -10,7 +10,7 @@ import { isCoffeeEvent } from '../../utils/eventCoffee';
 import { eventPassesSidebarCalendarFilters } from '../../utils/calendarEventFilters';
 
 /** 월간 그리드: 토·일 열 너비 = 평일 열 × 이 비율(낮을수록 주말이 좁아지고 월~금이 넓어짐) */
-const MONTH_WEEKEND_COL_WIDTH_RATIO = 0.5;
+const MONTH_WEEKEND_COL_WIDTH_RATIO = 0.35;
 
 /** 공모주(ipo) 등 데스크톱 월간 칸: 길면 앞부분 + … (모바일은 칸 너비 CSS 말줄임 사용) */
 function truncateIpoCalendarTitle(title, maxChars = 4) {
@@ -142,46 +142,69 @@ function CalendarView({
     if (!harness || !monthView || !scrollGrid) return undefined;
 
     const clearCellMinWidths = () => {
-      monthView.querySelectorAll('.fc-col-header-cell, .fc-daygrid-day').forEach((cell) => {
+      monthView.querySelectorAll('.fc-col-header-cell, .fc-daygrid-day, col').forEach((cell) => {
         cell.style.minWidth = '';
+        cell.style.width = '';
+        cell.style.maxWidth = '';
       });
       monthView.querySelectorAll('table.fc-scrollgrid-sync-table').forEach((t) => {
         t.style.minWidth = '';
+        t.style.width = '';
+        t.style.tableLayout = '';
       });
       scrollGrid.style.minWidth = '';
+      scrollGrid.style.width = '';
       monthView.style.minWidth = '';
+      monthView.style.width = '';
     };
 
     /**
-     * firstDay=0 기준 열 순서: 0=일 … 6=토. 주말 열은 좁게, 월~금은 넓게 해 제목을 더 보이게 함.
+     * firstDay=0 기준 열 순서: 0=일 … 6=토. FullCalendar 테이블은 colgroup 이
+     * 실제 열 너비를 잡는 경우가 있어 col, th, td 를 함께 지정한다.
      */
-    const applyUnevenColumnMinWidths = (weekdayMinPx, weekendMinPx) => {
-      if (weekdayMinPx <= 0 || weekendMinPx <= 0) return;
-      const colMin = (colIdx) => ((colIdx === 0 || colIdx === 6) ? weekendMinPx : weekdayMinPx);
+    const applyUnevenColumnWidths = (weekdayPx, weekendPx) => {
+      if (weekdayPx <= 0 || weekendPx <= 0) return;
+      const colWidth = (colIdx) => ((colIdx === 0 || colIdx === 6) ? weekendPx : weekdayPx);
+      const setWidth = (el, px) => {
+        const value = `${px.toFixed(2)}px`;
+        el.style.minWidth = value;
+        el.style.width = value;
+        el.style.maxWidth = value;
+      };
 
       const headerThead = monthView.querySelector('.fc-scrollgrid-section-header thead');
       if (headerThead) {
         headerThead.querySelectorAll('.fc-col-header-cell').forEach((cell, idx) => {
-          if (idx < 7) cell.style.minWidth = `${colMin(idx)}px`;
+          if (idx < 7) setWidth(cell, colWidth(idx));
         });
       } else {
         monthView.querySelectorAll('.fc-col-header-cell').forEach((cell, idx) => {
-          if (idx < 7) cell.style.minWidth = `${colMin(idx)}px`;
+          if (idx < 7) setWidth(cell, colWidth(idx));
         });
       }
 
       monthView.querySelectorAll('.fc-daygrid-body tr').forEach((tr) => {
         tr.querySelectorAll('td.fc-daygrid-day').forEach((cell, idx) => {
-          if (idx < 7) cell.style.minWidth = `${colMin(idx)}px`;
+          if (idx < 7) setWidth(cell, colWidth(idx));
         });
       });
 
-      const totalPx = 5 * weekdayMinPx + 2 * weekendMinPx;
+      monthView.querySelectorAll('colgroup').forEach((colgroup) => {
+        colgroup.querySelectorAll('col').forEach((col, idx) => {
+          if (idx < 7) setWidth(col, colWidth(idx));
+        });
+      });
+
+      const totalPx = 5 * weekdayPx + 2 * weekendPx;
       const totalMin = `${totalPx.toFixed(2)}px`;
       scrollGrid.style.minWidth = totalMin;
+      scrollGrid.style.width = totalMin;
       monthView.style.minWidth = totalMin;
+      monthView.style.width = totalMin;
       monthView.querySelectorAll('table.fc-scrollgrid-sync-table').forEach((t) => {
         t.style.minWidth = totalMin;
+        t.style.width = totalMin;
+        t.style.tableLayout = 'fixed';
       });
     };
 
@@ -297,14 +320,14 @@ function CalendarView({
           const weekdayMin7 = refW / (5 + 2 * r);
           const weekendMin7 = weekdayMin7 * r;
           layoutMondayAlignScroll = 0;
-          applyUnevenColumnMinWidths(weekdayMin7, weekendMin7);
+          applyUnevenColumnWidths(weekdayMin7, weekendMin7);
           detachScrollListeners();
         } else {
           /** 5일 뷰: 평일 칸 = refW/5, 주말은 그 비율로 좁게 → 7칸 합계 < 1.4*refW, 가로 스크롤 */
           const weekdayMin5 = refW / 5;
           const weekendMin5 = weekdayMin5 * r;
           layoutMondayAlignScroll = weekendMin5;
-          applyUnevenColumnMinWidths(weekdayMin5, weekendMin5);
+          applyUnevenColumnWidths(weekdayMin5, weekendMin5);
           /** FC가 레이아웃을 한 프레임 늦게 잡는 경우가 있어 rAF로 몇 번 재시도 */
           const attachAfterMeasure = (attempt) => {
             requestAnimationFrame(() => {
@@ -392,6 +415,12 @@ function CalendarView({
           '& .fc-daygrid-event': { px: '0 !important', mx: '0 !important' },
           '& .fc-event-main': { px: '1px !important' },
           '& .fc-h-event': { px: '0 !important' },
+          '& .fc-dayGridMonth-view .fc-col-header-cell:first-of-type, & .fc-dayGridMonth-view td.fc-daygrid-day:first-of-type': {
+            borderLeftWidth: '0 !important',
+          },
+          '& .fc-dayGridMonth-view .fc-col-header-cell:nth-of-type(7), & .fc-dayGridMonth-view td.fc-daygrid-day:nth-of-type(7)': {
+            borderRightWidth: '0 !important',
+          },
           /** 5일 뷰: 가로 스크롤 허용 / 7일 뷰: 기본 overflow(스크롤 없음) */
           ...(monthWeekdaySwipeLayout && !isWeekExpanded
             ? {
