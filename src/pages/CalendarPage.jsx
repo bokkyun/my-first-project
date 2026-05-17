@@ -29,7 +29,6 @@ import ExternalSignalEventDialog from '../components/landing/ExternalSignalEvent
 import DayAgendaDialog from '../components/landing/DayAgendaDialog';
 import MyEventSearchDialog from '../components/landing/MyEventSearchDialog';
 import TodayHotSignalBanner from '../components/landing/TodayHotSignalBanner';
-import SubwayScheduleBar from '../components/common/SubwayScheduleBar';
 import { eventPassesSidebarCalendarFilters } from '../utils/calendarEventFilters';
 import { ALL_BUY_SIGNAL_TYPE_KEYS } from '../constants/buySignalTypes';
 
@@ -528,8 +527,6 @@ function CalendarPage() {
       display: 'flex',
       flexDirection: 'column',
       bgcolor: 'background.default',
-      /** 하단 SubwayScheduleBar(고정)에 가리지 않도록 */
-      pb: { xs: 8, md: 7 },
     }}>
       <Navbar profile={profile} onMenuClick={() => setSidebarOpen(true)} />
 
@@ -715,8 +712,6 @@ function CalendarPage() {
       >
         <Alert severity={snack.severity} sx={{ borderRadius: 2 }}>{snack.msg}</Alert>
       </Snackbar>
-
-      <SubwayScheduleBar />
     </Box>
   );
 }

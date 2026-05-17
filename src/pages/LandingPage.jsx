@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import {
   CalendarMonth, Group, NotificationsActive, ShareOutlined,
   AdminPanelSettings, LocalCafe,
-  ShowChart, Apartment, DirectionsTransit, ArrowForward,
+  ShowChart, Apartment, ArrowForward,
 } from '@mui/icons-material';
 import PublicFooter from '../components/common/PublicFooter';
 import AdBanner from '../components/common/AdBanner';
@@ -52,11 +52,6 @@ const FEATURES = [
     icon: <ShareOutlined sx={{ fontSize: 40, color: '#0288d1' }} />,
     title: '여러 그룹 동시 보기',
     desc: '여러 모임에 소속되어 있어도 필터로 표시 그룹을 골라 볼 수 있습니다.',
-  },
-  {
-    icon: <DirectionsTransit sx={{ fontSize: 40, color: '#512da8' }} />,
-    title: '출퇴근 지하철 안내',
-    desc: '설정하면 서울 지하철 노선별 다음 도착 예정 시간을 하단 바로 확인할 수 있습니다(선택).',
   },
   {
     icon: <LocalCafe sx={{ fontSize: 40, color: '#5d4037' }} />,
