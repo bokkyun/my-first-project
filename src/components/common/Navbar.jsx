@@ -24,8 +24,9 @@ import { getAuthDisplayName, getDisplayEmail, getAvatarLetter } from '../../util
  */
 function Navbar({ profile, onMenuClick }) {
   const navigate = useNavigate();
-  const { user, signOut, loading } = useAuth();
+  const { user, signOut, loading, signInWithGoogle } = useAuth();
   const [anchorEl, setAnchorEl] = useState(null);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
@@ -38,6 +39,13 @@ function Navbar({ profile, onMenuClick }) {
     handleMenuClose();
     await signOut();
     navigate('/');
+  };
+
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    const { error } = await signInWithGoogle();
+    setGoogleLoading(false);
+    if (error) navigate('/login');
   };
 
   const displayName = profile?.nickname || getAuthDisplayName(user);
@@ -91,6 +99,31 @@ function Navbar({ profile, onMenuClick }) {
           </Button>
           <Button component={Link} to="/login" variant="outlined" size="small" sx={{ borderRadius: 2 }}>
             로그인
+          </Button>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleGoogleLogin}
+            disabled={googleLoading}
+            sx={{
+              borderRadius: 2,
+              borderColor: '#dadce0',
+              color: 'text.primary',
+              textTransform: 'none',
+              '&:hover': { borderColor: '#bbb', bgcolor: '#f8f8f8' },
+            }}
+            startIcon={
+              googleLoading ? <CircularProgress size={16} /> : (
+                <Box
+                  component="img"
+                  src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                  alt=""
+                  sx={{ width: 16, height: 16 }}
+                />
+              )
+            }
+          >
+            google로 로그인하기
           </Button>
           <Button component={Link} to="/signup" variant="contained" size="small" sx={{ borderRadius: 2 }}>
             회원가입

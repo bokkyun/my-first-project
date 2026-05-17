@@ -14,6 +14,7 @@ function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showEmailLogin, setShowEmailLogin] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
@@ -72,65 +73,13 @@ function LoginPage() {
 
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
-          <Box component="form" onSubmit={handleSubmit}>
-            <TextField
-              fullWidth
-              label="이메일"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              sx={{ mb: 2 }}
-              autoComplete="email"
-            />
-            <TextField
-              fullWidth
-              label="비밀번호"
-              type={showPassword ? 'text' : 'password'}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              sx={{ mb: 3 }}
-              autoComplete="current-password"
-              InputProps={{
-                endAdornment: (
-                  <InputAdornment position="end">
-                    <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
-                      {showPassword ? <VisibilityOff /> : <Visibility />}
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              }}
-            />
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              size="large"
-              disabled={loading}
-              sx={{ mb: 1.5, borderRadius: 2, py: 1.2 }}
-            >
-              {loading ? <CircularProgress size={24} color="inherit" /> : '로그인'}
-            </Button>
-            <Box sx={{ textAlign: 'right', mb: 1 }}>
-              <Link
-                to="/reset-password"
-                style={{ fontSize: '0.875rem', color: '#1976d2', fontWeight: 600, textDecoration: 'none' }}
-              >
-                비밀번호를 잊으셨나요?
-              </Link>
-            </Box>
-          </Box>
-
-          <Divider sx={{ my: 2 }}>또는</Divider>
-
           <Button
             fullWidth
             variant="outlined"
             size="large"
             onClick={handleGoogleLogin}
-            disabled={googleLoading}
-            sx={{ mb: 2, borderRadius: 2, py: 1.2, borderColor: '#dadce0', color: 'text.primary', '&:hover': { borderColor: '#bbb', backgroundColor: '#f8f8f8' } }}
+            disabled={loading || googleLoading}
+            sx={{ mb: 1.5, borderRadius: 2, py: 1.2, borderColor: '#dadce0', color: 'text.primary', '&:hover': { borderColor: '#bbb', backgroundColor: '#f8f8f8' } }}
             startIcon={
               googleLoading ? <CircularProgress size={20} /> : (
                 <Box component="img"
@@ -141,8 +90,75 @@ function LoginPage() {
               )
             }
           >
-            Google로 로그인
+            구글로그인
           </Button>
+
+          <Button
+            fullWidth
+            variant="contained"
+            size="large"
+            onClick={() => setShowEmailLogin(true)}
+            disabled={loading || googleLoading || showEmailLogin}
+            sx={{ mb: showEmailLogin ? 2 : 3, borderRadius: 2, py: 1.2 }}
+          >
+            이메일로그인
+          </Button>
+
+          {showEmailLogin && (
+            <>
+              <Divider sx={{ mb: 2 }}>이메일 로그인</Divider>
+
+              <Box component="form" onSubmit={handleSubmit}>
+                <TextField
+                  fullWidth
+                  label="이메일"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  sx={{ mb: 2 }}
+                  autoComplete="email"
+                />
+                <TextField
+                  fullWidth
+                  label="비밀번호"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  sx={{ mb: 3 }}
+                  autoComplete="current-password"
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                          {showPassword ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+                <Button
+                  type="submit"
+                  fullWidth
+                  variant="contained"
+                  size="large"
+                  disabled={loading}
+                  sx={{ mb: 1.5, borderRadius: 2, py: 1.2 }}
+                >
+                  {loading ? <CircularProgress size={24} color="inherit" /> : '로그인'}
+                </Button>
+                <Box sx={{ textAlign: 'right', mb: 2 }}>
+                  <Link
+                    to="/reset-password"
+                    style={{ fontSize: '0.875rem', color: '#1976d2', fontWeight: 600, textDecoration: 'none' }}
+                  >
+                    비밀번호를 잊으셨나요?
+                  </Link>
+                </Box>
+              </Box>
+            </>
+          )}
 
           <Box sx={{ textAlign: 'center' }}>
             <Typography variant="body2" color="text.secondary">

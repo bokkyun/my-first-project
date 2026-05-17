@@ -16,6 +16,7 @@ function SignupPage() {
 
   const [form, setForm] = useState({ email: '', nickname: '', password: '', passwordConfirm: '' });
   const [showPassword, setShowPassword] = useState(false);
+  const [showEmailSignup, setShowEmailSignup] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
@@ -133,78 +134,94 @@ function SignupPage() {
                 Google로 시작하기
               </Button>
 
-              <Divider sx={{ mb: 2 }}>이메일로 가입하기</Divider>
-
-              <Box component="form" onSubmit={handleSubmit}>
-                <TextField
-                  fullWidth
-                  label="이메일"
-                  type="email"
-                  value={form.email}
-                  onChange={handleChange('email')}
-                  required
-                  sx={{ mb: 2 }}
-                  autoComplete="email"
-                />
-                <TextField
-                  fullWidth
-                  label="닉네임 (선택)"
-                  value={form.nickname}
-                  onChange={handleChange('nickname')}
-                  sx={{ mb: 2 }}
-                  inputProps={{ maxLength: 20 }}
-                  helperText="비워두면 아이디가 닉네임으로 사용됩니다"
-                />
-                <TextField
-                  fullWidth
-                  label="비밀번호"
-                  type={showPassword ? 'text' : 'password'}
-                  value={form.password}
-                  onChange={handleChange('password')}
-                  required
-                  helperText="6자 이상 입력해주세요"
-                  sx={{ mb: 2 }}
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
-                          {showPassword ? <VisibilityOff /> : <Visibility />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-                <TextField
-                  fullWidth
-                  label="비밀번호 확인"
-                  type={showPassword ? 'text' : 'password'}
-                  value={form.passwordConfirm}
-                  onChange={handleChange('passwordConfirm')}
-                  required
-                  sx={{ mb: 3 }}
-                />
+              <Box sx={{ textAlign: 'center', mb: showEmailSignup ? 2 : 0 }}>
                 <Button
-                  type="submit"
-                  fullWidth
-                  variant="contained"
-                  size="large"
-                  disabled={loading}
-                  sx={{ borderRadius: 2, py: 1.2 }}
+                  size="small"
+                  variant="text"
+                  onClick={() => setShowEmailSignup(true)}
+                  disabled={loading || googleLoading || showEmailSignup}
+                  sx={{ fontSize: '0.8rem', fontWeight: 600 }}
                 >
-                  {loading ? <CircularProgress size={24} color="inherit" /> : '회원가입'}
+                  이메일로 회원가입
                 </Button>
-                <Box sx={{ textAlign: 'center', mt: 2 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    비밀번호를 잊으셨나요?{' '}
-                    <Link
-                      to="/reset-password"
-                      style={{ color: '#1976d2', fontWeight: 600, textDecoration: 'none' }}
-                    >
-                      비밀번호 재설정
-                    </Link>
-                  </Typography>
-                </Box>
               </Box>
+
+              {showEmailSignup && (
+                <>
+                  <Divider sx={{ mb: 2 }}>이메일 가입</Divider>
+
+                  <Box component="form" onSubmit={handleSubmit}>
+                    <TextField
+                      fullWidth
+                      label="이메일"
+                      type="email"
+                      value={form.email}
+                      onChange={handleChange('email')}
+                      required
+                      sx={{ mb: 2 }}
+                      autoComplete="email"
+                    />
+                    <TextField
+                      fullWidth
+                      label="닉네임 (선택)"
+                      value={form.nickname}
+                      onChange={handleChange('nickname')}
+                      sx={{ mb: 2 }}
+                      inputProps={{ maxLength: 20 }}
+                      helperText="비워두면 아이디가 닉네임으로 사용됩니다"
+                    />
+                    <TextField
+                      fullWidth
+                      label="비밀번호"
+                      type={showPassword ? 'text' : 'password'}
+                      value={form.password}
+                      onChange={handleChange('password')}
+                      required
+                      helperText="6자 이상 입력해주세요"
+                      sx={{ mb: 2 }}
+                      InputProps={{
+                        endAdornment: (
+                          <InputAdornment position="end">
+                            <IconButton onClick={() => setShowPassword(!showPassword)} edge="end">
+                              {showPassword ? <VisibilityOff /> : <Visibility />}
+                            </IconButton>
+                          </InputAdornment>
+                        ),
+                      }}
+                    />
+                    <TextField
+                      fullWidth
+                      label="비밀번호 확인"
+                      type={showPassword ? 'text' : 'password'}
+                      value={form.passwordConfirm}
+                      onChange={handleChange('passwordConfirm')}
+                      required
+                      sx={{ mb: 3 }}
+                    />
+                    <Button
+                      type="submit"
+                      fullWidth
+                      variant="contained"
+                      size="large"
+                      disabled={loading}
+                      sx={{ borderRadius: 2, py: 1.2 }}
+                    >
+                      {loading ? <CircularProgress size={24} color="inherit" /> : '회원가입'}
+                    </Button>
+                    <Box sx={{ textAlign: 'center', mt: 2 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        비밀번호를 잊으셨나요?{' '}
+                        <Link
+                          to="/reset-password"
+                          style={{ color: '#1976d2', fontWeight: 600, textDecoration: 'none' }}
+                        >
+                          비밀번호 재설정
+                        </Link>
+                      </Typography>
+                    </Box>
+                  </Box>
+                </>
+              )}
             </>
           )}
         </Paper>

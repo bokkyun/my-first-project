@@ -1,6 +1,7 @@
 import {
-  Box, Container, Typography, Button, Grid, Paper, Avatar,
+  Box, Container, Typography, Button, Grid, Paper, Avatar, CircularProgress,
 } from '@mui/material';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   CalendarMonth, Group, NotificationsActive, ShareOutlined,
@@ -9,6 +10,7 @@ import {
 } from '@mui/icons-material';
 import PublicFooter from '../components/common/PublicFooter';
 import AdBanner from '../components/common/AdBanner';
+import { useAuth } from '../hooks/useAuth';
 
 const FEATURES = [
   {
@@ -71,6 +73,15 @@ const STEPS = [
 ];
 
 function LandingPage() {
+  const { signInWithGoogle } = useAuth();
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    await signInWithGoogle();
+    setGoogleLoading(false);
+  };
+
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'background.default' }}>
 
@@ -92,9 +103,34 @@ function LandingPage() {
               <CalendarMonth sx={{ color: 'primary.main', fontSize: 30 }} />
               <Typography variant="h6" fontWeight={700} color="primary.main">MoneyCal</Typography>
             </Box>
-            <Box sx={{ display: 'flex', gap: 1 }}>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
               <Button component={Link} to="/login" variant="outlined" size="small" sx={{ borderRadius: 2 }}>
                 로그인
+              </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                onClick={handleGoogleLogin}
+                disabled={googleLoading}
+                sx={{
+                  borderRadius: 2,
+                  borderColor: '#dadce0',
+                  color: 'text.primary',
+                  textTransform: 'none',
+                  '&:hover': { borderColor: '#bbb', bgcolor: '#f8f8f8' },
+                }}
+                startIcon={
+                  googleLoading ? <CircularProgress size={16} /> : (
+                    <Box
+                      component="img"
+                      src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg"
+                      alt=""
+                      sx={{ width: 16, height: 16 }}
+                    />
+                  )
+                }
+              >
+                google로 로그인하기
               </Button>
               <Button component={Link} to="/signup" variant="contained" size="small" sx={{ borderRadius: 2 }}>
                 시작하기
