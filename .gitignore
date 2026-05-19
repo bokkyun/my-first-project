@@ -17,6 +17,9 @@ supabase/.temp
 .env
 .env.local
 .env.*.local
+kis-test/.env
+kis-test/.kis_token_cache.json
+kis-test/__pycache__/
 
 # Editor directories and files
 .vscode/*

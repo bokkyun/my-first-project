@@ -1,0 +1,6 @@
+FinanceDataReader
+pandas
+numpy
+requests
+supabase
+python-dotenv

@@ -1,0 +1,47 @@
+# kis-test/scanner.py — Supabase signals 적재 + 텔레그램 알림 (최근 10거래일)
+# 저장소 Settings → Secrets and variables → Actions:
+#   SUPABASE_URL
+#   SUPABASE_SERVICE_ROLE_KEY
+#   TELEGRAM_BOT_TOKEN
+# 선택: KIS_APP_KEY, KIS_APP_SECRET (--source kis 사용 시)
+name: KIS signal scanner
+
+on:
+  schedule:
+    # 월~금 10:30 UTC ≈ 한국 19:30 (장 마감 후·일봉 반영 여유)
+    - cron: '30 10 * * 1-5'
+  workflow_dispatch:
+
+concurrency:
+  group: kis-scanner-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    defaults:
+      run:
+        working-directory: kis-test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run scanner (10 trading days + Telegram)
+        env:
+          PYTHONUNBUFFERED: '1'
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          KIS_APP_KEY: ${{ secrets.KIS_APP_KEY }}
+          KIS_APP_SECRET: ${{ secrets.KIS_APP_SECRET }}
+        run: python scanner.py --days 10
