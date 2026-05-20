@@ -97,6 +97,9 @@ function Navbar({ profile, onMenuClick }) {
           <Button component={Link} to="/intro" color="inherit" size="small" sx={{ fontWeight: 600, textTransform: 'none' }}>
             소개
           </Button>
+          <Button component={Link} to="/consult" color="inherit" size="small" sx={{ fontWeight: 600, textTransform: 'none' }}>
+            상담
+          </Button>
           <Button component={Link} to="/login" variant="outlined" size="small" sx={{ borderRadius: 2 }}>
             로그인
           </Button>
@@ -154,6 +157,20 @@ function Navbar({ profile, onMenuClick }) {
         </Typography>
 
         <Box sx={{ flex: 1 }} />
+
+        <Button
+          component={Link}
+          to="/consult"
+          size="small"
+          sx={{
+            fontWeight: 700,
+            textTransform: 'none',
+            color: 'text.primary',
+            display: 'inline-flex',
+          }}
+        >
+          상담
+        </Button>
 
         <Tooltip title="알림">
           <IconButton>
