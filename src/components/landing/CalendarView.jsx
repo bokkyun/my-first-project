@@ -61,10 +61,10 @@ function CalendarView({
   const [monthSwipeKey, setMonthSwipeKey] = useState('');
   const [activeViewType, setActiveViewType] = useState('dayGridMonth');
   /**
-   * true: 기본 7일 전체 뷰 (일~토 한 화면에 표시, 주말만 좁게)
-   * false: 5일 스와이프 뷰 (월~금, 스와이프로 일/토 확인) — 두 손가락 핀치로 전환
+   * false(기본): 월~금 표시, 좌우 드래그·스와이프로 일·토 확인
+   * true: 7일 전체 뷰 — 두 손가락 핀치로 전환
    */
-  const [isWeekExpanded, setIsWeekExpanded] = useState(true);
+  const [isWeekExpanded, setIsWeekExpanded] = useState(false);
 
   /**
    * 월간(dayGridMonth)에서만: 일~토 순, 평일 칸은 refW/5·주말 칸은 더 좁게 두어
@@ -284,6 +284,12 @@ function CalendarView({
       attachedHost.removeEventListener('scrollend', onScrollEnd);
       attachedHost.removeEventListener('scroll', scheduleIdleSnap);
       attachedHost.removeEventListener('touchend', scheduleIdleSnap);
+      attachedHost.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', endMouseDrag);
+      attachedHost.style.cursor = '';
+      attachedHost.style.userSelect = '';
+      dragActive = false;
       attachedHost = null;
     };
 
@@ -305,12 +311,43 @@ function CalendarView({
       snapToNearest(scrollHost, true);
     };
 
+    let dragActive = false;
+    let dragStartX = 0;
+    let dragStartScroll = 0;
+
+    const onMouseDown = (e) => {
+      if (e.button !== 0) return;
+      dragActive = true;
+      dragStartX = e.pageX;
+      dragStartScroll = scrollHost.scrollLeft;
+      scrollHost.style.cursor = 'grabbing';
+      scrollHost.style.userSelect = 'none';
+    };
+
+    const onMouseMove = (e) => {
+      if (!dragActive || !scrollHost) return;
+      e.preventDefault();
+      scrollHost.scrollLeft = dragStartScroll - (e.pageX - dragStartX);
+    };
+
+    const endMouseDrag = () => {
+      if (!dragActive || !scrollHost) return;
+      dragActive = false;
+      scrollHost.style.cursor = 'grab';
+      scrollHost.style.userSelect = '';
+      snapToNearest(scrollHost, true);
+    };
+
     const attachScrollListeners = () => {
       detachScrollListeners();
       if (!scrollHost) return;
       scrollHost.addEventListener('scrollend', onScrollEnd);
       scrollHost.addEventListener('scroll', scheduleIdleSnap, { passive: true });
       scrollHost.addEventListener('touchend', scheduleIdleSnap, { passive: true });
+      scrollHost.addEventListener('mousedown', onMouseDown);
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', endMouseDrag);
+      scrollHost.style.cursor = 'grab';
       attachedHost = scrollHost;
     };
 

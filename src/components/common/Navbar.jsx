@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
-  AppBar, Toolbar, Typography, IconButton, Box, Menu, MenuItem,
+  AppBar, Toolbar, IconButton, Box, Menu, MenuItem,
   Avatar, Tooltip, Divider, ListItemIcon, Badge, useMediaQuery, useTheme,
   Button, CircularProgress,
 } from '@mui/material';
+import MoneyCalAiTitle from './MoneyCalAiTitle';
 import {
   CalendarMonth, GroupAdd, PersonAdd,
   Logout, Settings, Notifications, Menu as MenuIcon,
@@ -62,9 +63,7 @@ function Navbar({ profile, onMenuClick }) {
             </IconButton>
           )}
           <CalendarMonth sx={{ color: 'primary.main', mr: 0.5 }} />
-          <Typography variant="h6" fontWeight={700} color="primary.main" sx={{ flexShrink: 0 }}>
-            MoneyCal
-          </Typography>
+          <MoneyCalAiTitle variant="h6" sx={{ flexShrink: 0 }} />
           <Box sx={{ flex: 1 }} />
           <CircularProgress size={22} sx={{ color: 'primary.main' }} />
         </Toolbar>
@@ -82,23 +81,14 @@ function Navbar({ profile, onMenuClick }) {
             </IconButton>
           )}
           <CalendarMonth sx={{ color: 'primary.main', mr: 0.5 }} />
-          <Typography
-            variant="h6"
-            fontWeight={700}
-            color="primary.main"
-            sx={{ cursor: 'pointer', flexShrink: 0 }}
-            onClick={goHome}
-          >
-            MoneyCal
-          </Typography>
+          <Box onClick={goHome} sx={{ cursor: 'pointer', flexShrink: 0 }}>
+            <MoneyCalAiTitle variant="h6" />
+          </Box>
 
           <Box sx={{ flex: 1 }} />
 
           <Button component={Link} to="/intro" color="inherit" size="small" sx={{ fontWeight: 600, textTransform: 'none' }}>
             소개
-          </Button>
-          <Button component={Link} to="/consult" color="inherit" size="small" sx={{ fontWeight: 600, textTransform: 'none' }}>
-            상담
           </Button>
           <Button component={Link} to="/login" variant="outlined" size="small" sx={{ borderRadius: 2 }}>
             로그인
@@ -146,31 +136,11 @@ function Navbar({ profile, onMenuClick }) {
         )}
 
         <CalendarMonth sx={{ color: 'primary.main', mr: 0.5 }} />
-        <Typography
-          variant="h6"
-          fontWeight={700}
-          color="primary.main"
-          sx={{ cursor: 'pointer', flexShrink: 0 }}
-          onClick={goHome}
-        >
-          MoneyCal
-        </Typography>
+        <Box onClick={goHome} sx={{ cursor: 'pointer', flexShrink: 0 }}>
+          <MoneyCalAiTitle variant="h6" />
+        </Box>
 
         <Box sx={{ flex: 1 }} />
-
-        <Button
-          component={Link}
-          to="/consult"
-          size="small"
-          sx={{
-            fontWeight: 700,
-            textTransform: 'none',
-            color: 'text.primary',
-            display: 'inline-flex',
-          }}
-        >
-          상담
-        </Button>
 
         <Tooltip title="알림">
           <IconButton>
@@ -203,8 +173,12 @@ function Navbar({ profile, onMenuClick }) {
           PaperProps={{ sx: { minWidth: 180, borderRadius: 2, mt: 1 } }}
         >
           <Box sx={{ px: 2, py: 1 }}>
-            <Typography variant="subtitle2" fontWeight={600}>{displayName || '프로필'}</Typography>
-            <Typography variant="caption" color="text.secondary">{displayEmail}</Typography>
+            <Box component="span" sx={{ display: 'block', fontWeight: 600, fontSize: '0.875rem' }}>
+              {displayName || '프로필'}
+            </Box>
+            <Box component="span" sx={{ display: 'block', fontSize: '0.75rem', color: 'text.secondary' }}>
+              {displayEmail}
+            </Box>
           </Box>
           <Divider />
           <MenuItem onClick={() => { handleMenuClose(); navigate('/groups/create'); }}>
