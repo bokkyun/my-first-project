@@ -5,6 +5,7 @@ import {
   SIGNAL_POLL_INTERVAL_MS,
   toYmd,
 } from './useSignalEvents';
+import { KR_BUY_SIGNAL_MARKETS } from '../constants/buySignalMarkets';
 
 const DEFAULT_MIN_SIGNAL_COUNT = 3;
 const DEFAULT_LIMIT = 8;
@@ -99,7 +100,11 @@ export function useTodayHotSignalStocks({
           return;
         }
 
-        setStocks(buildHotSignalStocks(data || [], minSignalCount, limit));
+        setStocks(buildHotSignalStocks(
+          (data || []).filter((row) => KR_BUY_SIGNAL_MARKETS.includes(String(row.market || '').trim())),
+          minSignalCount,
+          limit,
+        ));
         setError(null);
         setLoading(false);
       } catch (e) {

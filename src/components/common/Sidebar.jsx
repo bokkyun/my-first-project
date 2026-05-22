@@ -22,6 +22,7 @@ const DEFAULT_FILTER_SETTINGS = {
   showFred: true,
   showBok: true,
   showBuySignals: true,
+  showUsBuySignals: true,
   signalTypeFilters: DEFAULT_SIGNAL_TYPE_FILTERS,
   showAllGroups: true,
 };
@@ -79,6 +80,8 @@ function Sidebar({
   onShowBokChange,
   showBuySignals = true,
   onShowBuySignalsChange,
+  showUsBuySignals = true,
+  onShowUsBuySignalsChange,
   signalTypeFilters = DEFAULT_FILTER_SETTINGS.signalTypeFilters,
   onSignalTypeFiltersChange,
   defaultFilters = DEFAULT_FILTER_SETTINGS,
@@ -250,7 +253,7 @@ function Sidebar({
               />
             )}
             label={(
-              <Typography variant="body2" fontWeight={600}>매수시그널종목</Typography>
+              <Typography variant="body2" fontWeight={600}>매수시그널(국내)</Typography>
             )}
           />
           <Tooltip title="매수 시그널 항목 설정">
@@ -265,6 +268,31 @@ function Sidebar({
               </IconButton>
             </span>
           </Tooltip>
+        </ListItem>
+      )}
+      {onShowUsBuySignalsChange && (
+        <ListItem disablePadding sx={{ mb: 0.25 }}>
+          <FormControlLabel
+            sx={{ alignItems: 'flex-start', m: 0 }}
+            control={(
+              <Checkbox
+                checked={showUsBuySignals}
+                onChange={(e) => onShowUsBuySignalsChange(e.target.checked)}
+                size="small"
+                sx={{ py: 0.25, alignSelf: 'flex-start', mt: 0.125 }}
+              />
+            )}
+            label={(
+              <Box>
+                <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1.28 }}>
+                  매수시그널(미국)
+                </Typography>
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.12, mt: 0.1 }}>
+                  S&P500·나스닥100
+                </Typography>
+              </Box>
+            )}
+          />
         </ListItem>
       )}
     </>
@@ -478,7 +506,13 @@ function Sidebar({
             <ListItem disablePadding>
               <FormControlLabel
                 control={<Checkbox checked={settingsDraft.showBuySignals} onChange={(e) => updateSettingsDraft('showBuySignals', e.target.checked)} size="small" />}
-                label={<Typography variant="body2">매수시그널종목</Typography>}
+                label={<Typography variant="body2">매수시그널(국내)</Typography>}
+              />
+            </ListItem>
+            <ListItem disablePadding>
+              <FormControlLabel
+                control={<Checkbox checked={settingsDraft.showUsBuySignals} onChange={(e) => updateSettingsDraft('showUsBuySignals', e.target.checked)} size="small" />}
+                label={<Typography variant="body2">매수시그널(미국) S&P500·나스닥</Typography>}
               />
             </ListItem>
             <ListItem disablePadding>

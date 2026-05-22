@@ -110,7 +110,7 @@ export async function fetchSignalsForDateRange(startYmd, endYmd) {
  * 각 시그널은 해당 날짜 16:00~16:30 일정으로 렌더링됩니다.
  * 매수 시그널 표시가 켜져 있으면 일정 간격으로 재조회하여, 배치 적재 후에도 새로고침 없이 반영됩니다.
  */
-export function useSignalEvents(enabled, viewRange, enabledSignalTypes = []) {
+export function useSignalEvents(enabled, viewRange, enabledSignalTypes = [], markets = null) {
   const [events, setEvents] = useState([]);
   const [error, setError] = useState(null);
 
@@ -126,6 +126,11 @@ export function useSignalEvents(enabled, viewRange, enabledSignalTypes = []) {
   const enabledTypesKey = useMemo(
     () => [...enabledSignalTypes].sort().join('|'),
     [enabledSignalTypes],
+  );
+
+  const marketsKey = useMemo(
+    () => (Array.isArray(markets) ? [...markets].sort().join('|') : ''),
+    [markets],
   );
 
   useEffect(() => {
@@ -161,6 +166,11 @@ export function useSignalEvents(enabled, viewRange, enabledSignalTypes = []) {
         if (enabledSignalTypes.length > 0 && !coversAllBuySignalTypes(enabledSignalTypes)) {
           const allow = new Set(enabledSignalTypes);
           rows = rows.filter((r) => allow.has(r.signal_type));
+        }
+
+        if (Array.isArray(markets) && markets.length > 0) {
+          const allowMarkets = new Set(markets);
+          rows = rows.filter((r) => allowMarkets.has(String(r.market || '').trim()));
         }
 
         rows = rows.filter((r) => !isSpacSignalRow(r));
@@ -228,7 +238,7 @@ export function useSignalEvents(enabled, viewRange, enabledSignalTypes = []) {
       window.clearInterval(intervalId);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [enabled, range.start, range.end, enabledTypesKey]);
+  }, [enabled, range.start, range.end, enabledTypesKey, marketsKey]);
 
   return { events, error };
 }

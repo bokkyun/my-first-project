@@ -1,5 +1,5 @@
 """
-매수신호 스캐너 — KOSPI/KOSDAQ 전 종목(스팩 제외) 기술적 지표 분석 후 Supabase signals 테이블에 저장
+매수신호 스캐너 — KOSPI/KOSDAQ 전 종목 + 미국지수(S&P500·나스닥100) 기술적 지표 분석 후 Supabase signals 테이블에 저장
 
 지원 신호 유형 (11종):
   추세:   MACD_GOLDEN_CROSS, MA_GOLDEN_CROSS, PRICE_ABOVE_MA20, MA_ALIGNMENT
@@ -59,6 +59,12 @@ SIGNAL_DEFS = {
     "BOLL_SQUEEZE_BREAKOUT": {"category": "볼린저", "name": "볼린저 밴드 상향 돌파"},
     "BOLL_MIDLINE_RECOVERY": {"category": "볼린저", "name": "볼린저 중심선 회복"},
 }
+
+# 미국 지수 ETF — S&P500(SPY), 나스닥100(QQQ). FinanceDataReader 일봉 사용.
+US_INDEX_TARGETS = [
+    {"code": "SPY", "name": "S&P 500", "market": "SP500"},
+    {"code": "QQQ", "name": "나스닥100", "market": "NASDAQ"},
+]
 
 
 # ──────────────────────────────────────────────
@@ -343,6 +349,37 @@ def _fetch_kis(code: str, fetch_start: str) -> pd.DataFrame | None:
     return df if len(df) >= 60 else None
 
 
+def scan_us_index_signals(target_dates: set, fetch_start: str, source: str = "fdr") -> list:
+    """S&P500·나스닥100 지수 ETF 기술적 매수 신호."""
+    rows = []
+    for item in US_INDEX_TARGETS:
+        code = item["code"]
+        name = item["name"]
+        market = item["market"]
+        try:
+            if source == "kis":
+                df = _fetch_kis(code, fetch_start)
+                time.sleep(0.05)
+            else:
+                df = _fetch_fdr(code, fetch_start)
+            if df is None:
+                continue
+            for s in detect_signals(df, target_dates):
+                meta = SIGNAL_DEFS[s["signal_type"]]
+                rows.append({
+                    "date":            s["date"],
+                    "code":            code,
+                    "name":            name,
+                    "market":          market,
+                    "signal_type":     s["signal_type"],
+                    "signal_category": meta["category"],
+                    "signal_name":     meta["name"],
+                })
+        except Exception as exc:
+            print(f"  [미국지수 오류] {code} {name}: {exc}")
+    return rows
+
+
 def run(days_back: int = 5, sleep_sec: float = 0.2, source: str = "fdr", skip_telegram: bool = False):
     """
     source: "fdr" = FinanceDataReader (기본, 빠름)
@@ -415,6 +452,11 @@ def run(days_back: int = 5, sleep_sec: float = 0.2, source: str = "fdr", skip_te
                 time.sleep(sleep_sec)
 
     print(f"\n[스캐너 완료] 총 신호: {len(all_rows)}건  오류 종목: {error_count}개")
+
+    us_rows = scan_us_index_signals(target_dates, fetch_start, source)
+    if us_rows:
+        print(f"[미국지수] S&P500·나스닥 신호 {len(us_rows)}건")
+        all_rows.extend(us_rows)
 
     if all_rows:
         print("[업로드] Supabase signals 테이블에 저장 중...")

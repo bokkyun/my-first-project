@@ -8,6 +8,7 @@ import {
   Divider,
 } from '@mui/material';
 import { Close, TrendingUp, Speed, BarChart } from '@mui/icons-material';
+import { buySignalMarketChipStyle, buySignalMarketLabel } from '../../constants/buySignalMarkets';
 
 const CATEGORY_CONFIG = {
   추세:   { color: '#1565c0', bg: '#e3f2fd', icon: TrendingUp, label: '추세지표' },
@@ -140,11 +141,14 @@ function ExternalSignalEventDialog({ open, onClose, event }) {
           <InfoRow label="종목코드" value={row.code || '-'} />
           <InfoRow label="시장" value={
             <Chip
-              label={row.market || '시장미상'}
+              label={buySignalMarketLabel(row.market)}
               size="small"
-              sx={{ height: 22, fontSize: '0.75rem', fontWeight: 600,
-                bgcolor: row.market === 'KOSPI' ? '#e3f2fd' : '#f3e5f5',
-                color: row.market === 'KOSPI' ? '#1565c0' : '#6a1b9a' }}
+              sx={{
+                height: 22,
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                ...buySignalMarketChipStyle(row.market),
+              }}
             />
           } />
           <InfoRow label="발생일" value={formatDate(event?.starts_at)} />

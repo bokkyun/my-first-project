@@ -31,6 +31,7 @@ import MyEventSearchDialog from '../components/landing/MyEventSearchDialog';
 import TodayHotSignalBanner from '../components/landing/TodayHotSignalBanner';
 import { eventPassesSidebarCalendarFilters } from '../utils/calendarEventFilters';
 import { ALL_BUY_SIGNAL_TYPE_KEYS } from '../constants/buySignalTypes';
+import { KR_BUY_SIGNAL_MARKETS, US_BUY_SIGNAL_MARKETS } from '../constants/buySignalMarkets';
 
 const SIDEBAR_DEFAULT_FILTERS_KEY = 'moneycal.sidebarDefaultFilters.v1';
 const DEFAULT_SIGNAL_TYPE_FILTERS = Object.fromEntries(
@@ -44,6 +45,7 @@ const DEFAULT_SIDEBAR_FILTERS = {
   showFred: true,
   showBok: true,
   showBuySignals: true,
+  showUsBuySignals: true,
   signalTypeFilters: DEFAULT_SIGNAL_TYPE_FILTERS,
   showAllGroups: true,
 };
@@ -135,6 +137,7 @@ function CalendarPage() {
   const [showFred, setShowFred] = useState(() => readSidebarDefaultFilters().showFred);
   const [showBok, setShowBok] = useState(() => readSidebarDefaultFilters().showBok);
   const [showBuySignals, setShowBuySignals] = useState(() => readSidebarDefaultFilters().showBuySignals);
+  const [showUsBuySignals, setShowUsBuySignals] = useState(() => readSidebarDefaultFilters().showUsBuySignals);
   const [signalTypeFilters, setSignalTypeFilters] = useState(() => readSidebarDefaultFilters().signalTypeFilters);
   const [viewRange, setViewRange] = useState(() => {
     const now = new Date();
@@ -196,7 +199,13 @@ function CalendarPage() {
       .map(([signalType]) => signalType),
     [signalTypeFilters]
   );
-  const { events: signalEvents, error: signalError } = useSignalEvents(showBuySignals, viewRange, enabledSignalTypes);
+  const { events: krSignalEvents, error: krSignalError } = useSignalEvents(
+    showBuySignals, viewRange, enabledSignalTypes, KR_BUY_SIGNAL_MARKETS,
+  );
+  const { events: usSignalEvents, error: usSignalError } = useSignalEvents(
+    showUsBuySignals, viewRange, enabledSignalTypes, US_BUY_SIGNAL_MARKETS,
+  );
+  const signalError = krSignalError || usSignalError;
   const {
     stocks: todayHotSignalStocks,
     date: todayHotSignalDate,
@@ -209,9 +218,10 @@ function CalendarPage() {
     if (showDartPeriodic) list.push(...dartPeriodicList);
     if (showFred) list.push(...fredCalendarEvents);
     if (showBok) list.push(...bokCalendarEvents);
-    list.push(...signalEvents);
+    if (showBuySignals) list.push(...krSignalEvents);
+    if (showUsBuySignals) list.push(...usSignalEvents);
     return list;
-  }, [events, aptSplyList, showAptSply, ipoList, showIpo, dartPeriodicList, showDartPeriodic, showFred, fredCalendarEvents, showBok, bokCalendarEvents, signalEvents]);
+  }, [events, aptSplyList, showAptSply, ipoList, showIpo, dartPeriodicList, showDartPeriodic, showFred, fredCalendarEvents, showBok, bokCalendarEvents, showBuySignals, krSignalEvents, showUsBuySignals, usSignalEvents]);
 
   /** 표시 중인 뷰 구간에 속하는 일정만(월 뷰에서는 해당 월만, 전·익월 칸 제외) + 공모주·청약·실적은 날짜별 요약 */
   const calendarEventsForGrid = useMemo(() => {
@@ -308,6 +318,7 @@ function CalendarPage() {
     setShowFred(normalized.showFred);
     setShowBok(normalized.showBok);
     setShowBuySignals(normalized.showBuySignals);
+    setShowUsBuySignals(normalized.showUsBuySignals);
     setSignalTypeFilters(normalized.signalTypeFilters);
     setVisibleGroupIds(normalized.showAllGroups ? groups.map((g) => g.id) : []);
     setSnack({ open: true, msg: '메뉴 기본 체크 설정을 저장했습니다.', severity: 'success' });
@@ -550,6 +561,8 @@ function CalendarPage() {
           onShowBokChange={setShowBok}
           showBuySignals={showBuySignals}
           onShowBuySignalsChange={setShowBuySignals}
+          showUsBuySignals={showUsBuySignals}
+          onShowUsBuySignalsChange={setShowUsBuySignals}
           signalTypeFilters={signalTypeFilters}
           onSignalTypeFiltersChange={setSignalTypeFilters}
           defaultFilters={sidebarDefaultFilters}
