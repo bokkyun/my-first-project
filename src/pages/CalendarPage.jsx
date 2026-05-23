@@ -31,7 +31,7 @@ import MyEventSearchDialog from '../components/landing/MyEventSearchDialog';
 import TodayHotSignalBanner from '../components/landing/TodayHotSignalBanner';
 import { eventPassesSidebarCalendarFilters } from '../utils/calendarEventFilters';
 import { ALL_BUY_SIGNAL_TYPE_KEYS } from '../constants/buySignalTypes';
-import { KR_BUY_SIGNAL_MARKETS, US_BUY_SIGNAL_MARKETS, CRYPTO_BUY_SIGNAL_MARKETS, isIndividualBuySignalMarket } from '../constants/buySignalMarkets';
+import { KR_BUY_SIGNAL_MARKETS, US_BUY_SIGNAL_MARKETS, CRYPTO_BUY_SIGNAL_MARKETS, isUsBuySignalMarket, isCryptoBuySignalMarket } from '../constants/buySignalMarkets';
 
 const SIDEBAR_DEFAULT_FILTERS_KEY = 'moneycal.sidebarDefaultFilters.v1';
 const DEFAULT_SIGNAL_TYPE_FILTERS = Object.fromEntries(
@@ -247,12 +247,12 @@ function CalendarPage() {
       else if (ext === 'dart-report') typeKey = 'dart';
       else if (ext === 'reb-apt' || ext === 'reb-odcloud') typeKey = 'apt';
       else if (ext === 'signal') {
-        /** 미국·코인은 종목명이 보이도록 개별 표시, 국내는 날짜별 요약 */
-        if (isIndividualBuySignalMarket(ev._signalRow?.market)) {
+        /** 미국 지수만 개별 표시, 국내·코인은 날짜별 요약(매수신호·코인 N건) */
+        if (isUsBuySignalMarket(ev._signalRow?.market)) {
           kept.push(ev);
           continue;
         }
-        typeKey = 'signal';
+        typeKey = isCryptoBuySignalMarket(ev._signalRow?.market) ? 'crypto' : 'signal';
       } else { kept.push(ev); continue; }
 
       let dateStr;
@@ -267,9 +267,9 @@ function CalendarPage() {
       summaryBuckets[key].events.push(ev);
     }
 
-    const COLOR_MAP = { ipo: '#1b5e20', dart: '#0d47a1', apt: '#0d47a1', signal: '#e65100' };
-    const LABEL_MAP = { ipo: '공모', dart: '실적', apt: '청약', signal: '매수신호' };
-    const EXT_MAP = { ipo: 'summary-ipo', dart: 'summary-dart', apt: 'summary-apt', signal: 'summary-signal' };
+    const COLOR_MAP = { ipo: '#1b5e20', dart: '#0d47a1', apt: '#0d47a1', signal: '#e65100', crypto: '#f7931a' };
+    const LABEL_MAP = { ipo: '공모', dart: '실적', apt: '청약', signal: '매수신호', crypto: '코인' };
+    const EXT_MAP = { ipo: 'summary-ipo', dart: 'summary-dart', apt: 'summary-apt', signal: 'summary-signal', crypto: 'summary-crypto' };
 
     const summaries = Object.values(summaryBuckets).map(({ type, date, events: evts }) => ({
       id: `summary-${type}-${date}`,

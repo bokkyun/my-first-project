@@ -14,12 +14,27 @@ import {
   Chip,
 } from '@mui/material';
 import { Close, ChevronRight } from '@mui/icons-material';
+import {
+  buySignalMarketChipStyle,
+  buySignalMarketLabel,
+  isCryptoBuySignalMarket,
+  isKrBuySignalMarket,
+} from '../../constants/buySignalMarkets';
 
 const SUMMARY_TYPES = {
   ipo:    { label: '공모주',     color: '#1b5e20', match: (ev) => ev._external === 'ipo' },
   apt:    { label: '아파트청약', color: '#0d47a1', match: (ev) => ev._external === 'reb-apt' || ev._external === 'reb-odcloud' },
   dart:   { label: '실적발표',   color: '#1565c0', match: (ev) => ev._external === 'dart-report' },
-  signal: { label: '매수신호',   color: '#e65100', match: (ev) => ev._external === 'signal' },
+  signal: {
+    label: '매수신호',
+    color: '#e65100',
+    match: (ev) => ev._external === 'signal' && isKrBuySignalMarket(ev._signalRow?.market),
+  },
+  crypto: {
+    label: '코인',
+    color: '#f7931a',
+    match: (ev) => ev._external === 'signal' && isCryptoBuySignalMarket(ev._signalRow?.market),
+  },
 };
 
 const SIGNAL_CATEGORIES = [
@@ -214,8 +229,8 @@ function DayAgendaDialog({
           </IconButton>
         </Box>
         <DialogContent sx={{ pt: 1.5, pb: 2, px: 1.5 }}>
-          {subType === 'signal' ? (
-            /* 매수신호: 카테고리별 요약 */
+          {subType === 'signal' || subType === 'crypto' ? (
+            /* 매수신호·코인: 카테고리별 요약 */
             <List disablePadding>
               {SIGNAL_CATEGORIES.filter((c) => signalByCategory[c.key]?.length > 0).map((c) => (
                 <SummaryListItem
@@ -278,8 +293,8 @@ function DayAgendaDialog({
             <List disablePadding>
               {categoryEvents.map((ev) => {
                 const row = ev._signalRow;
-                const marketColor = row?.market === 'KOSPI' ? '#1565c0' : '#6a1b9a';
-                const marketBg   = row?.market === 'KOSPI' ? '#e3f2fd' : '#f3e5f5';
+                const marketLabel = buySignalMarketLabel(row?.market);
+                const marketStyle = buySignalMarketChipStyle(row?.market);
                 const indicators = Array.isArray(ev._signalIndicatorLabels) && ev._signalIndicatorLabels.length > 0
                   ? ev._signalIndicatorLabels
                   : [row?.signal_name || row?.signal_type].filter(Boolean);
@@ -302,9 +317,9 @@ function DayAgendaDialog({
                       ))}
                     </Box>
                     {row?.market && (
-                      <Chip label={row.market} size="small"
+                      <Chip label={marketLabel} size="small"
                         sx={{ ml: 1, height: 20, fontSize: '0.7rem', fontWeight: 700,
-                          bgcolor: marketBg, color: marketColor, flexShrink: 0 }} />
+                          ...marketStyle, flexShrink: 0 }} />
                     )}
                   </ListItemButton>
                 );
