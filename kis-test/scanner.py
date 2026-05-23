@@ -1,5 +1,6 @@
 """
-매수신호 스캐너 — KOSPI/KOSDAQ 전 종목 + 미국지수(S&P500·나스닥100) 기술적 지표 분석 후 Supabase signals 테이블에 저장
+매수신호 스캐너 — KOSPI/KOSDAQ + 미국지수(S&P500·나스닥100) + 업비트 코인(BTC·ETH·XRP)
+기술적 지표 분석 후 Supabase signals 테이블에 저장
 
 지원 신호 유형 (11종):
   추세:   MACD_GOLDEN_CROSS, MA_GOLDEN_CROSS, PRICE_ABOVE_MA20, MA_ALIGNMENT
@@ -64,6 +65,13 @@ SIGNAL_DEFS = {
 US_INDEX_TARGETS = [
     {"code": "SPY", "name": "S&P 500", "market": "SP500"},
     {"code": "QQQ", "name": "나스닥100", "market": "NASDAQ"},
+]
+
+# 업비트 원화 마켓 — 공개 시세 API 일봉 (API 키 불필요)
+CRYPTO_TARGETS = [
+    {"code": "KRW-BTC", "name": "비트코인", "market": "CRYPTO_BTC"},
+    {"code": "KRW-ETH", "name": "이더리움", "market": "CRYPTO_ETH"},
+    {"code": "KRW-XRP", "name": "리플", "market": "CRYPTO_XRP"},
 ]
 
 
@@ -186,6 +194,16 @@ def get_target_dates(days_back: int) -> set:
     return result
 
 
+def get_calendar_dates(days_back: int) -> set:
+    """최근 N 달력일(주말 포함) — 코인 24/7 거래용."""
+    result = set()
+    d = datetime.today()
+    for _ in range(days_back):
+        result.add(d.strftime("%Y-%m-%d"))
+        d -= timedelta(days=1)
+    return result
+
+
 def upsert_batch(rows: list):
     """50건씩 나눠 upsert — (date, code, signal_type) 기준 중복 무시."""
     chunk_size = 50
@@ -284,8 +302,8 @@ def send_daily_signal_messages(signals: list, notify_date: str, subscribers: lis
         time.sleep(1)
 
 
-def notify_telegram_for_latest_day(all_rows: list, target_dates: set) -> None:
-    """가장 최근 거래일 시그널만 텔레그램 발송 (과거 일자 재스캔 시 스팸 방지)."""
+def notify_telegram_for_latest_day(all_rows: list, notify_dates: set) -> None:
+    """가장 최근 대상일 시그널만 텔레그램 발송 (과거 일자 재스캔 시 스팸 방지)."""
     if not TELEGRAM_BOT_TOKEN:
         print("[텔레그램] TELEGRAM_BOT_TOKEN 없음 — 발송 생략")
         return
@@ -293,7 +311,7 @@ def notify_telegram_for_latest_day(all_rows: list, target_dates: set) -> None:
         print("[텔레그램] 발송할 신호 없음")
         return
 
-    notify_date = max(target_dates)
+    notify_date = max(notify_dates)
     to_notify = [r for r in all_rows if r["date"] == notify_date]
     subscribers = get_active_subscribers()
 
@@ -380,6 +398,38 @@ def scan_us_index_signals(target_dates: set, fetch_start: str, source: str = "fd
     return rows
 
 
+def scan_crypto_signals(target_dates: set, fetch_start: str) -> list:
+    """업비트 BTC·ETH·XRP 일봉 기술적 매수 신호."""
+    from upbit_fetcher import fetch_ohlcv_daily
+
+    rows = []
+    end_date = datetime.today().strftime("%Y-%m-%d")
+    for item in CRYPTO_TARGETS:
+        code = item["code"]
+        name = item["name"]
+        market = item["market"]
+        try:
+            df = fetch_ohlcv_daily(code, fetch_start, end_date)
+            if df is None or len(df) < 60:
+                print(f"  [코인] {name} 데이터 부족 — 스킵")
+                continue
+            for s in detect_signals(df, target_dates):
+                meta = SIGNAL_DEFS[s["signal_type"]]
+                rows.append({
+                    "date":            s["date"],
+                    "code":            code,
+                    "name":            name,
+                    "market":          market,
+                    "signal_type":     s["signal_type"],
+                    "signal_category": meta["category"],
+                    "signal_name":     meta["name"],
+                })
+            time.sleep(0.12)
+        except Exception as exc:
+            print(f"  [코인 오류] {code} {name}: {exc}")
+    return rows
+
+
 def run(days_back: int = 5, sleep_sec: float = 0.2, source: str = "fdr", skip_telegram: bool = False):
     """
     source: "fdr" = FinanceDataReader (기본, 빠름)
@@ -390,10 +440,13 @@ def run(days_back: int = 5, sleep_sec: float = 0.2, source: str = "fdr", skip_te
         sys.exit(1)
 
     target_dates = get_target_dates(days_back)
+    crypto_target_dates = get_calendar_dates(days_back)
+    notify_dates = target_dates | crypto_target_dates
     fetch_start = (datetime.today() - timedelta(days=400)).strftime("%Y-%m-%d")
 
     print(f"[스캐너 시작] 데이터 소스: {source.upper()}")
-    print(f"[스캐너] 대상 날짜({days_back}거래일): {sorted(target_dates)}")
+    print(f"[스캐너] 주식 대상 날짜({days_back}거래일): {sorted(target_dates)}")
+    print(f"[스캐너] 코인 대상 날짜({days_back}일): {sorted(crypto_target_dates)}")
     print(f"[스캐너] 가격 데이터 조회 시작일: {fetch_start}")
 
     kospi  = fdr.StockListing("KOSPI")[["Code", "Name"]].copy()
@@ -458,6 +511,11 @@ def run(days_back: int = 5, sleep_sec: float = 0.2, source: str = "fdr", skip_te
         print(f"[미국지수] S&P500·나스닥 신호 {len(us_rows)}건")
         all_rows.extend(us_rows)
 
+    crypto_rows = scan_crypto_signals(crypto_target_dates, fetch_start)
+    if crypto_rows:
+        print(f"[코인] BTC·ETH·XRP 신호 {len(crypto_rows)}건")
+        all_rows.extend(crypto_rows)
+
     if all_rows:
         print("[업로드] Supabase signals 테이블에 저장 중...")
         upsert_batch(all_rows)
@@ -466,7 +524,7 @@ def run(days_back: int = 5, sleep_sec: float = 0.2, source: str = "fdr", skip_te
         print("[업로드] 저장할 신호 없음 (대상 날짜에 신호 발생 종목 없음)")
 
     if not skip_telegram:
-        notify_telegram_for_latest_day(all_rows, target_dates)
+        notify_telegram_for_latest_day(all_rows, notify_dates)
 
 
 if __name__ == "__main__":

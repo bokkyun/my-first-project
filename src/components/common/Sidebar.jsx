@@ -23,6 +23,7 @@ const DEFAULT_FILTER_SETTINGS = {
   showBok: true,
   showBuySignals: true,
   showUsBuySignals: true,
+  showCryptoBuySignals: true,
   signalTypeFilters: DEFAULT_SIGNAL_TYPE_FILTERS,
   showAllGroups: true,
 };
@@ -82,6 +83,8 @@ function Sidebar({
   onShowBuySignalsChange,
   showUsBuySignals = true,
   onShowUsBuySignalsChange,
+  showCryptoBuySignals = true,
+  onShowCryptoBuySignalsChange,
   signalTypeFilters = DEFAULT_FILTER_SETTINGS.signalTypeFilters,
   onSignalTypeFiltersChange,
   defaultFilters = DEFAULT_FILTER_SETTINGS,
@@ -289,6 +292,31 @@ function Sidebar({
                 </Typography>
                 <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.12, mt: 0.1 }}>
                   S&P500·나스닥100
+                </Typography>
+              </Box>
+            )}
+          />
+        </ListItem>
+      )}
+      {onShowCryptoBuySignalsChange && (
+        <ListItem disablePadding sx={{ mb: 0.25 }}>
+          <FormControlLabel
+            sx={{ alignItems: 'flex-start', m: 0 }}
+            control={(
+              <Checkbox
+                checked={showCryptoBuySignals}
+                onChange={(e) => onShowCryptoBuySignalsChange(e.target.checked)}
+                size="small"
+                sx={{ py: 0.25, alignSelf: 'flex-start', mt: 0.125 }}
+              />
+            )}
+            label={(
+              <Box>
+                <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1.28 }}>
+                  매수시그널(코인)
+                </Typography>
+                <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.12, mt: 0.1 }}>
+                  업비트 BTC·ETH·XRP
                 </Typography>
               </Box>
             )}
@@ -513,6 +541,12 @@ function Sidebar({
               <FormControlLabel
                 control={<Checkbox checked={settingsDraft.showUsBuySignals} onChange={(e) => updateSettingsDraft('showUsBuySignals', e.target.checked)} size="small" />}
                 label={<Typography variant="body2">매수시그널(미국) S&P500·나스닥</Typography>}
+              />
+            </ListItem>
+            <ListItem disablePadding>
+              <FormControlLabel
+                control={<Checkbox checked={settingsDraft.showCryptoBuySignals} onChange={(e) => updateSettingsDraft('showCryptoBuySignals', e.target.checked)} size="small" />}
+                label={<Typography variant="body2">매수시그널(코인) BTC·ETH·XRP</Typography>}
               />
             </ListItem>
             <ListItem disablePadding>

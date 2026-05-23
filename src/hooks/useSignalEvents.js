@@ -1,7 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { coversAllBuySignalTypes } from '../constants/buySignalTypes';
-import { US_NASDAQ_MARKET, US_SP500_MARKET, isUsBuySignalMarket } from '../constants/buySignalMarkets';
+import {
+  US_NASDAQ_MARKET,
+  US_SP500_MARKET,
+  CRYPTO_BTC_MARKET,
+  CRYPTO_ETH_MARKET,
+  CRYPTO_XRP_MARKET,
+  isUsBuySignalMarket,
+  isCryptoBuySignalMarket,
+} from '../constants/buySignalMarkets';
 import { groupSignalRowsForDisplay } from '../utils/signalDisplayMerge';
 
 export function toYmd(date) {
@@ -59,6 +67,9 @@ function categoryColor(category, market) {
   const m = String(market || '').trim();
   if (m === US_SP500_MARKET) return '#283593';
   if (m === US_NASDAQ_MARKET) return '#ad1457';
+  if (m === CRYPTO_BTC_MARKET) return '#f7931a';
+  if (m === CRYPTO_ETH_MARKET) return '#627eea';
+  if (m === CRYPTO_XRP_MARKET) return '#546e7a';
   if (category === '추세') return '#1976d2';
   if (category === '모멘텀') return '#2e7d32';
   if (category === '볼린저') return '#6a1b9a';
@@ -190,10 +201,12 @@ export function useSignalEvents(enabled, viewRange, enabledSignalTypes = [], mar
             ),
           ];
           const stock = row.name || row.code;
-          const usTag = isUsBuySignalMarket(row.market) ? '🇺🇸 ' : '';
+          const prefix = isCryptoBuySignalMarket(row.market)
+            ? '🪙 '
+            : (isUsBuySignalMarket(row.market) ? '🇺🇸 ' : '');
           const title = multi
-            ? `${usTag}[${row.signal_category || '시그널'}] ${stock}`
-            : `${usTag}[${row.signal_category || '시그널'}] ${stock} ${row.signal_name || row.signal_type}`;
+            ? `${prefix}[${row.signal_category || '시그널'}] ${stock}`
+            : `${prefix}[${row.signal_category || '시그널'}] ${stock} ${row.signal_name || row.signal_type}`;
           const codeKey = String(row.code ?? '').trim() || `name:${String(row.name ?? '').trim()}`;
           const id = multi
             ? `signal-${row.date}-${codeKey}-${row.signal_category || '기타'}-merged`

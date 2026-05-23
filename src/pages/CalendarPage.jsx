@@ -31,7 +31,7 @@ import MyEventSearchDialog from '../components/landing/MyEventSearchDialog';
 import TodayHotSignalBanner from '../components/landing/TodayHotSignalBanner';
 import { eventPassesSidebarCalendarFilters } from '../utils/calendarEventFilters';
 import { ALL_BUY_SIGNAL_TYPE_KEYS } from '../constants/buySignalTypes';
-import { KR_BUY_SIGNAL_MARKETS, US_BUY_SIGNAL_MARKETS, isUsBuySignalMarket } from '../constants/buySignalMarkets';
+import { KR_BUY_SIGNAL_MARKETS, US_BUY_SIGNAL_MARKETS, CRYPTO_BUY_SIGNAL_MARKETS, isIndividualBuySignalMarket } from '../constants/buySignalMarkets';
 
 const SIDEBAR_DEFAULT_FILTERS_KEY = 'moneycal.sidebarDefaultFilters.v1';
 const DEFAULT_SIGNAL_TYPE_FILTERS = Object.fromEntries(
@@ -46,6 +46,7 @@ const DEFAULT_SIDEBAR_FILTERS = {
   showBok: true,
   showBuySignals: true,
   showUsBuySignals: true,
+  showCryptoBuySignals: true,
   signalTypeFilters: DEFAULT_SIGNAL_TYPE_FILTERS,
   showAllGroups: true,
 };
@@ -59,8 +60,9 @@ function normalizeSidebarFilters(value) {
     ...DEFAULT_SIDEBAR_FILTERS,
     ...(value && typeof value === 'object' ? value : {}),
     signalTypeFilters,
-    /** v1 저장값에 없을 때 미국 매수시그널 기본 ON */
+    /** v1 저장값에 없을 때 미국·코인 매수시그널 기본 ON */
     showUsBuySignals: value?.showUsBuySignals !== false,
+    showCryptoBuySignals: value?.showCryptoBuySignals !== false,
   };
 }
 
@@ -140,6 +142,7 @@ function CalendarPage() {
   const [showBok, setShowBok] = useState(() => readSidebarDefaultFilters().showBok);
   const [showBuySignals, setShowBuySignals] = useState(() => readSidebarDefaultFilters().showBuySignals);
   const [showUsBuySignals, setShowUsBuySignals] = useState(() => readSidebarDefaultFilters().showUsBuySignals);
+  const [showCryptoBuySignals, setShowCryptoBuySignals] = useState(() => readSidebarDefaultFilters().showCryptoBuySignals);
   const [signalTypeFilters, setSignalTypeFilters] = useState(() => readSidebarDefaultFilters().signalTypeFilters);
   const [viewRange, setViewRange] = useState(() => {
     const now = new Date();
@@ -207,7 +210,10 @@ function CalendarPage() {
   const { events: usSignalEvents, error: usSignalError } = useSignalEvents(
     showUsBuySignals, viewRange, enabledSignalTypes, US_BUY_SIGNAL_MARKETS,
   );
-  const signalError = krSignalError || usSignalError;
+  const { events: cryptoSignalEvents, error: cryptoSignalError } = useSignalEvents(
+    showCryptoBuySignals, viewRange, enabledSignalTypes, CRYPTO_BUY_SIGNAL_MARKETS,
+  );
+  const signalError = krSignalError || usSignalError || cryptoSignalError;
   const {
     stocks: todayHotSignalStocks,
     date: todayHotSignalDate,
@@ -222,8 +228,9 @@ function CalendarPage() {
     if (showBok) list.push(...bokCalendarEvents);
     if (showBuySignals) list.push(...krSignalEvents);
     if (showUsBuySignals) list.push(...usSignalEvents);
+    if (showCryptoBuySignals) list.push(...cryptoSignalEvents);
     return list;
-  }, [events, aptSplyList, showAptSply, ipoList, showIpo, dartPeriodicList, showDartPeriodic, showFred, fredCalendarEvents, showBok, bokCalendarEvents, showBuySignals, krSignalEvents, showUsBuySignals, usSignalEvents]);
+  }, [events, aptSplyList, showAptSply, ipoList, showIpo, dartPeriodicList, showDartPeriodic, showFred, fredCalendarEvents, showBok, bokCalendarEvents, showBuySignals, krSignalEvents, showUsBuySignals, usSignalEvents, showCryptoBuySignals, cryptoSignalEvents]);
 
   /** 표시 중인 뷰 구간에 속하는 일정만(월 뷰에서는 해당 월만, 전·익월 칸 제외) + 공모주·청약·실적은 날짜별 요약 */
   const calendarEventsForGrid = useMemo(() => {
@@ -240,8 +247,8 @@ function CalendarPage() {
       else if (ext === 'dart-report') typeKey = 'dart';
       else if (ext === 'reb-apt' || ext === 'reb-odcloud') typeKey = 'apt';
       else if (ext === 'signal') {
-        /** 미국 지수(S&P500·나스닥)는 종목명이 보이도록 개별 표시, 국내는 날짜별 요약 */
-        if (isUsBuySignalMarket(ev._signalRow?.market)) {
+        /** 미국·코인은 종목명이 보이도록 개별 표시, 국내는 날짜별 요약 */
+        if (isIndividualBuySignalMarket(ev._signalRow?.market)) {
           kept.push(ev);
           continue;
         }
@@ -327,6 +334,7 @@ function CalendarPage() {
     setShowBok(normalized.showBok);
     setShowBuySignals(normalized.showBuySignals);
     setShowUsBuySignals(normalized.showUsBuySignals);
+    setShowCryptoBuySignals(normalized.showCryptoBuySignals);
     setSignalTypeFilters(normalized.signalTypeFilters);
     setVisibleGroupIds(normalized.showAllGroups ? groups.map((g) => g.id) : []);
     setSnack({ open: true, msg: '메뉴 기본 체크 설정을 저장했습니다.', severity: 'success' });
@@ -571,6 +579,8 @@ function CalendarPage() {
           onShowBuySignalsChange={setShowBuySignals}
           showUsBuySignals={showUsBuySignals}
           onShowUsBuySignalsChange={setShowUsBuySignals}
+          showCryptoBuySignals={showCryptoBuySignals}
+          onShowCryptoBuySignalsChange={setShowCryptoBuySignals}
           signalTypeFilters={signalTypeFilters}
           onSignalTypeFiltersChange={setSignalTypeFilters}
           defaultFilters={sidebarDefaultFilters}
