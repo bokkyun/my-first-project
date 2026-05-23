@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { coversAllBuySignalTypes } from '../constants/buySignalTypes';
+import { US_NASDAQ_MARKET, US_SP500_MARKET, isUsBuySignalMarket } from '../constants/buySignalMarkets';
 import { groupSignalRowsForDisplay } from '../utils/signalDisplayMerge';
 
 export function toYmd(date) {
@@ -54,7 +55,10 @@ function widenSignalQueryYmdRange(startYmd, endYmd, minSpanDays = 42) {
   };
 }
 
-function categoryColor(category) {
+function categoryColor(category, market) {
+  const m = String(market || '').trim();
+  if (m === US_SP500_MARKET) return '#283593';
+  if (m === US_NASDAQ_MARKET) return '#ad1457';
   if (category === '추세') return '#1976d2';
   if (category === '모멘텀') return '#2e7d32';
   if (category === '볼린저') return '#6a1b9a';
@@ -186,9 +190,10 @@ export function useSignalEvents(enabled, viewRange, enabledSignalTypes = [], mar
             ),
           ];
           const stock = row.name || row.code;
+          const usTag = isUsBuySignalMarket(row.market) ? '🇺🇸 ' : '';
           const title = multi
-            ? `[${row.signal_category || '시그널'}] ${stock}`
-            : `[${row.signal_category || '시그널'}] ${stock} ${row.signal_name || row.signal_type}`;
+            ? `${usTag}[${row.signal_category || '시그널'}] ${stock}`
+            : `${usTag}[${row.signal_category || '시그널'}] ${stock} ${row.signal_name || row.signal_type}`;
           const codeKey = String(row.code ?? '').trim() || `name:${String(row.name ?? '').trim()}`;
           const id = multi
             ? `signal-${row.date}-${codeKey}-${row.signal_category || '기타'}-merged`
@@ -199,7 +204,7 @@ export function useSignalEvents(enabled, viewRange, enabledSignalTypes = [], mar
             starts_at: `${row.date}T16:00:00+09:00`,
             ends_at: `${row.date}T16:30:00+09:00`,
             is_all_day: false,
-            color: categoryColor(row.signal_category),
+            color: categoryColor(row.signal_category, row.market),
             _external: 'signal',
             _signalRow: row,
             _signalMergedRows: multi ? sorted : undefined,

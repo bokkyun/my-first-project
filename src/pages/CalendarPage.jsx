@@ -31,7 +31,7 @@ import MyEventSearchDialog from '../components/landing/MyEventSearchDialog';
 import TodayHotSignalBanner from '../components/landing/TodayHotSignalBanner';
 import { eventPassesSidebarCalendarFilters } from '../utils/calendarEventFilters';
 import { ALL_BUY_SIGNAL_TYPE_KEYS } from '../constants/buySignalTypes';
-import { KR_BUY_SIGNAL_MARKETS, US_BUY_SIGNAL_MARKETS } from '../constants/buySignalMarkets';
+import { KR_BUY_SIGNAL_MARKETS, US_BUY_SIGNAL_MARKETS, isUsBuySignalMarket } from '../constants/buySignalMarkets';
 
 const SIDEBAR_DEFAULT_FILTERS_KEY = 'moneycal.sidebarDefaultFilters.v1';
 const DEFAULT_SIGNAL_TYPE_FILTERS = Object.fromEntries(
@@ -59,6 +59,8 @@ function normalizeSidebarFilters(value) {
     ...DEFAULT_SIDEBAR_FILTERS,
     ...(value && typeof value === 'object' ? value : {}),
     signalTypeFilters,
+    /** v1 저장값에 없을 때 미국 매수시그널 기본 ON */
+    showUsBuySignals: value?.showUsBuySignals !== false,
   };
 }
 
@@ -237,8 +239,14 @@ function CalendarPage() {
       if (ext === 'ipo') typeKey = 'ipo';
       else if (ext === 'dart-report') typeKey = 'dart';
       else if (ext === 'reb-apt' || ext === 'reb-odcloud') typeKey = 'apt';
-      else if (ext === 'signal') typeKey = 'signal';
-      else { kept.push(ev); continue; }
+      else if (ext === 'signal') {
+        /** 미국 지수(S&P500·나스닥)는 종목명이 보이도록 개별 표시, 국내는 날짜별 요약 */
+        if (isUsBuySignalMarket(ev._signalRow?.market)) {
+          kept.push(ev);
+          continue;
+        }
+        typeKey = 'signal';
+      } else { kept.push(ev); continue; }
 
       let dateStr;
       if (ext === 'signal' && ev._signalRow?.date != null) {
