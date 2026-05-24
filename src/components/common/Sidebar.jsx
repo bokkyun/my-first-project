@@ -210,7 +210,7 @@ function Sidebar({
               <Box>
                 <Typography variant="body2" fontWeight={600} sx={{ lineHeight: 1.28 }}>미국 거시지표</Typography>
                 <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.12, mt: 0.1 }}>
-                  NFP·CPI·M2 등...
+                  NFP·CPI·PCE·PPI·M2 등...
                 </Typography>
               </Box>
             )}
