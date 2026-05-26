@@ -247,12 +247,10 @@ function CalendarPage() {
       else if (ext === 'dart-report') typeKey = 'dart';
       else if (ext === 'reb-apt' || ext === 'reb-odcloud') typeKey = 'apt';
       else if (ext === 'signal') {
-        /** 미국 지수만 개별 표시, 국내·코인은 날짜별 요약(매수신호·코인 N건) */
-        if (isUsBuySignalMarket(ev._signalRow?.market)) {
-          kept.push(ev);
-          continue;
-        }
-        typeKey = isCryptoBuySignalMarket(ev._signalRow?.market) ? 'crypto' : 'signal';
+        /** 국내·미국·코인 모두 날짜별 요약(매수신호·🇺🇸시그널·코인 N건) */
+        if (isUsBuySignalMarket(ev._signalRow?.market)) typeKey = 'us';
+        else if (isCryptoBuySignalMarket(ev._signalRow?.market)) typeKey = 'crypto';
+        else typeKey = 'signal';
       } else { kept.push(ev); continue; }
 
       let dateStr;
@@ -267,9 +265,18 @@ function CalendarPage() {
       summaryBuckets[key].events.push(ev);
     }
 
-    const COLOR_MAP = { ipo: '#1b5e20', dart: '#0d47a1', apt: '#0d47a1', signal: '#e65100', crypto: '#f7931a' };
-    const LABEL_MAP = { ipo: '공모', dart: '실적', apt: '청약', signal: '매수신호', crypto: '코인' };
-    const EXT_MAP = { ipo: 'summary-ipo', dart: 'summary-dart', apt: 'summary-apt', signal: 'summary-signal', crypto: 'summary-crypto' };
+    const COLOR_MAP = {
+      ipo: '#1b5e20', dart: '#0d47a1', apt: '#0d47a1',
+      signal: '#e65100', us: '#283593', crypto: '#f7931a',
+    };
+    const LABEL_MAP = {
+      ipo: '공모', dart: '실적', apt: '청약',
+      signal: '매수신호', us: '🇺🇸시그널', crypto: '코인',
+    };
+    const EXT_MAP = {
+      ipo: 'summary-ipo', dart: 'summary-dart', apt: 'summary-apt',
+      signal: 'summary-signal', us: 'summary-us', crypto: 'summary-crypto',
+    };
 
     const summaries = Object.values(summaryBuckets).map(({ type, date, events: evts }) => ({
       id: `summary-${type}-${date}`,

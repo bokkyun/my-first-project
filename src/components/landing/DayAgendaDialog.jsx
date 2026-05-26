@@ -19,6 +19,7 @@ import {
   buySignalMarketLabel,
   isCryptoBuySignalMarket,
   isKrBuySignalMarket,
+  isUsBuySignalMarket,
 } from '../../constants/buySignalMarkets';
 
 const SUMMARY_TYPES = {
@@ -29,6 +30,11 @@ const SUMMARY_TYPES = {
     label: '매수신호',
     color: '#e65100',
     match: (ev) => ev._external === 'signal' && isKrBuySignalMarket(ev._signalRow?.market),
+  },
+  us: {
+    label: '🇺🇸 시그널',
+    color: '#283593',
+    match: (ev) => ev._external === 'signal' && isUsBuySignalMarket(ev._signalRow?.market),
   },
   crypto: {
     label: '코인',
@@ -229,8 +235,8 @@ function DayAgendaDialog({
           </IconButton>
         </Box>
         <DialogContent sx={{ pt: 1.5, pb: 2, px: 1.5 }}>
-          {subType === 'signal' || subType === 'crypto' ? (
-            /* 매수신호·코인: 카테고리별 요약 */
+          {subType === 'signal' || subType === 'us' || subType === 'crypto' ? (
+            /* 매수신호·미국·코인: 카테고리별 요약 */
             <List disablePadding>
               {SIGNAL_CATEGORIES.filter((c) => signalByCategory[c.key]?.length > 0).map((c) => (
                 <SummaryListItem

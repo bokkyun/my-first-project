@@ -24,9 +24,9 @@ export function isCryptoBuySignalMarket(market) {
   return CRYPTO_BUY_SIGNAL_MARKETS.includes(String(market || '').trim());
 }
 
-/** 캘린더에 종목명으로 개별 표시할 시장 (국내·코인은 날짜별 요약) */
-export function isIndividualBuySignalMarket(market) {
-  return isUsBuySignalMarket(market);
+/** 캘린더 그리드에 개별 표시할 시장 — 현재는 모두 날짜별 요약 */
+export function isIndividualBuySignalMarket() {
+  return false;
 }
 
 export function buySignalMarketLabel(market) {

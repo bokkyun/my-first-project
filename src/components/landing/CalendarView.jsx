@@ -530,7 +530,9 @@ function CalendarView({
             const isIpo = ex._external === 'ipo' || ex._external === 'summary-ipo';
             const isDartReport = ex._external === 'dart-report' || ex._external === 'summary-dart';
             const isAptSummary = ex._external === 'summary-apt';
-            const isSignalSummary = ex._external === 'summary-signal' || ex._external === 'summary-crypto';
+            const isSignalSummary = ex._external === 'summary-signal'
+              || ex._external === 'summary-us'
+              || ex._external === 'summary-crypto';
             const isSummary = !!ex._isSummary;
 
             const compactCalendarTitle = isIpo || isDartReport || isAptSummary || isSignalSummary;
