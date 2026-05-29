@@ -31,7 +31,7 @@ import MyEventSearchDialog from '../components/landing/MyEventSearchDialog';
 import TodayHotSignalBanner from '../components/landing/TodayHotSignalBanner';
 import { eventPassesSidebarCalendarFilters } from '../utils/calendarEventFilters';
 import { ALL_BUY_SIGNAL_TYPE_KEYS } from '../constants/buySignalTypes';
-import { KR_BUY_SIGNAL_MARKETS, US_BUY_SIGNAL_MARKETS, CRYPTO_BUY_SIGNAL_MARKETS, isUsBuySignalMarket, isCryptoBuySignalMarket } from '../constants/buySignalMarkets';
+import { KR_BUY_SIGNAL_MARKETS, US_BUY_SIGNAL_MARKETS, CRYPTO_MARKET_FILTER, isUsBuySignalMarket, isCryptoBuySignalMarket } from '../constants/buySignalMarkets';
 
 const SIDEBAR_DEFAULT_FILTERS_KEY = 'moneycal.sidebarDefaultFilters.v1';
 const DEFAULT_SIGNAL_TYPE_FILTERS = Object.fromEntries(
@@ -211,7 +211,7 @@ function CalendarPage() {
     showUsBuySignals, viewRange, enabledSignalTypes, US_BUY_SIGNAL_MARKETS,
   );
   const { events: cryptoSignalEvents, error: cryptoSignalError } = useSignalEvents(
-    showCryptoBuySignals, viewRange, enabledSignalTypes, CRYPTO_BUY_SIGNAL_MARKETS,
+    showCryptoBuySignals, viewRange, enabledSignalTypes, CRYPTO_MARKET_FILTER,
   );
   const signalError = krSignalError || usSignalError || cryptoSignalError;
   const {

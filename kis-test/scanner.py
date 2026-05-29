@@ -67,7 +67,8 @@ US_INDEX_TARGETS = [
     {"code": "QQQ", "name": "나스닥100", "market": "NASDAQ"},
 ]
 
-# 업비트 원화 마켓 — 공개 시세 API 일봉 (API 키 불필요)
+# 업비트 원화 마켓 — fetch_crypto_scan_targets() 로 24h 거래대금 상위 조회 (기본 30종)
+CRYPTO_SCAN_TOP_N = int(os.environ.get("CRYPTO_SCAN_TOP_N", "30"))
 CRYPTO_TARGETS = [
     {"code": "KRW-BTC", "name": "비트코인", "market": "CRYPTO_BTC"},
     {"code": "KRW-ETH", "name": "이더리움", "market": "CRYPTO_ETH"},
@@ -398,13 +399,21 @@ def scan_us_index_signals(target_dates: set, fetch_start: str, source: str = "fd
     return rows
 
 
-def scan_crypto_signals(target_dates: set, fetch_start: str) -> list:
-    """업비트 BTC·ETH·XRP 일봉 기술적 매수 신호."""
-    from upbit_fetcher import fetch_ohlcv_daily
+def scan_crypto_signals(target_dates: set, fetch_start: str, top_n: int | None = None) -> list:
+    """업비트 KRW 마켓(거래대금 상위) 일봉 기술적 매수 신호."""
+    from upbit_fetcher import fetch_crypto_scan_targets, fetch_ohlcv_daily
+
+    n = top_n if top_n is not None else CRYPTO_SCAN_TOP_N
+    try:
+        targets = fetch_crypto_scan_targets(n)
+        print(f"[코인] 업비트 거래대금 상위 {len(targets)}종 스캔")
+    except Exception as exc:
+        print(f"[코인] 마켓 목록 조회 실패, 기본 3종 사용: {exc}")
+        targets = CRYPTO_TARGETS
 
     rows = []
     end_date = datetime.today().strftime("%Y-%m-%d")
-    for item in CRYPTO_TARGETS:
+    for item in targets:
         code = item["code"]
         name = item["name"]
         market = item["market"]
@@ -430,7 +439,7 @@ def scan_crypto_signals(target_dates: set, fetch_start: str) -> list:
     return rows
 
 
-def run(days_back: int = 5, sleep_sec: float = 0.2, source: str = "fdr", skip_telegram: bool = False):
+def run(days_back: int = 5, sleep_sec: float = 0.2, source: str = "fdr", skip_telegram: bool = False, crypto_top_n: int | None = None):
     """
     source: "fdr" = FinanceDataReader (기본, 빠름)
             "kis" = KIS API (정확, 느림 — KIS_APP_KEY/SECRET 필요)
@@ -511,9 +520,9 @@ def run(days_back: int = 5, sleep_sec: float = 0.2, source: str = "fdr", skip_te
         print(f"[미국지수] S&P500·나스닥 신호 {len(us_rows)}건")
         all_rows.extend(us_rows)
 
-    crypto_rows = scan_crypto_signals(crypto_target_dates, fetch_start)
+    crypto_rows = scan_crypto_signals(crypto_target_dates, fetch_start, top_n=crypto_top_n)
     if crypto_rows:
-        print(f"[코인] BTC·ETH·XRP 신호 {len(crypto_rows)}건")
+        print(f"[코인] 신호 {len(crypto_rows)}건 ({len(set(r['code'] for r in crypto_rows))}종목)")
         all_rows.extend(crypto_rows)
 
     if all_rows:
@@ -541,5 +550,9 @@ if __name__ == "__main__":
         "--no-telegram", action="store_true",
         help="텔레그램 발송 생략 (DB 저장만)"
     )
+    parser.add_argument(
+        "--crypto-top", type=int, default=None,
+        help=f"코인 스캔 종목 수 — 업비트 24h 거래대금 상위 (기본: {CRYPTO_SCAN_TOP_N})"
+    )
     args = parser.parse_args()
-    run(days_back=args.days, source=args.source, skip_telegram=args.no_telegram)
+    run(days_back=args.days, source=args.source, skip_telegram=args.no_telegram, crypto_top_n=args.crypto_top)

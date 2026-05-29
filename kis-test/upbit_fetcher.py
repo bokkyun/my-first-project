@@ -15,6 +15,54 @@ import requests
 
 UPBIT_QUOTATION = "https://api.upbit.com/v1"
 
+# API 실패 시 사용할 최소 목록
+DEFAULT_CRYPTO_TARGETS = [
+    {"code": "KRW-BTC", "name": "비트코인", "market": "CRYPTO_BTC"},
+    {"code": "KRW-ETH", "name": "이더리움", "market": "CRYPTO_ETH"},
+    {"code": "KRW-XRP", "name": "리플", "market": "CRYPTO_XRP"},
+    {"code": "KRW-SOL", "name": "솔라나", "market": "CRYPTO_SOL"},
+    {"code": "KRW-DOGE", "name": "도지코인", "market": "CRYPTO_DOGE"},
+]
+
+
+def fetch_crypto_scan_targets(top_n: int = 30) -> list[dict]:
+    """
+    업비트 KRW 마켓 중 24h 거래대금 상위 top_n — scanner CRYPTO_TARGETS 형식.
+    market_warning 이 NONE 인 종목만 (투자유의·주의 제외).
+    """
+    resp = requests.get(f"{UPBIT_QUOTATION}/market/all", timeout=30)
+    resp.raise_for_status()
+    krw_meta = [
+        m for m in resp.json()
+        if str(m.get("market", "")).startswith("KRW-")
+        and str(m.get("market_warning") or "NONE") == "NONE"
+    ]
+    if not krw_meta:
+        return DEFAULT_CRYPTO_TARGETS[:top_n]
+
+    name_by_code = {m["market"]: m.get("korean_name") or m["market"].split("-")[1] for m in krw_meta}
+    codes = list(name_by_code.keys())
+    tickers: list[dict] = []
+
+    for i in range(0, len(codes), 100):
+        batch = ",".join(codes[i : i + 100])
+        tr = requests.get(f"{UPBIT_QUOTATION}/ticker", params={"markets": batch}, timeout=30)
+        tr.raise_for_status()
+        tickers.extend(tr.json())
+        time.sleep(0.11)
+
+    tickers.sort(key=lambda t: float(t.get("acc_trade_price_24h") or 0), reverse=True)
+    results: list[dict] = []
+    for t in tickers[:top_n]:
+        code = t["market"]
+        symbol = code.split("-", 1)[1]
+        results.append({
+            "code": code,
+            "name": name_by_code.get(code, symbol),
+            "market": f"CRYPTO_{symbol}",
+        })
+    return results or DEFAULT_CRYPTO_TARGETS[:top_n]
+
 
 def fetch_ohlcv_daily(market: str, start: str, end: str | None = None) -> pd.DataFrame:
     """

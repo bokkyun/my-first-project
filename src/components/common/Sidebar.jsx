@@ -316,7 +316,7 @@ function Sidebar({
                   매수시그널(코인)
                 </Typography>
                 <Typography variant="caption" color="text.secondary" display="block" sx={{ lineHeight: 1.12, mt: 0.1 }}>
-                  업비트 BTC·ETH·XRP
+                  업비트 주요 코인(거래대금 상위)
                 </Typography>
               </Box>
             )}
@@ -546,7 +546,7 @@ function Sidebar({
             <ListItem disablePadding>
               <FormControlLabel
                 control={<Checkbox checked={settingsDraft.showCryptoBuySignals} onChange={(e) => updateSettingsDraft('showCryptoBuySignals', e.target.checked)} size="small" />}
-                label={<Typography variant="body2">매수시그널(코인) BTC·ETH·XRP</Typography>}
+                label={<Typography variant="body2">매수시그널(코인) 업비트 주요코인</Typography>}
               />
             </ListItem>
             <ListItem disablePadding>

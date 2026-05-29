@@ -2,13 +2,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { coversAllBuySignalTypes } from '../constants/buySignalTypes';
 import {
+  CRYPTO_MARKET_FILTER,
   US_NASDAQ_MARKET,
   US_SP500_MARKET,
-  CRYPTO_BTC_MARKET,
-  CRYPTO_ETH_MARKET,
-  CRYPTO_XRP_MARKET,
-  isUsBuySignalMarket,
+  cryptoCategoryColor,
   isCryptoBuySignalMarket,
+  isUsBuySignalMarket,
 } from '../constants/buySignalMarkets';
 import { groupSignalRowsForDisplay } from '../utils/signalDisplayMerge';
 
@@ -67,9 +66,7 @@ function categoryColor(category, market) {
   const m = String(market || '').trim();
   if (m === US_SP500_MARKET) return '#283593';
   if (m === US_NASDAQ_MARKET) return '#ad1457';
-  if (m === CRYPTO_BTC_MARKET) return '#f7931a';
-  if (m === CRYPTO_ETH_MARKET) return '#627eea';
-  if (m === CRYPTO_XRP_MARKET) return '#546e7a';
+  if (isCryptoBuySignalMarket(m)) return cryptoCategoryColor(m);
   if (category === '추세') return '#1976d2';
   if (category === '모멘텀') return '#2e7d32';
   if (category === '볼린저') return '#6a1b9a';
@@ -183,7 +180,9 @@ export function useSignalEvents(enabled, viewRange, enabledSignalTypes = [], mar
           rows = rows.filter((r) => allow.has(r.signal_type));
         }
 
-        if (Array.isArray(markets) && markets.length > 0) {
+        if (markets === CRYPTO_MARKET_FILTER) {
+          rows = rows.filter((r) => isCryptoBuySignalMarket(r.market));
+        } else if (Array.isArray(markets) && markets.length > 0) {
           const allowMarkets = new Set(markets);
           rows = rows.filter((r) => allowMarkets.has(String(r.market || '').trim()));
         }
