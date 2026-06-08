@@ -12,6 +12,7 @@
   cp .env.example .env          # SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY 입력
   python scanner.py             # 최근 5거래일 신호 저장
   python scanner.py --days 30   # 최근 30거래일 신호 저장 (초기 적재 시)
+  python scanner.py --crypto-only --days 10 --crypto-top 30  # 코인만 (KRX/FDR 오류 시)
 
 GitHub Actions:
   이 저장소 루트 .github/workflows/kis-scanner-schedule.yml — 평일 스케줄로
@@ -439,86 +440,99 @@ def scan_crypto_signals(target_dates: set, fetch_start: str, top_n: int | None =
     return rows
 
 
-def run(days_back: int = 5, sleep_sec: float = 0.2, source: str = "fdr", skip_telegram: bool = False, crypto_top_n: int | None = None):
+def run(
+    days_back: int = 5,
+    sleep_sec: float = 0.2,
+    source: str = "fdr",
+    skip_telegram: bool = False,
+    crypto_top_n: int | None = None,
+    crypto_only: bool = False,
+):
     """
     source: "fdr" = FinanceDataReader (기본, 빠름)
             "kis" = KIS API (정확, 느림 — KIS_APP_KEY/SECRET 필요)
+    crypto_only: True면 업비트 코인만 스캔 (국내·미국 주식/KRX 생략)
     """
-    if source == "kis" and (not KIS_APP_KEY or not KIS_APP_SECRET):
+    if source == "kis" and not crypto_only and (not KIS_APP_KEY or not KIS_APP_SECRET):
         print("오류: KIS API 사용 시 .env 에 KIS_APP_KEY, KIS_APP_SECRET 을 설정해주세요.")
         sys.exit(1)
 
     target_dates = get_target_dates(days_back)
     crypto_target_dates = get_calendar_dates(days_back)
-    notify_dates = target_dates | crypto_target_dates
+    notify_dates = crypto_target_dates if crypto_only else (target_dates | crypto_target_dates)
     fetch_start = (datetime.today() - timedelta(days=400)).strftime("%Y-%m-%d")
 
-    print(f"[스캐너 시작] 데이터 소스: {source.upper()}")
-    print(f"[스캐너] 주식 대상 날짜({days_back}거래일): {sorted(target_dates)}")
+    if crypto_only:
+        print("[스캐너 시작] 모드: 코인만 (--crypto-only)")
+    else:
+        print(f"[스캐너 시작] 데이터 소스: {source.upper()}")
+        print(f"[스캐너] 주식 대상 날짜({days_back}거래일): {sorted(target_dates)}")
     print(f"[스캐너] 코인 대상 날짜({days_back}일): {sorted(crypto_target_dates)}")
     print(f"[스캐너] 가격 데이터 조회 시작일: {fetch_start}")
 
-    kospi  = fdr.StockListing("KOSPI")[["Code", "Name"]].copy()
-    kosdaq = fdr.StockListing("KOSDAQ")[["Code", "Name"]].copy()
-    kospi["market"]  = "KOSPI"
-    kosdaq["market"] = "KOSDAQ"
-    stocks = pd.concat([kospi, kosdaq], ignore_index=True)
-    _before_spac = len(stocks)
-    stocks = stocks[~stocks["Name"].astype(str).map(_is_spac_listing)].reset_index(drop=True)
-    _excluded = _before_spac - len(stocks)
-    if _excluded:
-        print(f"[스캐너] 스팩 종목 제외: {_excluded}개")
-    total = len(stocks)
-    print(f"[스캐너] 스캔 대상 종목: {total}개\n")
-
     all_rows = []
-    error_count = 0
 
-    for i, row in stocks.iterrows():
-        code   = str(row["Code"]).strip()
-        name   = str(row["Name"]).strip()
-        market = row["market"]
+    if not crypto_only:
+        kospi  = fdr.StockListing("KOSPI")[["Code", "Name"]].copy()
+        kosdaq = fdr.StockListing("KOSDAQ")[["Code", "Name"]].copy()
+        kospi["market"]  = "KOSPI"
+        kosdaq["market"] = "KOSDAQ"
+        stocks = pd.concat([kospi, kosdaq], ignore_index=True)
+        _before_spac = len(stocks)
+        stocks = stocks[~stocks["Name"].astype(str).map(_is_spac_listing)].reset_index(drop=True)
+        _excluded = _before_spac - len(stocks)
+        if _excluded:
+            print(f"[스캐너] 스팩 종목 제외: {_excluded}개")
+        total = len(stocks)
+        print(f"[스캐너] 스캔 대상 종목: {total}개\n")
 
-        try:
-            if source == "kis":
-                df = _fetch_kis(code, fetch_start)
-                time.sleep(0.05)  # KIS API 속도 제한
-            else:
-                df = _fetch_fdr(code, fetch_start)
+        error_count = 0
 
-            if df is None:
+        for i, row in stocks.iterrows():
+            code   = str(row["Code"]).strip()
+            name   = str(row["Name"]).strip()
+            market = row["market"]
+
+            try:
+                if source == "kis":
+                    df = _fetch_kis(code, fetch_start)
+                    time.sleep(0.05)  # KIS API 속도 제한
+                else:
+                    df = _fetch_fdr(code, fetch_start)
+
+                if df is None:
+                    continue
+
+                signals = detect_signals(df, target_dates)
+                for s in signals:
+                    meta = SIGNAL_DEFS[s["signal_type"]]
+                    all_rows.append({
+                        "date":            s["date"],
+                        "code":            code,
+                        "name":            name,
+                        "market":          market,
+                        "signal_type":     s["signal_type"],
+                        "signal_category": meta["category"],
+                        "signal_name":     meta["name"],
+                    })
+
+            except Exception as exc:
+                error_count += 1
+                if error_count <= 10:
+                    print(f"  [오류] {code} {name}: {exc}")
                 continue
 
-            signals = detect_signals(df, target_dates)
-            for s in signals:
-                meta = SIGNAL_DEFS[s["signal_type"]]
-                all_rows.append({
-                    "date":            s["date"],
-                    "code":            code,
-                    "name":            name,
-                    "market":          market,
-                    "signal_type":     s["signal_type"],
-                    "signal_category": meta["category"],
-                    "signal_name":     meta["name"],
-                })
+            if (i + 1) % 100 == 0:
+                print(f"  진행: {i + 1}/{total}  누적 신호: {len(all_rows)}건")
+                if source == "fdr":
+                    time.sleep(sleep_sec)
 
-        except Exception as exc:
-            error_count += 1
-            if error_count <= 10:
-                print(f"  [오류] {code} {name}: {exc}")
-            continue
+        print(f"\n[스캐너 완료] 총 신호: {len(all_rows)}건  오류 종목: {error_count}개")
 
-        if (i + 1) % 100 == 0:
-            print(f"  진행: {i + 1}/{total}  누적 신호: {len(all_rows)}건")
-            if source == "fdr":
-                time.sleep(sleep_sec)
-
-    print(f"\n[스캐너 완료] 총 신호: {len(all_rows)}건  오류 종목: {error_count}개")
-
-    us_rows = scan_us_index_signals(target_dates, fetch_start, source)
-    if us_rows:
-        print(f"[미국지수] S&P500·나스닥 신호 {len(us_rows)}건")
-        all_rows.extend(us_rows)
+        us_rows = scan_us_index_signals(target_dates, fetch_start, source)
+        if us_rows:
+            print(f"[미국지수] S&P500·나스닥 신호 {len(us_rows)}건")
+            all_rows.extend(us_rows)
 
     crypto_rows = scan_crypto_signals(crypto_target_dates, fetch_start, top_n=crypto_top_n)
     if crypto_rows:
@@ -554,5 +568,15 @@ if __name__ == "__main__":
         "--crypto-top", type=int, default=None,
         help=f"코인 스캔 종목 수 — 업비트 24h 거래대금 상위 (기본: {CRYPTO_SCAN_TOP_N})"
     )
+    parser.add_argument(
+        "--crypto-only", action="store_true",
+        help="업비트 코인만 스캔 (국내·미국 주식/KRX 조회 생략 — FDR 404 시 사용)"
+    )
     args = parser.parse_args()
-    run(days_back=args.days, source=args.source, skip_telegram=args.no_telegram, crypto_top_n=args.crypto_top)
+    run(
+        days_back=args.days,
+        source=args.source,
+        skip_telegram=args.no_telegram,
+        crypto_top_n=args.crypto_top,
+        crypto_only=args.crypto_only,
+    )
