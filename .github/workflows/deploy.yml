@@ -39,6 +39,15 @@ jobs:
             exit 1
           fi
 
+      - name: Require OpenRouter secret
+        env:
+          VITE_OPENROUTER_API_KEY: ${{ secrets.VITE_OPENROUTER_API_KEY }}
+        run: |
+          if [ -z "$VITE_OPENROUTER_API_KEY" ]; then
+            echo "::error::Settings → Secrets and variables → Actions 에 VITE_OPENROUTER_API_KEY 를 추가한 뒤 다시 실행해 주세요."
+            exit 1
+          fi
+
       - name: Install and build
         env:
           VITE_BASE: /${{ github.event.repository.name }}/

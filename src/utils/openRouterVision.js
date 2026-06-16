@@ -1,4 +1,8 @@
-const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY;
+function getOpenRouterApiKey() {
+  const key = import.meta.env.VITE_OPENROUTER_API_KEY;
+  return typeof key === 'string' ? key.trim() : key;
+}
+
 const MODEL_OVERRIDE = import.meta.env.VITE_OPENROUTER_RECEIPT_MODEL
   || import.meta.env.VITE_OPENROUTER_VISION_MODEL;
 
@@ -13,7 +17,7 @@ export const VISION_MODEL_PRIORITY = [
 ];
 
 export function assertOpenRouterKey() {
-  if (!OPENROUTER_API_KEY) {
+  if (!getOpenRouterApiKey()) {
     if (import.meta.env.PROD) {
       throw new Error(
         'VITE_OPENROUTER_API_KEY가 배포 환경에 없습니다. GitHub → my-first-project → Settings → Secrets → Actions 에 등록한 뒤 다시 배포해 주세요.',
@@ -40,7 +44,7 @@ export async function requestVisionParse(model, base64Image, mimeType, prompt, m
   const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+      Authorization: `Bearer ${getOpenRouterApiKey()}`,
       'Content-Type': 'application/json',
       'HTTP-Referer': typeof window !== 'undefined' ? window.location.origin : 'https://moneycalai.com',
       'X-Title': 'MoneyCal AI',
