@@ -14,7 +14,14 @@ export const VISION_MODEL_PRIORITY = [
 
 export function assertOpenRouterKey() {
   if (!OPENROUTER_API_KEY) {
-    throw new Error('VITE_OPENROUTER_API_KEY가 설정되지 않았습니다.');
+    if (import.meta.env.PROD) {
+      throw new Error(
+        'VITE_OPENROUTER_API_KEY가 배포 환경에 없습니다. GitHub → my-first-project → Settings → Secrets → Actions 에 등록한 뒤 다시 배포해 주세요.',
+      );
+    }
+    throw new Error(
+      'VITE_OPENROUTER_API_KEY가 .env에 없습니다. lecture1/my-first-project/.env 를 확인하고 dev 서버(Ctrl+C 후 npm run dev)를 재시작해 주세요.',
+    );
   }
 }
 
