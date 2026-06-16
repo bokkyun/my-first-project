@@ -41,6 +41,11 @@ const RELEASE_GROUPS: {
     release_id: 46,
     series: [{ series_id: 'PPIFIS', title: 'PPI (생산자물가·최종수요)' }],
   },
+  /** Personal Income and Outlays (PCE 물가) — BEA, FRED release_id 54 */
+  {
+    release_id: 54,
+    series: [{ series_id: 'PCEPI', title: 'PCE (개인소비지출 물가)' }],
+  },
 ];
 
 const TRACKED_SERIES_IDS = RELEASE_GROUPS.flatMap((g) => g.series.map((s) => s.series_id));

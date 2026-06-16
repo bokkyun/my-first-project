@@ -6,6 +6,8 @@ const TRACKED_FRED_SERIES = new Set([
   'PAYEMS', 'CPIAUCSL', 'M2SL', 'GDPC1', 'UNRATE',
   /** PPI: BLS Producer Price Index — Final Demand (동일 발표일에 SA/NSA 둘 다 있으면 SA만 표시) */
   'PPIFIS', 'PPIFID',
+  /** PCE: BEA Personal Income and Outlays */
+  'PCEPI',
 ]);
 const US_MACRO_FLAG = '🇺🇸';
 const FRED_SERIES_TITLES = {
@@ -16,6 +18,7 @@ const FRED_SERIES_TITLES = {
   UNRATE: '실업률',
   PPIFIS: 'PPI (생산자물가·최종수요)',
   PPIFID: 'PPI (생산자물가·최종수요, 비계절조정)',
+  PCEPI: 'PCE (개인소비지출 물가)',
 };
 const ISM_PMI_URL = 'https://go.weareism.org/ism-manufacturing-pmi';
 

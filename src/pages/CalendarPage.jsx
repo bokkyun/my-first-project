@@ -1,8 +1,11 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import {
-  Box, Snackbar, Alert, useTheme, Button,
+  Box, Snackbar, Alert, useTheme, Button, Dialog, DialogTitle, DialogContent, IconButton,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
+import ReceiptIcon from '@mui/icons-material/Receipt';
+import ShowChartIcon from '@mui/icons-material/ShowChart';
+import CloseIcon from '@mui/icons-material/Close';
 import useMediaQuery from '@mui/material/useMediaQuery';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
@@ -28,6 +31,11 @@ import ExternalFredEventDialog from '../components/landing/ExternalFredEventDial
 import ExternalSignalEventDialog from '../components/landing/ExternalSignalEventDialog';
 import DayAgendaDialog from '../components/landing/DayAgendaDialog';
 import MyEventSearchDialog from '../components/landing/MyEventSearchDialog';
+import { useExpenses } from '../hooks/useExpenses';
+import { useStockDailyProfits } from '../hooks/useStockDailyProfits';
+import ExternalExpenseEventDialog from '../components/landing/ExternalExpenseEventDialog';
+import ReceiptUploader from '../components/ReceiptUploader';
+import StockUploader from '../components/StockUploader';
 import TodayHotSignalBanner from '../components/landing/TodayHotSignalBanner';
 import { eventPassesSidebarCalendarFilters } from '../utils/calendarEventFilters';
 import { ALL_BUY_SIGNAL_TYPE_KEYS } from '../constants/buySignalTypes';
@@ -89,8 +97,10 @@ function localYmd(d) {
 /** `dateStr` YYYY-MM-DD 가 로컬 달력 날짜와 겹치는지 */
 function eventOccursOnDate(ev, dateStr) {
   if (!dateStr) return false;
-  if (ev._external === 'signal' && ev._signalRow?.date != null) {
-    const rowYmd = String(ev._signalRow.date).slice(0, 10);
+  if ((ev._external === 'signal' && ev._signalRow?.date != null)
+    || (ev._external === 'expense' && ev._expenseRow?.date != null)) {
+    const row = ev._signalRow || ev._expenseRow;
+    const rowYmd = String(row.date).slice(0, 10);
     return rowYmd === String(dateStr).slice(0, 10);
   }
   if (!ev?.starts_at) return false;
@@ -109,8 +119,10 @@ function eventOccursOnDate(ev, dateStr) {
  * 월 뷰에서는 해당 월만 표시하고 전·익월 패딩 칸 일정은 숨길 때 사용합니다.
  */
 function eventOverlapsFocusedRange(ev, rangeStart, rangeEndExclusive) {
-  if (ev._external === 'signal' && ev._signalRow?.date != null) {
-    const ymd = String(ev._signalRow.date).slice(0, 10);
+  if ((ev._external === 'signal' && ev._signalRow?.date != null)
+    || (ev._external === 'expense' && ev._expenseRow?.date != null)) {
+    const row = ev._signalRow || ev._expenseRow;
+    const ymd = String(row.date).slice(0, 10);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return false;
     const startYmd = localYmd(rangeStart);
     const lastInclusive = new Date(rangeEndExclusive.getTime() - 1);
@@ -169,6 +181,10 @@ function CalendarPage() {
   const [selectedFredEvent, setSelectedFredEvent] = useState(null);
   const [signalDetailOpen, setSignalDetailOpen] = useState(false);
   const [selectedSignalEvent, setSelectedSignalEvent] = useState(null);
+  const [expenseDetailOpen, setExpenseDetailOpen] = useState(false);
+  const [selectedExpenseEvent, setSelectedExpenseEvent] = useState(null);
+  const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
+  const [stockTradeDialogOpen, setStockTradeDialogOpen] = useState(false);
   /** 모바일 사이드바 */
   const [sidebarOpen, setSidebarOpen] = useState(false);
   /** 다이얼로그·시트 — selectedDate 는 dayEventsForSheet 보다 먼저 선언해야 함 */
@@ -218,9 +234,46 @@ function CalendarPage() {
     stocks: todayHotSignalStocks,
     date: todayHotSignalDate,
   } = useTodayHotSignalStocks({ minSignalCount: 3, limit: 8 });
+  const {
+    calendarEvents: expenseCalendarEvents,
+    error: expenseError,
+    refreshExpenses,
+  } = useExpenses(user?.id ?? null, viewRange, Boolean(user?.id));
+  const {
+    byDate: dailyStockProfits,
+    error: stockProfitError,
+    refreshStockProfits,
+  } = useStockDailyProfits(user?.id ?? null, viewRange);
+
+  const refreshCalendar = useCallback((date) => {
+    void refreshExpenses();
+    void refreshStockProfits();
+    if (date) {
+      setSelectedDate(String(date).slice(0, 10));
+      setSnack({
+        open: true,
+        msg: `${String(date).slice(0, 10)} 반영되었습니다.`,
+        severity: 'success',
+      });
+    }
+  }, [refreshExpenses, refreshStockProfits]);
+
+  const refreshCalendarFromStockTrades = useCallback(({ dates }) => {
+    void refreshStockProfits();
+    const first = dates?.[0];
+    if (first) {
+      setSelectedDate(String(first).slice(0, 10));
+    }
+    setSnack({
+      open: true,
+      msg: `체결 ${dates?.length ? dates.length : 0}일치가 캘린더에 반영되었습니다.`,
+      severity: 'success',
+    });
+  }, [refreshStockProfits]);
 
   const calendarEvents = useMemo(() => {
     const list = [...events];
+    if (user?.id) list.push(...expenseCalendarEvents);
     if (showAptSply) list.push(...aptSplyList);
     if (showIpo) list.push(...ipoList);
     if (showDartPeriodic) list.push(...dartPeriodicList);
@@ -230,7 +283,7 @@ function CalendarPage() {
     if (showUsBuySignals) list.push(...usSignalEvents);
     if (showCryptoBuySignals) list.push(...cryptoSignalEvents);
     return list;
-  }, [events, aptSplyList, showAptSply, ipoList, showIpo, dartPeriodicList, showDartPeriodic, showFred, fredCalendarEvents, showBok, bokCalendarEvents, showBuySignals, krSignalEvents, showUsBuySignals, usSignalEvents, showCryptoBuySignals, cryptoSignalEvents]);
+  }, [events, user?.id, expenseCalendarEvents, aptSplyList, showAptSply, ipoList, showIpo, dartPeriodicList, showDartPeriodic, showFred, fredCalendarEvents, showBok, bokCalendarEvents, showBuySignals, krSignalEvents, showUsBuySignals, usSignalEvents, showCryptoBuySignals, cryptoSignalEvents]);
 
   /** 표시 중인 뷰 구간에 속하는 일정만(월 뷰에서는 해당 월만, 전·익월 칸 제외) + 공모주·청약·실적은 날짜별 요약 */
   const calendarEventsForGrid = useMemo(() => {
@@ -251,11 +304,14 @@ function CalendarPage() {
         if (isUsBuySignalMarket(ev._signalRow?.market)) typeKey = 'us';
         else if (isCryptoBuySignalMarket(ev._signalRow?.market)) typeKey = 'crypto';
         else typeKey = 'signal';
+      } else if (ext === 'expense') {
+        typeKey = 'expense';
       } else { kept.push(ev); continue; }
 
       let dateStr;
-      if (ext === 'signal' && ev._signalRow?.date != null) {
-        dateStr = String(ev._signalRow.date).slice(0, 10);
+      if ((ext === 'signal' && ev._signalRow?.date != null)
+        || (ext === 'expense' && ev._expenseRow?.date != null)) {
+        dateStr = String((ev._signalRow || ev._expenseRow).date).slice(0, 10);
       } else {
         const d = new Date(ev.starts_at);
         dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -267,15 +323,16 @@ function CalendarPage() {
 
     const COLOR_MAP = {
       ipo: '#1b5e20', dart: '#0d47a1', apt: '#0d47a1',
-      signal: '#e65100', us: '#283593', crypto: '#f7931a',
+      signal: '#e65100', us: '#283593', crypto: '#f7931a', expense: '#c62828',
     };
     const LABEL_MAP = {
       ipo: '공모', dart: '실적', apt: '청약',
-      signal: '매수신호', us: '🇺🇸시그널', crypto: '코인',
+      signal: '매수신호', us: '🇺🇸시그널', crypto: '코인', expense: '지출',
     };
     const EXT_MAP = {
       ipo: 'summary-ipo', dart: 'summary-dart', apt: 'summary-apt',
       signal: 'summary-signal', us: 'summary-us', crypto: 'summary-crypto',
+      expense: 'summary-expense',
     };
 
     const summaries = Object.values(summaryBuckets).map(({ type, date, events: evts }) => ({
@@ -399,6 +456,11 @@ function CalendarPage() {
       setSignalDetailOpen(true);
       return;
     }
+    if (ev._external === 'expense') {
+      setSelectedExpenseEvent(ev);
+      setExpenseDetailOpen(true);
+      return;
+    }
     setSelectedEvent(ev);
     setDetailDialogOpen(true);
   };
@@ -466,6 +528,18 @@ function CalendarPage() {
       setSnack({ open: true, msg: `공시(DART): ${dartPeriodicError}`, severity: 'warning' });
     }
   }, [showDartPeriodic, dartPeriodicError]);
+
+  useEffect(() => {
+    if (user?.id && stockProfitError) {
+      setSnack({ open: true, msg: `주식 수익 조회: ${stockProfitError}`, severity: 'warning' });
+    }
+  }, [user?.id, stockProfitError]);
+
+  useEffect(() => {
+    if (user?.id && expenseError) {
+      setSnack({ open: true, msg: `지출 조회: ${expenseError}`, severity: 'warning' });
+    }
+  }, [user?.id, expenseError]);
 
   useEffect(() => {
     if (showFred && fredError) {
@@ -625,6 +699,28 @@ function CalendarPage() {
               <Button
                 variant="outlined"
                 size="small"
+                startIcon={<ShowChartIcon />}
+                onClick={() => setStockTradeDialogOpen(true)}
+                aria-label="체결 등록"
+              >
+                체결 등록
+              </Button>
+            )}
+            {user?.id && (
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<ReceiptIcon />}
+                onClick={() => setReceiptDialogOpen(true)}
+                aria-label="영수증 등록"
+              >
+                영수증 등록
+              </Button>
+            )}
+            {user?.id && (
+              <Button
+                variant="outlined"
+                size="small"
                 startIcon={<SearchIcon />}
                 onClick={() => setMyEventSearchOpen(true)}
                 aria-label="일정 검색"
@@ -654,6 +750,7 @@ function CalendarPage() {
             onlyMySchedules={onlyMySchedules}
             currentUserId={user?.id ?? null}
             onDatesSet={handleDatesSet}
+            dailyStockProfits={user?.id ? dailyStockProfits : null}
           />
         </Box>
       </Box>
@@ -714,6 +811,61 @@ function CalendarPage() {
         onClose={() => { setSignalDetailOpen(false); setSelectedSignalEvent(null); }}
         event={selectedSignalEvent}
       />
+      <ExternalExpenseEventDialog
+        open={expenseDetailOpen}
+        onClose={() => { setExpenseDetailOpen(false); setSelectedExpenseEvent(null); }}
+        event={selectedExpenseEvent}
+      />
+
+      <Dialog
+        open={receiptDialogOpen}
+        onClose={() => setReceiptDialogOpen(false)}
+        fullWidth
+        maxWidth="md"
+        PaperProps={{ sx: { borderRadius: 2 } }}
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 1 }}>
+          <span>영수증 등록</span>
+          <IconButton onClick={() => setReceiptDialogOpen(false)} aria-label="닫기" size="small">
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          {receiptDialogOpen && (
+            <ReceiptUploader
+              onSaved={(data) => {
+                refreshCalendar(data.date);
+                setReceiptDialogOpen(false);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={stockTradeDialogOpen}
+        onClose={() => setStockTradeDialogOpen(false)}
+        fullWidth
+        maxWidth="lg"
+        PaperProps={{ sx: { borderRadius: 2 } }}
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', pr: 1 }}>
+          <span>체결 등록</span>
+          <IconButton onClick={() => setStockTradeDialogOpen(false)} aria-label="닫기" size="small">
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          {stockTradeDialogOpen && (
+            <StockUploader
+              onSaved={(result) => {
+                refreshCalendarFromStockTrades(result);
+                setStockTradeDialogOpen(false);
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
 
       <EventDetailDialog
         open={detailDialogOpen}

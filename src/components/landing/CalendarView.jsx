@@ -8,6 +8,12 @@ import interactionPlugin from '@fullcalendar/interaction';
 import { Box, useMediaQuery, useTheme } from '@mui/material';
 import { isCoffeeEvent } from '../../utils/eventCoffee';
 import { eventPassesSidebarCalendarFilters } from '../../utils/calendarEventFilters';
+import DayCellProfit, { EMPTY_PROFIT } from './DayCellProfit';
+
+function localYmdFromDate(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null;
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
 
 /** 월간 그리드: 토·일 열 너비 = 평일 열 × 이 비율(낮을수록 주말이 좁아지고 월~금이 넓어짐) */
 const MONTH_WEEKEND_COL_WIDTH_RATIO = 0.35;
@@ -40,6 +46,7 @@ function getPinchDist(touches) {
  * @param {boolean} onlyMySchedules - true면 내가 등록한 일정만 표시 [Optional]
  * @param {string|null} currentUserId - 현재 로그인 유저 ID (onlyMySchedules 시 필요) [Optional]
  * @param {function} onDatesSet - (info) => void (보이는 날짜 범위, 외부 API 범위용) [Optional]
+ * @param {Record<string, { domestic: number, overseas: number }>} dailyStockProfits - 날짜별 주식 실현손익 [Optional]
  *
  * Example usage:
  * <CalendarView events={events} groups={groups} visibleGroupIds={ids} onDateClick={fn} onEventClick={fn} />
@@ -53,6 +60,7 @@ function CalendarView({
   onlyMySchedules = false,
   currentUserId = null,
   onDatesSet = null,
+  dailyStockProfits = null,
 }) {
   const calendarRef = useRef(null);
   const theme = useTheme();
@@ -468,6 +476,14 @@ function CalendarView({
           '& .fc-dayGridMonth-view .fc-col-header-cell:nth-of-type(7), & .fc-dayGridMonth-view td.fc-daygrid-day:nth-of-type(7)': {
             borderRightWidth: '0 !important',
           },
+          '& .fc-daygrid-day-top': {
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+          },
+          '& .fc-daygrid-day-number': {
+            width: '100%',
+            padding: '2px 4px !important',
+          },
           /** 5일 뷰: 가로 스크롤 허용 / 7일 뷰: 기본 overflow(스크롤 없음) */
           ...(monthWeekdaySwipeLayout && !isWeekExpanded
             ? {
@@ -507,6 +523,19 @@ function CalendarView({
           }}
           events={fcEvents()}
           dateClick={(info) => onDateClick(info.dateStr)}
+          dayCellContent={(arg) => {
+            const dateStr = localYmdFromDate(arg.date);
+            const stockProfit = (dailyStockProfits && dateStr && dailyStockProfits[dateStr])
+              ? dailyStockProfits[dateStr]
+              : EMPTY_PROFIT;
+            return (
+              <DayCellProfit
+                dayNumber={arg.dayNumberText}
+                isToday={arg.isToday}
+                stockProfit={stockProfit}
+              />
+            );
+          }}
           eventClick={(info) => {
             const cell = info.el?.closest?.('[data-date]');
             const clickedDateStr = cell?.getAttribute?.('data-date') || null;

@@ -8,7 +8,7 @@ import {
 import MoneyCalAiTitle from './MoneyCalAiTitle';
 import {
   CalendarMonth, GroupAdd, PersonAdd,
-  Logout, Settings, Notifications, Menu as MenuIcon,
+  Logout, Settings, Notifications, Menu as MenuIcon, Receipt,
 } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
 import { getAuthDisplayName, getDisplayEmail, getAvatarLetter } from '../../utils/profileDisplay';
@@ -188,6 +188,11 @@ function Navbar({ profile, onMenuClick }) {
           <MenuItem onClick={() => { handleMenuClose(); navigate('/groups/join'); }}>
             <ListItemIcon><PersonAdd fontSize="small" /></ListItemIcon>
             그룹 가입
+          </MenuItem>
+          <Divider />
+          <MenuItem onClick={() => { handleMenuClose(); navigate('/expenses'); }}>
+            <ListItemIcon><Receipt fontSize="small" /></ListItemIcon>
+            영수증 등록
           </MenuItem>
           <Divider />
           <MenuItem onClick={() => { handleMenuClose(); navigate('/profile'); }}>

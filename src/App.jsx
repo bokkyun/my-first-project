@@ -14,6 +14,7 @@ import PrivacyPage from './pages/PrivacyPage';
 import TermsPage from './pages/TermsPage';
 import AboutPage from './pages/AboutPage';
 import PromoSignalsPage from './pages/PromoSignalsPage';
+import ExpensesPage from './pages/ExpensesPage';
 
 /**
  * 인증이 필요한 라우트 보호 컴포넌트
@@ -74,6 +75,14 @@ function App() {
         element={
           <ProtectedRoute user={user} loading={loading}>
             <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/expenses"
+        element={
+          <ProtectedRoute user={user} loading={loading}>
+            <ExpensesPage />
           </ProtectedRoute>
         }
       />

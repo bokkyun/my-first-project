@@ -11,6 +11,11 @@ export function eventPassesSidebarCalendarFilters(ev, {
   onlyMySchedules,
   currentUserId,
 }) {
+  if (ev._external === 'expense') {
+    if (!currentUserId) return false;
+    return String(ev._expenseRow?.user_id || ev.creator_id || '') === String(currentUserId);
+  }
+
   const isExternal = ev._external === 'reb-apt'
     || ev._external === 'reb-odcloud'
     || ev._external === 'ipo'
