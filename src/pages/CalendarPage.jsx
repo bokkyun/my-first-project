@@ -33,7 +33,9 @@ import DayAgendaDialog from '../components/landing/DayAgendaDialog';
 import MyEventSearchDialog from '../components/landing/MyEventSearchDialog';
 import { useExpenses } from '../hooks/useExpenses';
 import { useStockDailyProfits } from '../hooks/useStockDailyProfits';
+import { useStockTrades } from '../hooks/useStockTrades';
 import ExternalExpenseEventDialog from '../components/landing/ExternalExpenseEventDialog';
+import ExternalStockTradeEventDialog from '../components/landing/ExternalStockTradeEventDialog';
 import ReceiptUploader from '../components/ReceiptUploader';
 import StockUploader from '../components/StockUploader';
 import TodayHotSignalBanner from '../components/landing/TodayHotSignalBanner';
@@ -98,9 +100,10 @@ function localYmd(d) {
 function eventOccursOnDate(ev, dateStr) {
   if (!dateStr) return false;
   if ((ev._external === 'signal' && ev._signalRow?.date != null)
-    || (ev._external === 'expense' && ev._expenseRow?.date != null)) {
-    const row = ev._signalRow || ev._expenseRow;
-    const rowYmd = String(row.date).slice(0, 10);
+    || (ev._external === 'expense' && ev._expenseRow?.date != null)
+    || (ev._external === 'stock-trade' && ev._stockTradeRow?.trade_date != null)) {
+    const row = ev._signalRow || ev._expenseRow || ev._stockTradeRow;
+    const rowYmd = String(row.date || row.trade_date).slice(0, 10);
     return rowYmd === String(dateStr).slice(0, 10);
   }
   if (!ev?.starts_at) return false;
@@ -120,9 +123,10 @@ function eventOccursOnDate(ev, dateStr) {
  */
 function eventOverlapsFocusedRange(ev, rangeStart, rangeEndExclusive) {
   if ((ev._external === 'signal' && ev._signalRow?.date != null)
-    || (ev._external === 'expense' && ev._expenseRow?.date != null)) {
-    const row = ev._signalRow || ev._expenseRow;
-    const ymd = String(row.date).slice(0, 10);
+    || (ev._external === 'expense' && ev._expenseRow?.date != null)
+    || (ev._external === 'stock-trade' && ev._stockTradeRow?.trade_date != null)) {
+    const row = ev._signalRow || ev._expenseRow || ev._stockTradeRow;
+    const ymd = String(row.date || row.trade_date).slice(0, 10);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(ymd)) return false;
     const startYmd = localYmd(rangeStart);
     const lastInclusive = new Date(rangeEndExclusive.getTime() - 1);
@@ -183,6 +187,8 @@ function CalendarPage() {
   const [selectedSignalEvent, setSelectedSignalEvent] = useState(null);
   const [expenseDetailOpen, setExpenseDetailOpen] = useState(false);
   const [selectedExpenseEvent, setSelectedExpenseEvent] = useState(null);
+  const [stockTradeDetailOpen, setStockTradeDetailOpen] = useState(false);
+  const [selectedStockTradeEvent, setSelectedStockTradeEvent] = useState(null);
   const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
   const [stockTradeDialogOpen, setStockTradeDialogOpen] = useState(false);
   /** 모바일 사이드바 */
@@ -238,7 +244,14 @@ function CalendarPage() {
     calendarEvents: expenseCalendarEvents,
     error: expenseError,
     refreshExpenses,
+    deleteExpense,
   } = useExpenses(user?.id ?? null, viewRange, Boolean(user?.id));
+  const {
+    calendarEvents: stockTradeCalendarEvents,
+    error: stockTradeError,
+    refreshStockTrades,
+    deleteStockTrade,
+  } = useStockTrades(user?.id ?? null, viewRange, Boolean(user?.id));
   const {
     byDate: dailyStockProfits,
     error: stockProfitError,
@@ -247,6 +260,7 @@ function CalendarPage() {
 
   const refreshCalendar = useCallback((date) => {
     void refreshExpenses();
+    void refreshStockTrades();
     void refreshStockProfits();
     if (date) {
       setSelectedDate(String(date).slice(0, 10));
@@ -256,9 +270,10 @@ function CalendarPage() {
         severity: 'success',
       });
     }
-  }, [refreshExpenses, refreshStockProfits]);
+  }, [refreshExpenses, refreshStockTrades, refreshStockProfits]);
 
   const refreshCalendarFromStockTrades = useCallback(({ dates }) => {
+    void refreshStockTrades();
     void refreshStockProfits();
     const first = dates?.[0];
     if (first) {
@@ -269,11 +284,14 @@ function CalendarPage() {
       msg: `체결 ${dates?.length ? dates.length : 0}일치가 캘린더에 반영되었습니다.`,
       severity: 'success',
     });
-  }, [refreshStockProfits]);
+  }, [refreshStockTrades, refreshStockProfits]);
 
   const calendarEvents = useMemo(() => {
     const list = [...events];
-    if (user?.id) list.push(...expenseCalendarEvents);
+    if (user?.id) {
+      list.push(...expenseCalendarEvents);
+      list.push(...stockTradeCalendarEvents);
+    }
     if (showAptSply) list.push(...aptSplyList);
     if (showIpo) list.push(...ipoList);
     if (showDartPeriodic) list.push(...dartPeriodicList);
@@ -283,7 +301,7 @@ function CalendarPage() {
     if (showUsBuySignals) list.push(...usSignalEvents);
     if (showCryptoBuySignals) list.push(...cryptoSignalEvents);
     return list;
-  }, [events, user?.id, expenseCalendarEvents, aptSplyList, showAptSply, ipoList, showIpo, dartPeriodicList, showDartPeriodic, showFred, fredCalendarEvents, showBok, bokCalendarEvents, showBuySignals, krSignalEvents, showUsBuySignals, usSignalEvents, showCryptoBuySignals, cryptoSignalEvents]);
+  }, [events, user?.id, expenseCalendarEvents, stockTradeCalendarEvents, aptSplyList, showAptSply, ipoList, showIpo, dartPeriodicList, showDartPeriodic, showFred, fredCalendarEvents, showBok, bokCalendarEvents, showBuySignals, krSignalEvents, showUsBuySignals, usSignalEvents, showCryptoBuySignals, cryptoSignalEvents]);
 
   /** 표시 중인 뷰 구간에 속하는 일정만(월 뷰에서는 해당 월만, 전·익월 칸 제외) + 공모주·청약·실적은 날짜별 요약 */
   const calendarEventsForGrid = useMemo(() => {
@@ -306,12 +324,16 @@ function CalendarPage() {
         else typeKey = 'signal';
       } else if (ext === 'expense') {
         typeKey = 'expense';
+      } else if (ext === 'stock-trade') {
+        typeKey = 'stock-trade';
       } else { kept.push(ev); continue; }
 
       let dateStr;
       if ((ext === 'signal' && ev._signalRow?.date != null)
-        || (ext === 'expense' && ev._expenseRow?.date != null)) {
-        dateStr = String((ev._signalRow || ev._expenseRow).date).slice(0, 10);
+        || (ext === 'expense' && ev._expenseRow?.date != null)
+        || (ext === 'stock-trade' && ev._stockTradeRow?.trade_date != null)) {
+        dateStr = String((ev._signalRow || ev._expenseRow || ev._stockTradeRow).date
+          || (ev._stockTradeRow?.trade_date)).slice(0, 10);
       } else {
         const d = new Date(ev.starts_at);
         dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -324,15 +346,18 @@ function CalendarPage() {
     const COLOR_MAP = {
       ipo: '#1b5e20', dart: '#0d47a1', apt: '#0d47a1',
       signal: '#e65100', us: '#283593', crypto: '#f7931a', expense: '#c62828',
+      'stock-trade': '#00695c',
     };
     const LABEL_MAP = {
       ipo: '공모', dart: '실적', apt: '청약',
       signal: '매수신호', us: '🇺🇸시그널', crypto: '코인', expense: '지출',
+      'stock-trade': '체결',
     };
     const EXT_MAP = {
       ipo: 'summary-ipo', dart: 'summary-dart', apt: 'summary-apt',
       signal: 'summary-signal', us: 'summary-us', crypto: 'summary-crypto',
       expense: 'summary-expense',
+      'stock-trade': 'summary-stock-trade',
     };
 
     const summaries = Object.values(summaryBuckets).map(({ type, date, events: evts }) => ({
@@ -461,6 +486,11 @@ function CalendarPage() {
       setExpenseDetailOpen(true);
       return;
     }
+    if (ev._external === 'stock-trade') {
+      setSelectedStockTradeEvent(ev);
+      setStockTradeDetailOpen(true);
+      return;
+    }
     setSelectedEvent(ev);
     setDetailDialogOpen(true);
   };
@@ -540,6 +570,12 @@ function CalendarPage() {
       setSnack({ open: true, msg: `지출 조회: ${expenseError}`, severity: 'warning' });
     }
   }, [user?.id, expenseError]);
+
+  useEffect(() => {
+    if (user?.id && stockTradeError) {
+      setSnack({ open: true, msg: `체결 조회: ${stockTradeError}`, severity: 'warning' });
+    }
+  }, [user?.id, stockTradeError]);
 
   useEffect(() => {
     if (showFred && fredError) {
@@ -626,6 +662,27 @@ function CalendarPage() {
   const handleOpenEditDialog = (event) => {
     setSelectedEvent(event);
     setEditDialogOpen(true);
+  };
+
+  const handleDeleteExpense = async (expenseId) => {
+    const { error } = await deleteExpense(expenseId);
+    if (error) {
+      setSnack({ open: true, msg: `지출 삭제 실패: ${error.message || error}`, severity: 'error' });
+      throw error;
+    }
+    setSelectedExpenseEvent(null);
+    setSnack({ open: true, msg: '지출 기록을 삭제했습니다.', severity: 'success' });
+  };
+
+  const handleDeleteStockTrade = async (tradeId) => {
+    const { error } = await deleteStockTrade(tradeId);
+    if (error) {
+      setSnack({ open: true, msg: `체결 삭제 실패: ${error.message || error}`, severity: 'error' });
+      throw error;
+    }
+    setSelectedStockTradeEvent(null);
+    void refreshStockProfits();
+    setSnack({ open: true, msg: '체결 기록을 삭제했습니다.', severity: 'success' });
   };
 
   return (
@@ -815,6 +872,13 @@ function CalendarPage() {
         open={expenseDetailOpen}
         onClose={() => { setExpenseDetailOpen(false); setSelectedExpenseEvent(null); }}
         event={selectedExpenseEvent}
+        onDelete={handleDeleteExpense}
+      />
+      <ExternalStockTradeEventDialog
+        open={stockTradeDetailOpen}
+        onClose={() => { setStockTradeDetailOpen(false); setSelectedStockTradeEvent(null); }}
+        event={selectedStockTradeEvent}
+        onDelete={handleDeleteStockTrade}
       />
 
       <Dialog

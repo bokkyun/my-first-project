@@ -120,3 +120,10 @@ export async function saveStockTrades(userId, trades, rawText = null) {
   const dates = [...new Set(saved.map((r) => String(r.trade_date).slice(0, 10)))];
   return { saved, dates };
 }
+
+/** @param {string} tradeId */
+export async function deleteStockTrade(tradeId) {
+  if (!tradeId) return { error: new Error('삭제할 체결 내역이 없습니다.') };
+  const { error } = await supabase.from('stock_trades').delete().eq('id', tradeId);
+  return { error };
+}

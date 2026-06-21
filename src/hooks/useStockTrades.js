@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { deleteStockTrade } from '../utils/stockTradeSave';
 
 function toYmd(date) {
   if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null;
@@ -8,8 +9,7 @@ function toYmd(date) {
 
 function exclusiveEndToInclusiveLastYmd(exclusiveEnd) {
   if (!(exclusiveEnd instanceof Date) || Number.isNaN(exclusiveEnd.getTime())) return null;
-  const last = new Date(exclusiveEnd.getTime() - 1);
-  return toYmd(last);
+  return toYmd(new Date(exclusiveEnd.getTime() - 1));
 }
 
 function addDaysToYmd(ymd, deltaDays) {
@@ -44,39 +44,43 @@ function widenQueryYmdRange(startYmd, endYmd, minSpanDays = 42) {
   };
 }
 
-const EXPENSE_COLOR = '#c62828';
-
-export function expenseToCalendarEvent(row) {
-  const date = String(row.date).slice(0, 10);
-  const amount = Number(row.amount) || 0;
-  const merchant = String(row.merchant || '지출').trim();
+export function stockTradeToCalendarEvent(row) {
+  const date = String(row.trade_date).slice(0, 10);
+  const isBuy = row.trade_type === 'buy';
+  const market = row.market_type === 'domestic' ? '국' : '해';
+  const name = String(row.stock_name || row.ticker || '종목').trim();
+  const typeLabel = isBuy ? '매수' : '매도';
+  let profitSuffix = '';
+  if (!isBuy && row.profit_krw != null && row.profit_krw !== '') {
+    const p = Number(row.profit_krw) || 0;
+    profitSuffix = ` ${p >= 0 ? '+' : ''}${p.toLocaleString()}`;
+  }
   return {
-    id: `expense-${row.id}`,
-    title: `${merchant} ${amount.toLocaleString()}원`,
+    id: `stock-trade-${row.id}`,
+    title: `${market} ${name} ${typeLabel}${profitSuffix}`,
     starts_at: `${date}T00:00:00`,
     ends_at: `${date}T23:59:59`,
     is_all_day: true,
-    color: EXPENSE_COLOR,
-    _external: 'expense',
-    _expenseRow: row,
+    color: isBuy ? '#1565c0' : '#2e7d32',
+    _external: 'stock-trade',
+    _stockTradeRow: row,
     creator_id: row.user_id,
   };
 }
 
 /**
- * 로그인 사용자 지출(expenses) — 캘린더 표시용
  * @param {string|null} userId
- * @param {{ start: Date, end: Date }} viewRange FullCalendar datesSet (end 배타)
+ * @param {{ start: Date, end: Date }} viewRange
  * @param {boolean} [enabled]
  */
-export function useExpenses(userId, viewRange, enabled = true) {
-  const [expenses, setExpenses] = useState([]);
+export function useStockTrades(userId, viewRange, enabled = true) {
+  const [trades, setTrades] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchExpenses = useCallback(async () => {
+  const fetchTrades = useCallback(async () => {
     if (!userId || !enabled) {
-      setExpenses([]);
+      setTrades([]);
       setError(null);
       return;
     }
@@ -90,44 +94,44 @@ export function useExpenses(userId, viewRange, enabled = true) {
     setLoading(true);
     setError(null);
     const { data, error: err } = await supabase
-      .from('expenses')
+      .from('stock_trades')
       .select('*')
       .eq('user_id', userId)
-      .gte('date', start)
-      .lte('date', end)
-      .order('date', { ascending: true });
+      .gte('trade_date', start)
+      .lte('trade_date', end)
+      .order('trade_date', { ascending: true })
+      .order('created_at', { ascending: true });
 
     setLoading(false);
     if (err) {
       setError(err.message);
-      setExpenses([]);
+      setTrades([]);
       return;
     }
-    setExpenses(data || []);
+    setTrades(data || []);
   }, [userId, enabled, viewRange?.start?.getTime(), viewRange?.end?.getTime()]);
 
   useEffect(() => {
-    fetchExpenses();
-  }, [fetchExpenses]);
+    fetchTrades();
+  }, [fetchTrades]);
 
   const calendarEvents = useMemo(
-    () => (expenses || []).map(expenseToCalendarEvent),
-    [expenses],
+    () => (trades || []).map(stockTradeToCalendarEvent),
+    [trades],
   );
 
-  const deleteExpense = useCallback(async (expenseId) => {
-    if (!expenseId) return { error: new Error('삭제할 지출이 없습니다.') };
-    const { error: err } = await supabase.from('expenses').delete().eq('id', expenseId);
-    if (!err) await fetchExpenses();
+  const removeTrade = useCallback(async (tradeId) => {
+    const { error: err } = await deleteStockTrade(tradeId);
+    if (!err) await fetchTrades();
     return { error: err };
-  }, [fetchExpenses]);
+  }, [fetchTrades]);
 
   return {
-    expenses,
+    trades,
     calendarEvents,
     loading,
     error,
-    refreshExpenses: fetchExpenses,
-    deleteExpense,
+    refreshStockTrades: fetchTrades,
+    deleteStockTrade: removeTrade,
   };
 }

@@ -46,6 +46,11 @@ const SUMMARY_TYPES = {
     color: '#c62828',
     match: (ev) => ev._external === 'expense',
   },
+  stockTrade: {
+    label: '체결',
+    color: '#00695c',
+    match: (ev) => ev._external === 'stock-trade',
+  },
 };
 
 const SIGNAL_CATEGORIES = [
@@ -268,6 +273,29 @@ function DayAgendaDialog({
                     <ListItemText
                       primary={row?.merchant || displayTitle(ev)}
                       secondary={`${Number(row?.amount || 0).toLocaleString()}원 · ${row?.category || '기타'}`}
+                      primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
+                      secondaryTypographyProps={{ fontSize: '0.78rem', color: 'text.secondary' }}
+                    />
+                  </ListItemButton>
+                );
+              })}
+            </List>
+          ) : subType === 'stockTrade' ? (
+            <List disablePadding>
+              {subEvents.map((ev) => {
+                const row = ev._stockTradeRow;
+                const isBuy = row?.trade_type === 'buy';
+                return (
+                  <ListItemButton
+                    key={ev.id}
+                    onClick={() => { handleSubClose(); onEventPick(ev); }}
+                    sx={{ borderRadius: 1.5, mb: 0.5, alignItems: 'flex-start', pl: 1.25, py: 1.25,
+                      '&:hover': { bgcolor: 'action.hover' } }}
+                  >
+                    <Box sx={{ width: 3, alignSelf: 'stretch', minHeight: 36, borderRadius: 2, bgcolor: subInfo?.color || '#00695c', mr: 1.5, flexShrink: 0 }} />
+                    <ListItemText
+                      primary={row?.stock_name || row?.ticker || displayTitle(ev)}
+                      secondary={`${isBuy ? '매수' : '매도'} · ${Number(row?.quantity || 0).toLocaleString()}주`}
                       primaryTypographyProps={{ fontWeight: 600, fontSize: '0.9rem' }}
                       secondaryTypographyProps={{ fontSize: '0.78rem', color: 'text.secondary' }}
                     />

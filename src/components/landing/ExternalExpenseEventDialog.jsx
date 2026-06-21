@@ -1,21 +1,38 @@
+import { useState } from 'react';
 import {
-  Dialog, DialogTitle, DialogContent, IconButton, Typography, Box, Chip, Divider,
+  Dialog, DialogTitle, DialogContent, DialogActions,
+  IconButton, Typography, Box, Chip, Divider, Button,
 } from '@mui/material';
-import { Close } from '@mui/icons-material';
+import { Close, Delete } from '@mui/icons-material';
 
-function formatAmount(value) {
+function formatAmount(value, suffix = '원') {
   const n = Number(value);
-  return Number.isFinite(n) ? `${n.toLocaleString()}원` : '-';
+  if (!Number.isFinite(n)) return '-';
+  return `${n.toLocaleString()}${suffix}`;
 }
 
 /**
- * @param {{ open: boolean, onClose: () => void, event: object|null }} props
+ * @param {{ open: boolean, onClose: () => void, event: object|null, onDelete?: (expenseId: string) => Promise<void>|void }} props
  */
-function ExternalExpenseEventDialog({ open, onClose, event }) {
+function ExternalExpenseEventDialog({ open, onClose, event, onDelete }) {
+  const [deleting, setDeleting] = useState(false);
   const row = event?._expenseRow;
   if (!row) return null;
 
   const items = Array.isArray(row.items) ? row.items : [];
+
+  const handleDelete = async () => {
+    if (!onDelete || deleting) return;
+    const ok = window.confirm('이 영수증(지출) 기록을 삭제할까요?');
+    if (!ok) return;
+    setDeleting(true);
+    try {
+      await onDelete(row.id);
+      onClose();
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="xs" PaperProps={{ sx: { borderRadius: 2 } }}>
@@ -56,6 +73,19 @@ function ExternalExpenseEventDialog({ open, onClose, event }) {
           </>
         )}
       </DialogContent>
+      {onDelete && (
+        <DialogActions sx={{ px: 2, pb: 2 }}>
+          <Button
+            color="error"
+            variant="outlined"
+            startIcon={<Delete />}
+            onClick={handleDelete}
+            disabled={deleting}
+          >
+            {deleting ? '삭제 중…' : '삭제'}
+          </Button>
+        </DialogActions>
+      )}
     </Dialog>
   );
 }

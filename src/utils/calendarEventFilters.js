@@ -16,6 +16,11 @@ export function eventPassesSidebarCalendarFilters(ev, {
     return String(ev._expenseRow?.user_id || ev.creator_id || '') === String(currentUserId);
   }
 
+  if (ev._external === 'stock-trade') {
+    if (!currentUserId) return false;
+    return String(ev._stockTradeRow?.user_id || ev.creator_id || '') === String(currentUserId);
+  }
+
   const isExternal = ev._external === 'reb-apt'
     || ev._external === 'reb-odcloud'
     || ev._external === 'ipo'
