@@ -20,6 +20,7 @@ supabase/.temp
 kis-test/.env
 kis-test/.kis_token_cache.json
 kis-test/__pycache__/
+kis-test/.cache/
 
 # Editor directories and files
 .vscode/*

@@ -473,11 +473,9 @@ def run(
     all_rows = []
 
     if not crypto_only:
-        kospi  = fdr.StockListing("KOSPI")[["Code", "Name"]].copy()
-        kosdaq = fdr.StockListing("KOSDAQ")[["Code", "Name"]].copy()
-        kospi["market"]  = "KOSPI"
-        kosdaq["market"] = "KOSDAQ"
-        stocks = pd.concat([kospi, kosdaq], ignore_index=True)
+        from kr_stock_listing import fetch_kr_stock_listing
+
+        stocks = fetch_kr_stock_listing()
         _before_spac = len(stocks)
         stocks = stocks[~stocks["Name"].astype(str).map(_is_spac_listing)].reset_index(drop=True)
         _excluded = _before_spac - len(stocks)
@@ -485,6 +483,8 @@ def run(
             print(f"[스캐너] 스팩 종목 제외: {_excluded}개")
         total = len(stocks)
         print(f"[스캐너] 스캔 대상 종목: {total}개\n")
+        if total == 0:
+            print("[스캐너] 경고: 국내 종목이 0개라 매수 시그널을 만들 수 없습니다.")
 
         error_count = 0
 

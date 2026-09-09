@@ -280,11 +280,9 @@ def scan_once(stocks: pd.DataFrame, hist_data: dict, interval_min: int):
 
 def load_stocks_and_hist() -> tuple[pd.DataFrame, dict]:
     print("[초기화] 종목 목록 로딩 중...")
-    kospi  = fdr.StockListing("KOSPI")[["Code", "Name"]].copy()
-    kosdaq = fdr.StockListing("KOSDAQ")[["Code", "Name"]].copy()
-    kospi["market"]  = "KOSPI"
-    kosdaq["market"] = "KOSDAQ"
-    stocks = pd.concat([kospi, kosdaq], ignore_index=True)
+    from kr_stock_listing import fetch_kr_stock_listing
+
+    stocks = fetch_kr_stock_listing()
     stocks = stocks[~stocks["Name"].astype(str).map(_is_spac_listing)].reset_index(drop=True)
     print(f"[초기화] 스캔 대상: {len(stocks)}종목")
 
