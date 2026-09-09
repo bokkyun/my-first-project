@@ -1,6 +1,8 @@
-FinanceDataReader
+finance-datareader
 pandas
 numpy
 requests
+lxml
 supabase
 python-dotenv
+
